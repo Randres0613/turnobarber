@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<title>TurnoBarber</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <div class="brand">💈 TurnoBarber</div>
+  <div id="status">Conectando...</div>
+</header>
+<main id="app">
+  <div class="card hero"><h1>TurnoBarber</h1><p>Cargando barbería...</p></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://dkgkejulxkgvjrppsmly.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_7mxRDvndqfxuf6rCbi8CpA_VWKgK9e2";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+</script>
+<script src="app.js"></script>
+</body>
+</html>
