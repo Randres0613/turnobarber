@@ -17,44 +17,62 @@ let waitingTickets = [];
 
 async function loadBusiness() {
 
-    connectionStatus.textContent = "CONECTANDO";
+    connectionStatus.textContent = "CONECTANDO...";
 
-    const { data, error } =
-        await client
-            .from("businesses")
-            .select("id,name,city")
-            .eq("id", businessId)
-            .single();
+    try {
 
-    if (error) {
+        // Buscamos la barbería mediante su QR.
+        // Por ahora usamos el slug conocido.
+        const { data, error } =
+            await client.rpc(
+                "get_business_by_qr",
+                {
+                    p_qr_slug: "barberia-el-jefe"
+                }
+            );
 
-        console.error(error);
+        if (error) {
+            throw error;
+        }
+
+        if (!data || data.length === 0) {
+            throw new Error("No se encontró la barbería.");
+        }
+
+        business = data[0];
+
+        businessInfo.textContent =
+            `${business.name} · ${business.city || ""}`;
+
+        connectionStatus.textContent = "ONLINE";
+
+        await loadPanel();
+
+    } catch (error) {
+
+        console.error("ERROR ADMIN:", error);
 
         connectionStatus.textContent = "ERROR";
 
         adminApp.innerHTML = `
             <div class="card hero">
 
-                <h2>⚠️ Error</h2>
+                <h2>⚠️ Error cargando el panel</h2>
 
                 <p>
                     ${error.message}
                 </p>
 
+                <button
+                    class="btn"
+                    onclick="location.reload()"
+                >
+                    🔄 Reintentar
+                </button>
+
             </div>
         `;
-
-        return;
     }
-
-    business = data;
-
-    businessInfo.textContent =
-        `${business.name} · ${business.city || ""}`;
-
-    connectionStatus.textContent = "ONLINE";
-
-    await loadPanel();
 }
 
 
@@ -87,11 +105,8 @@ async function loadCurrentTicket() {
         );
 
     if (error) {
-
         console.error(error);
-
         currentTicket = null;
-
         return;
     }
 
@@ -117,11 +132,8 @@ async function loadWaitingTickets() {
         );
 
     if (error) {
-
         console.error(error);
-
         waitingTickets = [];
-
         return;
     }
 
@@ -139,65 +151,59 @@ function renderPanel() {
 
         <section class="card current">
 
-            <h2>
-                TURNO ACTUAL
-            </h2>
+            <h2>TURNO ACTUAL</h2>
 
             ${
                 currentTicket
-
                 ?
-
                 `
-                    <div class="current-ticket">
+                <div class="current-ticket">
 
-                        <div class="ticket-number">
-                            ${currentTicket.ticket_code}
-                        </div>
-
-                        <h2>
-                            ${currentTicket.service_name}
-                        </h2>
-
-                        <p class="badge">
-                            🟢 EN ATENCIÓN
-                        </p>
-
+                    <div class="ticket-number">
+                        ${currentTicket.ticket_code}
                     </div>
 
-                    <div class="actions">
+                    <h2>
+                        ${currentTicket.service_name}
+                    </h2>
 
-                        <button
-                            class="btn success"
-                            onclick="finishCurrent()"
-                        >
-                            ✅ Finalizar
-                        </button>
+                    <p class="badge">
+                        🟢 EN ATENCIÓN
+                    </p>
 
-                        <button
-                            class="btn danger"
-                            onclick="noShowCurrent()"
-                        >
-                            🚫 No se presentó
-                        </button>
+                </div>
 
-                    </div>
+                <div class="actions">
+
+                    <button
+                        class="btn success"
+                        onclick="finishCurrent()"
+                    >
+                        ✅ Finalizar
+                    </button>
+
+                    <button
+                        class="btn danger"
+                        onclick="noShowCurrent()"
+                    >
+                        🚫 No se presentó
+                    </button>
+
+                </div>
                 `
-
                 :
-
                 `
-                    <div class="empty">
+                <div class="empty">
 
-                        <h2>
-                            No hay turno en atención
-                        </h2>
+                    <h2>
+                        No hay turno en atención
+                    </h2>
 
-                        <p>
-                            Pulsa "Llamar siguiente" para comenzar.
-                        </p>
+                    <p>
+                        Listo para llamar al siguiente cliente.
+                    </p>
 
-                    </div>
+                </div>
                 `
             }
 
@@ -208,69 +214,59 @@ function renderPanel() {
 
             <div class="queue-header">
 
-                <h2>
-                    PRÓXIMOS TURNOS
-                </h2>
+                <h2>PRÓXIMOS TURNOS</h2>
 
                 <span class="badge">
-                    ${waitingTickets.length}
-                    esperando
+                    ${waitingTickets.length} esperando
                 </span>
 
             </div>
 
-
             ${
                 waitingTickets.length === 0
-
                 ?
-
                 `
-                    <div class="empty">
-
-                        <p>
-                            No hay clientes esperando.
-                        </p>
-
-                    </div>
+                <div class="empty">
+                    <p>No hay clientes esperando.</p>
+                </div>
                 `
-
                 :
-
                 `
-                    <div class="queue">
+                <div class="queue">
 
-                        ${
-                            waitingTickets
-                                .map((ticket, index) => `
+                    ${
+                        waitingTickets
+                            .map((ticket, index) => `
 
-                                    <div class="queue-item">
+                                <div class="queue-item">
 
-                                        <div>
+                                    <div>
 
-                                            <strong>
-                                                ${ticket.ticket_code}
-                                            </strong>
+                                        <strong>
+                                            ${ticket.ticket_code}
+                                        </strong>
 
-                                            <span>
-                                                ${ticket.service_name}
-                                            </span>
-
-                                        </div>
-
-                                        <small>
-                                            ${index === 0
-                                                ? "Siguiente"
-                                                : `${index} antes`}
-                                        </small>
+                                        <span>
+                                            ${ticket.service_name}
+                                        </span>
 
                                     </div>
 
-                                `)
-                                .join("")
-                        }
+                                    <small>
+                                        ${
+                                            index === 0
+                                            ? "Siguiente"
+                                            : `${index} antes`
+                                        }
+                                    </small>
 
-                    </div>
+                                </div>
+
+                            `)
+                            .join("")
+                    }
+
+                </div>
                 `
             }
 
@@ -296,11 +292,7 @@ function renderPanel() {
 async function callNext() {
 
     if (currentTicket) {
-
-        alert(
-            "Primero debes finalizar el turno actual."
-        );
-
+        alert("Primero debes finalizar el turno actual.");
         return;
     }
 
@@ -313,9 +305,7 @@ async function callNext() {
         );
 
     if (error) {
-
         alert(error.message);
-
         return;
     }
 
@@ -334,9 +324,7 @@ async function callNext() {
 
 async function finishCurrent() {
 
-    if (!currentTicket) {
-        return;
-    }
+    if (!currentTicket) return;
 
     const { data, error } =
         await client.rpc(
@@ -347,18 +335,12 @@ async function finishCurrent() {
         );
 
     if (error) {
-
         alert(error.message);
-
         return;
     }
 
     if (!data) {
-
-        alert(
-            "No se pudo finalizar el turno."
-        );
-
+        alert("No se pudo finalizar el turno.");
         return;
     }
 
@@ -374,9 +356,7 @@ async function finishCurrent() {
 
 async function noShowCurrent() {
 
-    if (!currentTicket) {
-        return;
-    }
+    if (!currentTicket) return;
 
     const { data, error } =
         await client.rpc(
@@ -387,18 +367,12 @@ async function noShowCurrent() {
         );
 
     if (error) {
-
         alert(error.message);
-
         return;
     }
 
     if (!data) {
-
-        alert(
-            "No se pudo cambiar el estado."
-        );
-
+        alert("No se pudo cambiar el estado.");
         return;
     }
 
@@ -409,7 +383,7 @@ async function noShowCurrent() {
 
 
 // ==========================================
-// ACTUALIZAR AUTOMÁTICAMENTE
+// ACTUALIZACIÓN AUTOMÁTICA
 // ==========================================
 
 setInterval(
