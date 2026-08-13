@@ -7,6 +7,8 @@ const slug =
 
 let business = null;
 let services = [];
+let currentTicket = null;
+
 
 // ==========================================
 // CARGAR BARBERÍA
@@ -32,8 +34,13 @@ async function loadBusiness() {
 
         app.innerHTML = `
             <div class="card hero">
+
                 <h2>⚠️ Error de conexión</h2>
-                <p>${error.message}</p>
+
+                <p>
+                    ${error.message}
+                </p>
+
             </div>
         `;
 
@@ -46,9 +53,17 @@ async function loadBusiness() {
 
         app.innerHTML = `
             <div class="card hero">
-                <h2>💈 No encontramos la barbería</h2>
-                <p>Buscamos:</p>
-                <strong>${slug}</strong>
+
+                <h2>💈 Barbería no encontrada</h2>
+
+                <p>
+                    No encontramos la barbería:
+                </p>
+
+                <strong>
+                    ${slug}
+                </strong>
+
             </div>
         `;
 
@@ -91,8 +106,15 @@ async function loadServices() {
 
         app.innerHTML = `
             <div class="card hero">
-                <h2>⚠️ Error cargando servicios</h2>
-                <p>${error.message}</p>
+
+                <h2>
+                    ⚠️ Error cargando servicios
+                </h2>
+
+                <p>
+                    ${error.message}
+                </p>
+
             </div>
         `;
 
@@ -108,7 +130,7 @@ async function loadServices() {
 
 
 // ==========================================
-// MOSTRAR BARBERÍA Y SERVICIOS
+// MOSTRAR SERVICIOS
 // ==========================================
 
 function renderCustomer() {
@@ -131,6 +153,7 @@ function renderCustomer() {
 
         </div>
 
+
         <div class="card">
 
             <h2>
@@ -143,47 +166,47 @@ function renderCustomer() {
                 ?
 
                 `
-                    <p class="muted">
-                        No hay servicios disponibles.
-                    </p>
+                <p class="muted">
+                    No hay servicios disponibles.
+                </p>
                 `
 
                 :
 
                 `
-                    <div class="grid">
+                <div class="grid">
 
-                        ${
-                            services
-                                .map(service => `
+                    ${
+                        services
+                            .map(service => `
 
-                                    <div class="service">
+                                <div class="service">
 
-                                        <h3>
-                                            ${service.name}
-                                        </h3>
+                                    <h3>
+                                        ${service.name}
+                                    </h3>
 
-                                        <p>
-                                            ${service.duration_minutes}
-                                            min
-                                            ·
-                                            ${money(service.price)}
-                                        </p>
+                                    <p>
+                                        ${service.duration_minutes}
+                                        min
+                                        ·
+                                        ${money(service.price)}
+                                    </p>
 
-                                        <button
-                                            class="btn"
-                                            onclick="takeTurn('${service.id}')"
-                                        >
-                                            🎟️ Tomar turno
-                                        </button>
+                                    <button
+                                        class="btn"
+                                        onclick="takeTurn('${service.id}')"
+                                    >
+                                        Tomar turno
+                                    </button>
 
-                                    </div>
+                                </div>
 
-                                `)
-                                .join("")
-                        }
+                            `)
+                            .join("")
+                    }
 
-                    </div>
+                </div>
                 `
             }
 
@@ -233,17 +256,13 @@ async function takeTurn(serviceId) {
             </h2>
 
             <p>
-                Estamos registrando tu turno.
+                Espera un momento.
             </p>
 
         </div>
 
     `;
 
-
-    // ======================================
-    // CREAR TURNO EN SUPABASE
-    // ======================================
 
     const { data, error } =
         await client.rpc(
@@ -264,7 +283,7 @@ async function takeTurn(serviceId) {
             <div class="card hero">
 
                 <h2>
-                    ⚠️ No pudimos crear el turno
+                    ⚠️ No pudimos tomar tu turno
                 </h2>
 
                 <p>
@@ -275,7 +294,7 @@ async function takeTurn(serviceId) {
                     class="btn"
                     onclick="renderCustomer()"
                 >
-                    Volver a servicios
+                    Volver
                 </button>
 
             </div>
@@ -286,10 +305,6 @@ async function takeTurn(serviceId) {
     }
 
 
-    // ======================================
-    // COMPROBAR RESPUESTA
-    // ======================================
-
     if (!data || data.length === 0) {
 
         app.innerHTML = `
@@ -297,7 +312,7 @@ async function takeTurn(serviceId) {
             <div class="card hero">
 
                 <h2>
-                    ⚠️ No recibimos el número de turno
+                    ⚠️ No se creó el turno
                 </h2>
 
                 <button
@@ -315,65 +330,283 @@ async function takeTurn(serviceId) {
     }
 
 
-    const ticket = data[0];
+    currentTicket = data[0];
+
+    showTicket();
+
+}
 
 
-    // ======================================
-    // MOSTRAR TURNO
-    // ======================================
+// ==========================================
+// MOSTRAR TURNO
+// ==========================================
+
+function showTicket() {
 
     app.innerHTML = `
 
         <div class="card hero">
 
+            <h1>
+                💈 ${business.name}
+            </h1>
+
             <p class="muted">
-                ${business.name}
+                ${business.city || ""}
             </p>
 
-            <h2>
-                🎟️ Tu turno es
-            </h2>
+        </div>
 
-            <div class="ticket-number">
-                ${ticket.ticket_code}
-            </div>
 
-            <h3>
-                ${ticket.service_name}
-            </h3>
+        <div id="ticketStatus">
 
-            <p>
-                ⏱️ ${service.duration_minutes} minutos
-            </p>
-
-            <p>
-                💰 ${money(service.price)}
-            </p>
-
-            <div class="status-box">
-
-                <strong>
-                    En espera
-                </strong>
+            <div class="card ticket-card">
 
                 <p>
-                    Por favor espera a ser llamado.
+                    TU TURNO
                 </p>
+
+                <div class="ticket-number">
+                    ${currentTicket.ticket_code}
+                </div>
+
+                <h2>
+                    ${currentTicket.service_name}
+                </h2>
+
+                <span class="badge">
+                    🟡 ESPERANDO
+                </span>
+
+                <div id="ticketDetails">
+
+                    <p>
+                        Consultando tu posición...
+                    </p>
+
+                </div>
 
             </div>
 
-            <button
-                class="btn"
-                onclick="renderCustomer()"
-            >
-                Tomar otro turno
-            </button>
+
+            <div class="card">
+
+                <p class="muted">
+                    Esta página se actualiza
+                    automáticamente.
+                </p>
+
+                <button
+                    class="btn"
+                    onclick="checkTicketStatus()"
+                >
+                    🔄 Actualizar
+                </button>
+
+            </div>
 
         </div>
 
     `;
 
+    checkTicketStatus();
+
 }
+
+
+// ==========================================
+// CONSULTAR ESTADO
+// ==========================================
+
+async function checkTicketStatus() {
+
+    if (!currentTicket) {
+        return;
+    }
+
+
+    const { data, error } =
+        await client.rpc(
+            "public_ticket_status",
+            {
+                p_ticket_id: currentTicket.id
+            }
+        );
+
+
+    if (error) {
+
+        console.error(error);
+
+        return;
+    }
+
+
+    if (!data || data.length === 0) {
+
+        return;
+    }
+
+
+    const ticket = data[0];
+
+    renderTicketStatus(ticket);
+
+}
+
+
+// ==========================================
+// ACTUALIZAR PANTALLA
+// ==========================================
+
+function renderTicketStatus(ticket) {
+
+    const details =
+        document.getElementById("ticketDetails");
+
+    if (!details) {
+        return;
+    }
+
+
+    currentTicket = {
+        ...currentTicket,
+        ...ticket
+    };
+
+
+    if (ticket.status === "waiting") {
+
+        details.innerHTML = `
+
+            <div class="status-box">
+
+                <h3>
+                    🟡 Estás en espera
+                </h3>
+
+                <p>
+                    Hay
+                    <strong>
+                        ${ticket.people_ahead}
+                    </strong>
+                    personas antes que tú.
+                </p>
+
+                <p>
+                    ⏱️ Tiempo estimado:
+                    <strong>
+                        ${ticket.estimated_minutes}
+                        min
+                    </strong>
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    if (
+        ticket.status === "called" ||
+        ticket.status === "serving"
+    ) {
+
+        details.innerHTML = `
+
+            <div class="status-box">
+
+                <h2>
+                    🟢 ¡ES TU TURNO!
+                </h2>
+
+                <p>
+                    Pasa a la barbería.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    if (ticket.status === "done") {
+
+        details.innerHTML = `
+
+            <div class="status-box">
+
+                <h2>
+                    ✅ Turno finalizado
+                </h2>
+
+                <p>
+                    Gracias por visitarnos.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    if (ticket.status === "no_show") {
+
+        details.innerHTML = `
+
+            <div class="status-box">
+
+                <h2>
+                    🚫 Turno perdido
+                </h2>
+
+                <p>
+                    El turno fue marcado como
+                    no presentado.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    if (ticket.status === "cancelled") {
+
+        details.innerHTML = `
+
+            <div class="status-box">
+
+                <h2>
+                    ❌ Turno cancelado
+                </h2>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+}
+
+
+// ==========================================
+// ACTUALIZACIÓN AUTOMÁTICA
+// ==========================================
+
+setInterval(
+    checkTicketStatus,
+    5000
+);
 
 
 // ==========================================
