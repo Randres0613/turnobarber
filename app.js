@@ -44,8 +44,9 @@ async function loadBusiness() {
             </div>
         `;
 
-        return;
+        return false;
     }
+
 
     if (!data || data.length === 0) {
 
@@ -54,7 +55,9 @@ async function loadBusiness() {
         app.innerHTML = `
             <div class="card hero">
 
-                <h2>💈 Barbería no encontrada</h2>
+                <h2>
+                    💈 Barbería no encontrada
+                </h2>
 
                 <p>
                     No encontramos la barbería:
@@ -67,12 +70,15 @@ async function loadBusiness() {
             </div>
         `;
 
-        return;
+        return false;
     }
+
 
     business = data[0];
 
     await loadServices();
+
+    return true;
 }
 
 
@@ -98,6 +104,7 @@ async function loadServices() {
             )
             .order("name");
 
+
     if (error) {
 
         console.error(error);
@@ -121,11 +128,11 @@ async function loadServices() {
         return;
     }
 
+
     services = data || [];
 
     statusEl.textContent = "Conectado";
 
-    renderCustomer();
 }
 
 
@@ -240,12 +247,14 @@ async function takeTurn(serviceId) {
             s => s.id === serviceId
         );
 
+
     if (!service) {
 
         alert("No se encontró el servicio.");
 
         return;
     }
+
 
     app.innerHTML = `
 
@@ -332,7 +341,91 @@ async function takeTurn(serviceId) {
 
     currentTicket = data[0];
 
+
+    // ======================================
+    // GUARDAR TURNO
+    // ======================================
+
+    saveTicket();
+
+
+    // Mostrar pantalla del turno
+
     showTicket();
+
+}
+
+
+// ==========================================
+// GUARDAR TURNO
+// ==========================================
+
+function saveTicket() {
+
+    if (!currentTicket || !currentTicket.id) {
+        return;
+    }
+
+
+    localStorage.setItem(
+        "turnobarber_ticket",
+        JSON.stringify({
+            ticket_id: currentTicket.id,
+            business_id: business.id,
+            business_slug: slug
+        })
+    );
+
+}
+
+
+// ==========================================
+// OBTENER TURNO GUARDADO
+// ==========================================
+
+function getSavedTicket() {
+
+    const saved =
+        localStorage.getItem(
+            "turnobarber_ticket"
+        );
+
+
+    if (!saved) {
+        return null;
+    }
+
+
+    try {
+
+        return JSON.parse(saved);
+
+    } catch (error) {
+
+        console.error(
+            "Error leyendo turno guardado:",
+            error
+        );
+
+        localStorage.removeItem(
+            "turnobarber_ticket"
+        );
+
+        return null;
+    }
+
+}
+
+
+// ==========================================
+// BORRAR TURNO GUARDADO
+// ==========================================
+
+function clearSavedTicket() {
+
+    localStorage.removeItem(
+        "turnobarber_ticket"
+    );
 
 }
 
@@ -342,6 +435,11 @@ async function takeTurn(serviceId) {
 // ==========================================
 
 function showTicket() {
+
+    if (!currentTicket) {
+        return;
+    }
+
 
     app.innerHTML = `
 
@@ -367,16 +465,20 @@ function showTicket() {
                 </p>
 
                 <div class="ticket-number">
-                    ${currentTicket.ticket_code}
+                    ${currentTicket.ticket_code || "..."}
                 </div>
 
                 <h2>
-                    ${currentTicket.service_name}
+                    ${currentTicket.service_name || ""}
                 </h2>
 
-                <span class="badge">
+                <span
+                    id="ticketBadge"
+                    class="badge"
+                >
                     🟡 ESPERANDO
                 </span>
+
 
                 <div id="ticketDetails">
 
@@ -409,6 +511,7 @@ function showTicket() {
 
     `;
 
+
     checkTicketStatus();
 
 }
@@ -420,7 +523,7 @@ function showTicket() {
 
 async function checkTicketStatus() {
 
-    if (!currentTicket) {
+    if (!currentTicket || !currentTicket.id) {
         return;
     }
 
@@ -436,7 +539,10 @@ async function checkTicketStatus() {
 
     if (error) {
 
-        console.error(error);
+        console.error(
+            "Error consultando turno:",
+            error
+        );
 
         return;
     }
@@ -450,24 +556,6 @@ async function checkTicketStatus() {
 
     const ticket = data[0];
 
-    renderTicketStatus(ticket);
-
-}
-
-
-// ==========================================
-// ACTUALIZAR PANTALLA
-// ==========================================
-
-function renderTicketStatus(ticket) {
-
-    const details =
-        document.getElementById("ticketDetails");
-
-    if (!details) {
-        return;
-    }
-
 
     currentTicket = {
         ...currentTicket,
@@ -475,7 +563,47 @@ function renderTicketStatus(ticket) {
     };
 
 
+    renderTicketStatus(ticket);
+
+}
+
+
+// ==========================================
+// ACTUALIZAR ESTADO VISUAL
+// ==========================================
+
+function renderTicketStatus(ticket) {
+
+    const details =
+        document.getElementById(
+            "ticketDetails"
+        );
+
+
+    const badge =
+        document.getElementById(
+            "ticketBadge"
+        );
+
+
+    if (!details) {
+        return;
+    }
+
+
+    // ======================================
+    // ESPERANDO
+    // ======================================
+
     if (ticket.status === "waiting") {
+
+        if (badge) {
+
+            badge.textContent =
+                "🟡 ESPERANDO";
+
+        }
+
 
         details.innerHTML = `
 
@@ -509,10 +637,22 @@ function renderTicketStatus(ticket) {
     }
 
 
+    // ======================================
+    // LLAMADO / EN ATENCIÓN
+    // ======================================
+
     if (
         ticket.status === "called" ||
         ticket.status === "serving"
     ) {
+
+        if (badge) {
+
+            badge.textContent =
+                "🟢 ¡ES TU TURNO!";
+
+        }
+
 
         details.innerHTML = `
 
@@ -534,7 +674,19 @@ function renderTicketStatus(ticket) {
     }
 
 
+    // ======================================
+    // FINALIZADO
+    // ======================================
+
     if (ticket.status === "done") {
+
+        if (badge) {
+
+            badge.textContent =
+                "✅ FINALIZADO";
+
+        }
+
 
         details.innerHTML = `
 
@@ -552,34 +704,67 @@ function renderTicketStatus(ticket) {
 
         `;
 
+
+        // El turno ya terminó.
+        // Lo quitamos del navegador.
+
+        clearSavedTicket();
+
         return;
     }
 
 
+    // ======================================
+    // NO SE PRESENTÓ
+    // ======================================
+
     if (ticket.status === "no_show") {
+
+        if (badge) {
+
+            badge.textContent =
+                "🚫 NO PRESENTADO";
+
+        }
+
 
         details.innerHTML = `
 
             <div class="status-box">
 
                 <h2>
-                    🚫 Turno perdido
+                    🚫 Turno marcado como
+                    no presentado
                 </h2>
 
                 <p>
-                    El turno fue marcado como
-                    no presentado.
+                    Este turno ya no está activo.
                 </p>
 
             </div>
 
         `;
 
+
+        clearSavedTicket();
+
         return;
     }
 
 
+    // ======================================
+    // CANCELADO
+    // ======================================
+
     if (ticket.status === "cancelled") {
+
+        if (badge) {
+
+            badge.textContent =
+                "❌ CANCELADO";
+
+        }
+
 
         details.innerHTML = `
 
@@ -589,12 +774,129 @@ function renderTicketStatus(ticket) {
                     ❌ Turno cancelado
                 </h2>
 
+                <p>
+                    Este turno ya no está activo.
+                </p>
+
             </div>
 
         `;
 
+
+        clearSavedTicket();
+
         return;
     }
+
+}
+
+
+// ==========================================
+// RECUPERAR TURNO AL ABRIR LA PÁGINA
+// ==========================================
+
+async function restoreSavedTicket() {
+
+    const savedTicket =
+        getSavedTicket();
+
+
+    if (!savedTicket) {
+
+        renderCustomer();
+
+        return;
+    }
+
+
+    // Comprobar que pertenece
+    // a esta barbería.
+
+    if (
+        savedTicket.business_slug !== slug
+    ) {
+
+        clearSavedTicket();
+
+        renderCustomer();
+
+        return;
+    }
+
+
+    // Reconstruimos el objeto mínimo
+    // necesario para consultar Supabase.
+
+    currentTicket = {
+        id: savedTicket.ticket_id
+    };
+
+
+    // Consultamos el estado real.
+
+    const { data, error } =
+        await client.rpc(
+            "public_ticket_status",
+            {
+                p_ticket_id:
+                    savedTicket.ticket_id
+            }
+        );
+
+
+    if (error) {
+
+        console.error(
+            "Error recuperando turno:",
+            error
+        );
+
+        clearSavedTicket();
+
+        renderCustomer();
+
+        return;
+    }
+
+
+    if (!data || data.length === 0) {
+
+        clearSavedTicket();
+
+        renderCustomer();
+
+        return;
+    }
+
+
+    const ticket = data[0];
+
+
+    currentTicket = {
+        id: savedTicket.ticket_id,
+        ...ticket
+    };
+
+
+    // Si ya terminó, no lo recuperamos.
+
+    if (
+        ticket.status === "done" ||
+        ticket.status === "cancelled" ||
+        ticket.status === "no_show"
+    ) {
+
+        clearSavedTicket();
+
+        renderCustomer();
+
+        return;
+    }
+
+
+    // Mostrar turno recuperado.
+
+    showTicket();
 
 }
 
@@ -610,7 +912,23 @@ setInterval(
 
 
 // ==========================================
-// INICIAR
+// INICIAR APLICACIÓN
 // ==========================================
 
-loadBusiness();
+async function startApp() {
+
+    const loaded =
+        await loadBusiness();
+
+
+    if (!loaded) {
+        return;
+    }
+
+
+    await restoreSavedTicket();
+
+}
+
+
+startApp();
