@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>TurnoBarber - Pantalla</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background: #111;
+            color: white;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+
+        .screen {
+
+            width: 100%;
+            max-width: 1400px;
+
+            min-height: 100vh;
+
+            padding: 40px;
+
+            display: flex;
+            flex-direction: column;
+
+            justify-content: center;
+
+            text-align: center;
+        }
+
+
+        .header {
+
+            margin-bottom: 40px;
+        }
+
+
+        .header h1 {
+
+            margin: 0;
+
+            font-size: clamp(
+                32px,
+                5vw,
+                64px
+            );
+        }
+
+
+        .header p {
+
+            margin-top: 10px;
+
+            font-size: clamp(
+                18px,
+                2vw,
+                28px
+            );
+
+            opacity: 0.7;
+        }
+
+
+        .online {
+
+            display: inline-block;
+
+            margin-top: 15px;
+
+            padding: 8px 18px;
+
+            border-radius: 30px;
+
+            background: #16803c;
+
+            font-size: 16px;
+
+            font-weight: bold;
+        }
+
+
+        .main {
+
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            gap: 30px;
+        }
+
+
+        .card {
+
+            background: #1d1d1d;
+
+            border-radius: 24px;
+
+            padding: 40px;
+
+            min-height: 350px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+            align-items: center;
+        }
+
+
+        .card h2 {
+
+            margin: 0 0 25px;
+
+            font-size: clamp(
+                24px,
+                3vw,
+                40px
+            );
+        }
+
+
+        .current {
+
+            border: 3px solid #16803c;
+        }
+
+
+        .next {
+
+            border: 3px solid #444;
+        }
+
+
+        .ticket {
+
+            font-size: clamp(
+                80px,
+                13vw,
+                180px
+            );
+
+            font-weight: bold;
+
+            line-height: 1;
+
+            margin: 20px 0;
+        }
+
+
+        .service {
+
+            font-size: clamp(
+                24px,
+                3vw,
+                42px
+            );
+
+            opacity: 0.85;
+        }
+
+
+        .waiting {
+
+            font-size: clamp(
+                55px,
+                8vw,
+                110px
+            );
+
+            font-weight: bold;
+
+            opacity: 0.5;
+
+            margin: 30px 0;
+        }
+
+
+        .footer {
+
+            margin-top: 40px;
+
+            font-size: 20px;
+
+            opacity: 0.5;
+        }
+
+
+        .message {
+
+            font-size: clamp(
+                28px,
+                4vw,
+                55px
+            );
+
+            opacity: 0.6;
+        }
+
+
+        @media (max-width: 700px) {
+
+            .screen {
+                padding: 20px;
+            }
+
+            .main {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                min-height: 250px;
+                padding: 25px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <main class="screen">
+
+        <header class="header">
+
+            <h1 id="businessName">
+                💈 TurnoBarber
+            </h1>
+
+            <p id="businessCity">
+                Cargando barbería...
+            </p>
+
+            <span class="online">
+                ONLINE
+            </span>
+
+        </header>
+
+
+        <section class="main">
+
+
+            <!-- ========================= -->
+            <!-- TURNO ACTUAL -->
+            <!-- ========================= -->
+
+            <div class="card current">
+
+                <h2>
+                    🟢 AHORA ATENDIENDO
+                </h2>
+
+                <div
+                    id="currentTicket"
+                    class="ticket"
+                >
+                    —
+                </div>
+
+                <div
+                    id="currentService"
+                    class="service"
+                >
+                    Esperando...
+                </div>
+
+            </div>
+
+
+            <!-- ========================= -->
+            <!-- SIGUIENTE -->
+            <!-- ========================= -->
+
+            <div class="card next">
+
+                <h2>
+                    🟡 SIGUIENTE
+                </h2>
+
+                <div
+                    id="nextTicket"
+                    class="waiting"
+                >
+                    —
+                </div>
+
+                <div
+                    id="nextService"
+                    class="service"
+                >
+                    —
+                </div>
+
+            </div>
+
+
+        </section>
+
+
+        <footer class="footer">
+
+            <span id="updateStatus">
+                Actualizando...
+            </span>
+
+        </footer>
+
+    </main>
+
+
+    <!-- ================================= -->
+    <!-- SUPABASE -->
+    <!-- ================================= -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    </script>
+
+
+    <script>
+
+        // =================================
+        // CONFIGURACIÓN SUPABASE
+        // =================================
+
+        const SUPABASE_URL =
+            "TU_SUPABASE_URL";
+
+        const SUPABASE_ANON_KEY =
+            "TU_SUPABASE_ANON_KEY";
+
+
+        const client =
+            supabase.createClient(
+                SUPABASE_URL,
+                SUPABASE_ANON_KEY
+            );
+
+
+        // =================================
+        // BARBERÍA
+        // =================================
+
+        const slug =
+            new URLSearchParams(
+                location.search
+            ).get("b")
+            || "barberia-el-jefe";
+
+
+        let business = null;
+
+
+        // =================================
+        // ELEMENTOS
+        // =================================
+
+        const businessName =
+            document.getElementById(
+                "businessName"
+            );
+
+        const businessCity =
+            document.getElementById(
+                "businessCity"
+            );
+
+        const currentTicket =
+            document.getElementById(
+                "currentTicket"
+            );
+
+        const currentService =
+            document.getElementById(
+                "currentService"
+            );
+
+        const nextTicket =
+            document.getElementById(
+                "nextTicket"
+            );
+
+        const nextService =
+            document.getElementById(
+                "nextService"
+            );
+
+        const updateStatus =
+            document.getElementById(
+                "updateStatus"
+            );
+
+
+        // =================================
+        // CARGAR BARBERÍA
+        // =================================
+
+        async function loadBusiness() {
+
+            const { data, error } =
+                await client.rpc(
+                    "get_business_by_qr",
+                    {
+                        p_qr_slug: slug
+                    }
+                );
+
+
+            if (error) {
+
+                console.error(error);
+
+                updateStatus.textContent =
+                    "Error de conexión";
+
+                return;
+
+            }
+
+
+            if (
+                !data ||
+                data.length === 0
+            ) {
+
+                updateStatus.textContent =
+                    "Barbería no encontrada";
+
+                return;
+
+            }
+
+
+            business = data[0];
+
+
+            businessName.textContent =
+                "💈 " + business.name;
+
+
+            businessCity.textContent =
+                business.city || "";
+
+
+            await loadQueue();
+
+        }
+
+
+        // =================================
+        // CARGAR COLA
+        // =================================
+
+        async function loadQueue() {
+
+            if (!business) {
+                return;
+            }
+
+
+            const { data, error } =
+                await client.rpc(
+                    "admin_current_ticket",
+                    {
+                        p_business_id:
+                            business.id
+                    }
+                );
+
+
+            if (error) {
+
+                console.error(error);
+
+                updateStatus.textContent =
+                    "Error actualizando";
+
+                return;
+
+            }
+
+
+            // =============================
+            // TURNO ACTUAL
+            // =============================
+
+            if (
+                data &&
+                data.length > 0
+            ) {
+
+                const ticket =
+                    data[0];
+
+
+                currentTicket.textContent =
+                    ticket.ticket_code;
+
+
+                currentService.textContent =
+                    ticket.service_name;
+
+            } else {
+
+                currentTicket.textContent =
+                    "—";
+
+
+                currentService.textContent =
+                    "Esperando cliente";
+
+            }
+
+
+            await loadNext();
+
+
+            updateStatus.textContent =
+                "Actualizado · " +
+                new Date()
+                    .toLocaleTimeString(
+                        "es-CO"
+                    );
+
+        }
+
+
+        // =================================
+        // SIGUIENTE TURNO
+        // =================================
+
+        async function loadNext() {
+
+            const { data, error } =
+                await client.rpc(
+                    "admin_waiting_tickets",
+                    {
+                        p_business_id:
+                            business.id
+                    }
+                );
+
+
+            if (error) {
+
+                console.error(error);
+
+                return;
+
+            }
+
+
+            if (
+                !data ||
+                data.length === 0
+            ) {
+
+                nextTicket.textContent =
+                    "—";
+
+
+                nextService.textContent =
+                    "No hay clientes esperando";
+
+
+                return;
+
+            }
+
+
+            const next =
+                data[0];
+
+
+            nextTicket.textContent =
+                next.ticket_code;
+
+
+            nextService.textContent =
+                next.service_name;
+
+        }
+
+
+        // =================================
+        // ACTUALIZACIÓN AUTOMÁTICA
+        // =================================
+
+        setInterval(
+            loadQueue,
+            5000
+        );
+
+
+        // =================================
+        // INICIAR
+        // =================================
+
+        loadBusiness();
+
+    </script>
+
+</body>
+
+</html>
