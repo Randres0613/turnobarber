@@ -19,7 +19,9 @@
         }
 
         body {
+
             margin: 0;
+
             min-height: 100vh;
 
             font-family:
@@ -28,17 +30,23 @@
                 sans-serif;
 
             background: #111;
+
             color: white;
 
             display: flex;
+
             align-items: center;
+
             justify-content: center;
+
+            overflow: hidden;
         }
 
 
         .screen {
 
             width: 100%;
+
             max-width: 1400px;
 
             min-height: 100vh;
@@ -46,6 +54,7 @@
             padding: 40px;
 
             display: flex;
+
             flex-direction: column;
 
             justify-content: center;
@@ -54,7 +63,12 @@
         }
 
 
+        /* =================================
+           ENCABEZADO
+        ================================= */
+
         .header {
+
             margin-bottom: 40px;
         }
 
@@ -102,6 +116,48 @@
             font-weight: bold;
         }
 
+
+        /* =================================
+           BOTÓN SONIDO
+        ================================= */
+
+        .sound-button {
+
+            position: fixed;
+
+            top: 20px;
+
+            right: 20px;
+
+            z-index: 20;
+
+            border: none;
+
+            border-radius: 30px;
+
+            padding: 12px 20px;
+
+            background: #222;
+
+            color: white;
+
+            font-size: 16px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+
+        .sound-button.active {
+
+            background: #16803c;
+        }
+
+
+        /* =================================
+           TARJETAS
+        ================================= */
 
         .main {
 
@@ -212,19 +268,156 @@
         }
 
 
+        /* =================================
+           AVISO DE LLAMADA
+        ================================= */
+
+        .call-overlay {
+
+            position: fixed;
+
+            inset: 0;
+
+            z-index: 10;
+
+            background: rgba(0, 0, 0, 0.92);
+
+            display: none;
+
+            align-items: center;
+
+            justify-content: center;
+
+            flex-direction: column;
+
+            text-align: center;
+
+            padding: 30px;
+        }
+
+
+        .call-overlay.show {
+
+            display: flex;
+        }
+
+
+        .call-title {
+
+            font-size: clamp(
+                35px,
+                6vw,
+                80px
+            );
+
+            font-weight: bold;
+
+            margin-bottom: 30px;
+        }
+
+
+        .call-ticket {
+
+            font-size: clamp(
+                110px,
+                20vw,
+                280px
+            );
+
+            font-weight: bold;
+
+            line-height: 1;
+
+            margin: 20px 0;
+        }
+
+
+        .call-service {
+
+            font-size: clamp(
+                30px,
+                5vw,
+                65px
+            );
+
+            opacity: 0.9;
+        }
+
+
+        .call-message {
+
+            margin-top: 35px;
+
+            font-size: clamp(
+                25px,
+                4vw,
+                50px
+            );
+
+            font-weight: bold;
+        }
+
+
+        /* =================================
+           ANIMACIÓN
+        ================================= */
+
+        .pulse {
+
+            animation:
+                pulse 0.8s
+                infinite alternate;
+        }
+
+
+        @keyframes pulse {
+
+            from {
+                transform: scale(1);
+            }
+
+            to {
+                transform: scale(1.04);
+            }
+
+        }
+
+
+        /* =================================
+           MÓVIL
+        ================================= */
+
         @media (max-width: 700px) {
 
             .screen {
+
                 padding: 20px;
             }
 
+
             .main {
+
                 grid-template-columns: 1fr;
             }
 
+
             .card {
+
                 min-height: 250px;
+
                 padding: 25px;
+            }
+
+
+            .sound-button {
+
+                top: 10px;
+
+                right: 10px;
+
+                font-size: 13px;
+
+                padding: 10px 14px;
             }
 
         }
@@ -236,12 +429,26 @@
 
 <body>
 
+
+    <!-- =================================
+         BOTÓN SONIDO
+    ================================= -->
+
+    <button
+        id="soundButton"
+        class="sound-button"
+        onclick="activateSound()"
+    >
+        🔇 Activar sonido
+    </button>
+
+
+    <!-- =================================
+         PANTALLA PRINCIPAL
+    ================================= -->
+
     <main class="screen">
 
-
-        <!-- ================================= -->
-        <!-- ENCABEZADO -->
-        <!-- ================================= -->
 
         <header class="header">
 
@@ -249,9 +456,11 @@
                 💈 TurnoBarber
             </h1>
 
+
             <p id="businessCity">
                 Cargando barbería...
             </p>
+
 
             <span class="online">
                 ONLINE
@@ -260,16 +469,12 @@
         </header>
 
 
-        <!-- ================================= -->
-        <!-- TURNOS -->
-        <!-- ================================= -->
-
         <section class="main">
 
 
-            <!-- ============================= -->
-            <!-- TURNO ACTUAL -->
-            <!-- ============================= -->
+            <!-- =============================
+                 TURNO ACTUAL
+            ============================== -->
 
             <div class="card current">
 
@@ -277,12 +482,14 @@
                     🟢 AHORA ATENDIENDO
                 </h2>
 
+
                 <div
                     id="currentTicket"
                     class="ticket"
                 >
                     —
                 </div>
+
 
                 <div
                     id="currentService"
@@ -294,9 +501,9 @@
             </div>
 
 
-            <!-- ============================= -->
-            <!-- SIGUIENTE -->
-            <!-- ============================= -->
+            <!-- =============================
+                 SIGUIENTE
+            ============================== -->
 
             <div class="card next">
 
@@ -304,12 +511,14 @@
                     🟡 SIGUIENTE
                 </h2>
 
+
                 <div
                     id="nextTicket"
                     class="waiting"
                 >
                     —
                 </div>
+
 
                 <div
                     id="nextService"
@@ -323,10 +532,6 @@
         </section>
 
 
-        <!-- ================================= -->
-        <!-- ESTADO -->
-        <!-- ================================= -->
-
         <footer class="footer">
 
             <span id="updateStatus">
@@ -338,20 +543,64 @@
     </main>
 
 
-    <!-- ================================= -->
-    <!-- SUPABASE -->
-    <!-- ================================= -->
+    <!-- =================================
+         AVISO DE LLAMADA
+    ================================= -->
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <div
+        id="callOverlay"
+        class="call-overlay"
+    >
 
-    <script src="supabase.js"></script>
+        <div class="call-title">
+            📢 ES TU TURNO
+        </div>
 
 
-    <!-- ================================= -->
-    <!-- LÓGICA DE LA PANTALLA -->
-    <!-- ================================= -->
+        <div
+            id="callTicket"
+            class="call-ticket pulse"
+        >
+            A-000
+        </div>
+
+
+        <div
+            id="callService"
+            class="call-service"
+        >
+            Servicio
+        </div>
+
+
+        <div class="call-message">
+            🚶 PASA A LA BARBERÍA
+        </div>
+
+    </div>
+
+
+    <!-- =================================
+         SUPABASE
+    ================================= -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    </script>
+
+
+    <script src="supabase.js">
+    </script>
+
+
+    <!-- =================================
+         LÓGICA
+    ================================= -->
 
     <script>
+
+        // =================================
+        // CONFIGURACIÓN
+        // =================================
 
         const slug =
             new URLSearchParams(
@@ -363,6 +612,21 @@
         let business = null;
 
 
+        let previousTicketId = null;
+
+
+        let firstLoad = true;
+
+
+        let audioContext = null;
+
+
+        let soundEnabled = false;
+
+
+        let overlayTimer = null;
+
+
         // =================================
         // ELEMENTOS
         // =================================
@@ -372,35 +636,244 @@
                 "businessName"
             );
 
+
         const businessCity =
             document.getElementById(
                 "businessCity"
             );
+
 
         const currentTicket =
             document.getElementById(
                 "currentTicket"
             );
 
+
         const currentService =
             document.getElementById(
                 "currentService"
             );
+
 
         const nextTicket =
             document.getElementById(
                 "nextTicket"
             );
 
+
         const nextService =
             document.getElementById(
                 "nextService"
             );
 
+
         const updateStatus =
             document.getElementById(
                 "updateStatus"
             );
+
+
+        const soundButton =
+            document.getElementById(
+                "soundButton"
+            );
+
+
+        const callOverlay =
+            document.getElementById(
+                "callOverlay"
+            );
+
+
+        const callTicket =
+            document.getElementById(
+                "callTicket"
+            );
+
+
+        const callService =
+            document.getElementById(
+                "callService"
+            );
+
+
+        // =================================
+        // ACTIVAR SONIDO
+        // =================================
+
+        function activateSound() {
+
+            try {
+
+                audioContext =
+                    new (
+                        window.AudioContext ||
+                        window.webkitAudioContext
+                    )();
+
+
+                audioContext.resume();
+
+
+                soundEnabled = true;
+
+
+                soundButton.textContent =
+                    "🔊 Sonido activado";
+
+
+                soundButton.classList.add(
+                    "active"
+                );
+
+
+                playBeep();
+
+            } catch (error) {
+
+                console.error(
+                    "Error activando sonido:",
+                    error
+                );
+
+                soundButton.textContent =
+                    "❌ Sonido no disponible";
+
+            }
+
+        }
+
+
+        // =================================
+        // SONIDO
+        // =================================
+
+        function playBeep() {
+
+            if (
+                !soundEnabled ||
+                !audioContext
+            ) {
+                return;
+            }
+
+
+            const oscillator =
+                audioContext.createOscillator();
+
+
+            const gain =
+                audioContext.createGain();
+
+
+            oscillator.type =
+                "sine";
+
+
+            oscillator.frequency.value =
+                880;
+
+
+            gain.gain.setValueAtTime(
+                0.0001,
+                audioContext.currentTime
+            );
+
+
+            gain.gain.exponentialRampToValueAtTime(
+                0.35,
+                audioContext.currentTime + 0.03
+            );
+
+
+            gain.gain.exponentialRampToValueAtTime(
+                0.0001,
+                audioContext.currentTime + 0.35
+            );
+
+
+            oscillator.connect(gain);
+
+
+            gain.connect(
+                audioContext.destination
+            );
+
+
+            oscillator.start();
+
+
+            oscillator.stop(
+                audioContext.currentTime + 0.4
+            );
+
+        }
+
+
+        // =================================
+        // AVISO SONORO COMPLETO
+        // =================================
+
+        function announceTurn() {
+
+            playBeep();
+
+
+            setTimeout(
+                playBeep,
+                500
+            );
+
+        }
+
+
+        // =================================
+        // MOSTRAR AVISO
+        // =================================
+
+        function showCallScreen(
+            ticket,
+            service
+        ) {
+
+            callTicket.textContent =
+                ticket;
+
+
+            callService.textContent =
+                service;
+
+
+            callOverlay.classList.add(
+                "show"
+            );
+
+
+            announceTurn();
+
+
+            if (overlayTimer) {
+
+                clearTimeout(
+                    overlayTimer
+                );
+
+            }
+
+
+            overlayTimer =
+                setTimeout(
+                    () => {
+
+                        callOverlay.classList.remove(
+                            "show"
+                        );
+
+                    },
+                    5000
+                );
+
+        }
 
 
         // =================================
@@ -429,8 +902,10 @@
                     error
                 );
 
+
                 updateStatus.textContent =
                     "Error de conexión";
+
 
                 return;
 
@@ -445,12 +920,14 @@
                 updateStatus.textContent =
                     "Barbería no encontrada";
 
+
                 return;
 
             }
 
 
-            business = data[0];
+            business =
+                data[0];
 
 
             businessName.textContent =
@@ -478,6 +955,7 @@
 
 
             await loadCurrentTicket();
+
 
             await loadNextTicket();
 
@@ -515,11 +993,14 @@
                     error
                 );
 
+
                 currentTicket.textContent =
                     "—";
 
+
                 currentService.textContent =
                     "Error";
+
 
                 return;
 
@@ -542,6 +1023,29 @@
                 currentService.textContent =
                     ticket.service_name;
 
+
+                // =================================
+                // DETECTAR NUEVO TURNO
+                // =================================
+
+                if (
+                    !firstLoad &&
+                    previousTicketId !== null &&
+                    ticket.id !== previousTicketId
+                ) {
+
+                    showCallScreen(
+                        ticket.ticket_code,
+                        ticket.service_name
+                    );
+
+                }
+
+
+                previousTicketId =
+                    ticket.id;
+
+
             } else {
 
                 currentTicket.textContent =
@@ -551,7 +1055,14 @@
                 currentService.textContent =
                     "Esperando cliente";
 
+
+                previousTicketId =
+                    null;
+
             }
+
+
+            firstLoad = false;
 
         }
 
@@ -579,11 +1090,14 @@
                     error
                 );
 
+
                 nextTicket.textContent =
                     "—";
 
+
                 nextService.textContent =
                     "Error";
+
 
                 return;
 
@@ -601,6 +1115,7 @@
 
                 nextService.textContent =
                     "No hay clientes esperando";
+
 
                 return;
 
