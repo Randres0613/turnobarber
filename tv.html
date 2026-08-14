@@ -11,7 +11,7 @@
     >
 
     <title>TurnoBarber - Pantalla</title>
-    <meta name="turnobarber-tv-version" content="2.0-sonido">
+    <meta name="turnobarber-tv-version" content="2.1-sonido-llamado">
 
     <style>
 
@@ -302,6 +302,23 @@
         .call-overlay.show {
 
             display: flex;
+
+            animation:
+                callIn 0.35s ease-out;
+        }
+
+
+        @keyframes callIn {
+
+            from {
+                opacity: 0;
+                transform: scale(1.03);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
 
@@ -315,7 +332,11 @@
 
             font-weight: bold;
 
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+
+            letter-spacing: 1px;
+
+            text-transform: uppercase;
         }
 
 
@@ -331,7 +352,10 @@
 
             line-height: 1;
 
-            margin: 20px 0;
+            margin: 10px 0 20px;
+
+            text-shadow:
+                0 0 18px rgba(255,255,255,0.25);
         }
 
 
@@ -343,13 +367,17 @@
                 65px
             );
 
-            opacity: 0.9;
+            opacity: 0.95;
+
+            font-weight: bold;
+
+            margin-bottom: 10px;
         }
 
 
         .call-message {
 
-            margin-top: 35px;
+            margin-top: 25px;
 
             font-size: clamp(
                 25px,
@@ -358,6 +386,22 @@
             );
 
             font-weight: bold;
+
+            letter-spacing: 1px;
+        }
+
+
+        .call-submessage {
+
+            margin-top: 12px;
+
+            font-size: clamp(
+                16px,
+                2vw,
+                28px
+            );
+
+            opacity: 0.7;
         }
 
 
@@ -556,7 +600,7 @@
     >
 
         <div class="call-title">
-            📢 ES TU TURNO
+            📢 ATENCIÓN — ES TU TURNO
         </div>
 
 
@@ -577,7 +621,11 @@
 
 
         <div class="call-message">
-            🚶 PASA A LA BARBERÍA
+            🚶 PUEDE PASAR
+        </div>
+
+        <div class="call-submessage">
+            Gracias por esperar
         </div>
 
     </div>
@@ -853,7 +901,7 @@
                             .replace(/-/g, " ");
 
                     speakText(
-                        `Turno ${spokenTicket}. Puede pasar. ${service || ""}`
+                        `Atención. Turno ${spokenTicket}. Servicio de ${service || "barbería"}. Puede pasar.`
                     );
 
                 },
