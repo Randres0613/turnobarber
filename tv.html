@@ -11,7 +11,7 @@
     >
 
     <title>TurnoBarber - Pantalla</title>
-    <meta name="turnobarber-tv-version" content="2.1-sonido-llamado">
+    <meta name="turnobarber-tv-version" content="2.2-sonido-animacion">
 
     <style>
 
@@ -900,9 +900,7 @@
                         String(ticket)
                             .replace(/-/g, " ");
 
-                    speakText(
-                        `Atención. Turno ${spokenTicket}. Servicio de ${service || "barbería"}. Puede pasar.`
-                    );
+                    speakText(`Atención. Turno ${spokenTicket}. Servicio de ${service || "barbería"}. Puede pasar.`);
 
                 },
                 900
@@ -956,7 +954,7 @@
                         );
 
                     },
-                    5000
+                    10000
                 );
 
         }
