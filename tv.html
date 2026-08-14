@@ -55,7 +55,6 @@
 
 
         .header {
-
             margin-bottom: 40px;
         }
 
@@ -213,18 +212,6 @@
         }
 
 
-        .message {
-
-            font-size: clamp(
-                28px,
-                4vw,
-                55px
-            );
-
-            opacity: 0.6;
-        }
-
-
         @media (max-width: 700px) {
 
             .screen {
@@ -251,6 +238,11 @@
 
     <main class="screen">
 
+
+        <!-- ================================= -->
+        <!-- ENCABEZADO -->
+        <!-- ================================= -->
+
         <header class="header">
 
             <h1 id="businessName">
@@ -268,12 +260,16 @@
         </header>
 
 
+        <!-- ================================= -->
+        <!-- TURNOS -->
+        <!-- ================================= -->
+
         <section class="main">
 
 
-            <!-- ========================= -->
+            <!-- ============================= -->
             <!-- TURNO ACTUAL -->
-            <!-- ========================= -->
+            <!-- ============================= -->
 
             <div class="card current">
 
@@ -298,9 +294,9 @@
             </div>
 
 
-            <!-- ========================= -->
+            <!-- ============================= -->
             <!-- SIGUIENTE -->
-            <!-- ========================= -->
+            <!-- ============================= -->
 
             <div class="card next">
 
@@ -324,14 +320,17 @@
 
             </div>
 
-
         </section>
 
+
+        <!-- ================================= -->
+        <!-- ESTADO -->
+        <!-- ================================= -->
 
         <footer class="footer">
 
             <span id="updateStatus">
-                Actualizando...
+                Conectando...
             </span>
 
         </footer>
@@ -343,33 +342,16 @@
     <!-- SUPABASE -->
     <!-- ================================= -->
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <script src="supabase.js"></script>
+
+
+    <!-- ================================= -->
+    <!-- LÓGICA DE LA PANTALLA -->
+    <!-- ================================= -->
 
     <script>
-
-        // =================================
-        // CONFIGURACIÓN SUPABASE
-        // =================================
-
-        const SUPABASE_URL =
-            "TU_SUPABASE_URL";
-
-        const SUPABASE_ANON_KEY =
-            "TU_SUPABASE_ANON_KEY";
-
-
-        const client =
-            supabase.createClient(
-                SUPABASE_URL,
-                SUPABASE_ANON_KEY
-            );
-
-
-        // =================================
-        // BARBERÍA
-        // =================================
 
         const slug =
             new URLSearchParams(
@@ -427,6 +409,10 @@
 
         async function loadBusiness() {
 
+            updateStatus.textContent =
+                "Conectando...";
+
+
             const { data, error } =
                 await client.rpc(
                     "get_business_by_qr",
@@ -438,7 +424,10 @@
 
             if (error) {
 
-                console.error(error);
+                console.error(
+                    "Error barbería:",
+                    error
+                );
 
                 updateStatus.textContent =
                     "Error de conexión";
@@ -488,6 +477,27 @@
             }
 
 
+            await loadCurrentTicket();
+
+            await loadNextTicket();
+
+
+            updateStatus.textContent =
+                "Actualizado · " +
+                new Date()
+                    .toLocaleTimeString(
+                        "es-CO"
+                    );
+
+        }
+
+
+        // =================================
+        // TURNO ACTUAL
+        // =================================
+
+        async function loadCurrentTicket() {
+
             const { data, error } =
                 await client.rpc(
                     "admin_current_ticket",
@@ -500,19 +510,21 @@
 
             if (error) {
 
-                console.error(error);
+                console.error(
+                    "Error turno actual:",
+                    error
+                );
 
-                updateStatus.textContent =
-                    "Error actualizando";
+                currentTicket.textContent =
+                    "—";
+
+                currentService.textContent =
+                    "Error";
 
                 return;
 
             }
 
-
-            // =============================
-            // TURNO ACTUAL
-            // =============================
 
             if (
                 data &&
@@ -541,17 +553,6 @@
 
             }
 
-
-            await loadNext();
-
-
-            updateStatus.textContent =
-                "Actualizado · " +
-                new Date()
-                    .toLocaleTimeString(
-                        "es-CO"
-                    );
-
         }
 
 
@@ -559,7 +560,7 @@
         // SIGUIENTE TURNO
         // =================================
 
-        async function loadNext() {
+        async function loadNextTicket() {
 
             const { data, error } =
                 await client.rpc(
@@ -573,7 +574,16 @@
 
             if (error) {
 
-                console.error(error);
+                console.error(
+                    "Error siguiente:",
+                    error
+                );
+
+                nextTicket.textContent =
+                    "—";
+
+                nextService.textContent =
+                    "Error";
 
                 return;
 
@@ -591,7 +601,6 @@
 
                 nextService.textContent =
                     "No hay clientes esperando";
-
 
                 return;
 
