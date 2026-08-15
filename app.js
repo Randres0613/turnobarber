@@ -1,3 +1,4 @@
+```javascript
 const app = document.getElementById("app");
 const statusEl = document.getElementById("status");
 
@@ -11,12 +12,43 @@ let currentTicket = null;
 
 
 // ==========================================
+// CLAVE PARA GUARDAR EL TURNO
+// ==========================================
+
+const SAVED_TICKET_KEY =
+    "turnobarber_ticket";
+
+
+// ==========================================
+// FECHA LOCAL DE COLOMBIA
+// ==========================================
+
+function getColombiaDate() {
+
+    return new Intl.DateTimeFormat(
+        "en-CA",
+        {
+            timeZone: "America/Bogota",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit"
+        }
+    ).format(
+        new Date()
+    );
+
+}
+
+
+// ==========================================
 // CARGAR BARBERÍA
 // ==========================================
 
 async function loadBusiness() {
 
-    statusEl.textContent = "Conectando...";
+    statusEl.textContent =
+        "Conectando...";
+
 
     const { data, error } =
         await client.rpc(
@@ -26,22 +58,32 @@ async function loadBusiness() {
             }
         );
 
+
     if (error) {
 
-        console.error(error);
+        console.error(
+            "Error cargando barbería:",
+            error
+        );
 
-        statusEl.textContent = "Error";
+        statusEl.textContent =
+            "Error";
+
 
         app.innerHTML = `
+
             <div class="card hero">
 
-                <h2>⚠️ Error de conexión</h2>
+                <h2>
+                    ⚠️ Error de conexión
+                </h2>
 
                 <p>
                     ${error.message}
                 </p>
 
             </div>
+
         `;
 
         return false;
@@ -50,9 +92,12 @@ async function loadBusiness() {
 
     if (!data || data.length === 0) {
 
-        statusEl.textContent = "No encontrada";
+        statusEl.textContent =
+            "No encontrada";
+
 
         app.innerHTML = `
+
             <div class="card hero">
 
                 <h2>
@@ -68,17 +113,22 @@ async function loadBusiness() {
                 </strong>
 
             </div>
+
         `;
 
         return false;
     }
 
 
-    business = data[0];
+    business =
+        data[0];
+
 
     await loadServices();
 
+
     return true;
+
 }
 
 
@@ -107,11 +157,17 @@ async function loadServices() {
 
     if (error) {
 
-        console.error(error);
+        console.error(
+            "Error cargando servicios:",
+            error
+        );
 
-        statusEl.textContent = "Error";
+        statusEl.textContent =
+            "Error";
+
 
         app.innerHTML = `
+
             <div class="card hero">
 
                 <h2>
@@ -123,15 +179,19 @@ async function loadServices() {
                 </p>
 
             </div>
+
         `;
 
         return;
     }
 
 
-    services = data || [];
+    services =
+        data || [];
 
-    statusEl.textContent = "Conectado";
+
+    statusEl.textContent =
+        "Conectado";
 
 }
 
@@ -185,31 +245,33 @@ function renderCustomer() {
 
                     ${
                         services
-                            .map(service => `
+                            .map(
+                                service => `
 
-                                <div class="service">
+                                    <div class="service">
 
-                                    <h3>
-                                        ${service.name}
-                                    </h3>
+                                        <h3>
+                                            ${service.name}
+                                        </h3>
 
-                                    <p>
-                                        ${service.duration_minutes}
-                                        min
-                                        ·
-                                        ${money(service.price)}
-                                    </p>
+                                        <p>
+                                            ${service.duration_minutes}
+                                            min
+                                            ·
+                                            ${money(service.price)}
+                                        </p>
 
-                                    <button
-                                        class="btn"
-                                        onclick="takeTurn('${service.id}')"
-                                    >
-                                        Tomar turno
-                                    </button>
+                                        <button
+                                            class="btn"
+                                            onclick="takeTurn('${service.id}')"
+                                        >
+                                            Tomar turno
+                                        </button>
 
-                                </div>
+                                    </div>
 
-                            `)
+                                `
+                            )
                             .join("")
                     }
 
@@ -220,6 +282,7 @@ function renderCustomer() {
         </div>
 
     `;
+
 }
 
 
@@ -242,6 +305,32 @@ function money(value) {
 
 async function takeTurn(serviceId) {
 
+    // ======================================
+    // SEGURIDAD:
+    // SI YA HAY UN TURNO ACTIVO,
+    // NO CREAR OTRO
+    // ======================================
+
+    const savedTicket =
+        getSavedTicket();
+
+
+    if (savedTicket) {
+
+        if (
+            savedTicket.business_slug === slug &&
+            savedTicket.business_id === business.id &&
+            savedTicket.jornada === getColombiaDate()
+        ) {
+
+            await restoreSavedTicket();
+
+            return;
+        }
+
+    }
+
+
     const service =
         services.find(
             s => s.id === serviceId
@@ -250,7 +339,9 @@ async function takeTurn(serviceId) {
 
     if (!service) {
 
-        alert("No se encontró el servicio.");
+        alert(
+            "No se encontró el servicio."
+        );
 
         return;
     }
@@ -277,15 +368,22 @@ async function takeTurn(serviceId) {
         await client.rpc(
             "public_take_ticket",
             {
-                p_business_id: business.id,
-                p_service_id: service.id
+                p_business_id:
+                    business.id,
+
+                p_service_id:
+                    service.id
             }
         );
 
 
     if (error) {
 
-        console.error(error);
+        console.error(
+            "Error tomando turno:",
+            error
+        );
+
 
         app.innerHTML = `
 
@@ -339,17 +437,20 @@ async function takeTurn(serviceId) {
     }
 
 
-    currentTicket = data[0];
+    currentTicket =
+        data[0];
 
 
     // ======================================
-    // GUARDAR TURNO
+    // GUARDAR TURNO INMEDIATAMENTE
     // ======================================
 
     saveTicket();
 
 
-    // Mostrar pantalla del turno
+    // ======================================
+    // MOSTRAR TURNO
+    // ======================================
 
     showTicket();
 
@@ -362,19 +463,63 @@ async function takeTurn(serviceId) {
 
 function saveTicket() {
 
-    if (!currentTicket || !currentTicket.id) {
+    if (
+        !currentTicket ||
+        !currentTicket.id ||
+        !business
+    ) {
+
         return;
     }
 
 
-    localStorage.setItem(
-        "turnobarber_ticket",
-        JSON.stringify({
-            ticket_id: currentTicket.id,
-            business_id: business.id,
-            business_slug: slug
-        })
-    );
+    const savedData = {
+
+        ticket_id:
+            currentTicket.id,
+
+        ticket_code:
+            currentTicket.ticket_code || "",
+
+        service_name:
+            currentTicket.service_name || "",
+
+        business_id:
+            business.id,
+
+        business_slug:
+            slug,
+
+        jornada:
+            getColombiaDate(),
+
+        saved_at:
+            Date.now()
+
+    };
+
+
+    try {
+
+        localStorage.setItem(
+            SAVED_TICKET_KEY,
+            JSON.stringify(savedData)
+        );
+
+
+        console.log(
+            "Turno guardado:",
+            savedData
+        );
+
+    } catch (error) {
+
+        console.error(
+            "No se pudo guardar el turno:",
+            error
+        );
+
+    }
 
 }
 
@@ -385,13 +530,29 @@ function saveTicket() {
 
 function getSavedTicket() {
 
-    const saved =
-        localStorage.getItem(
-            "turnobarber_ticket"
+    let saved = null;
+
+
+    try {
+
+        saved =
+            localStorage.getItem(
+                SAVED_TICKET_KEY
+            );
+
+    } catch (error) {
+
+        console.error(
+            "Error accediendo a localStorage:",
+            error
         );
+
+        return null;
+    }
 
 
     if (!saved) {
+
         return null;
     }
 
@@ -407,10 +568,6 @@ function getSavedTicket() {
             error
         );
 
-        localStorage.removeItem(
-            "turnobarber_ticket"
-        );
-
         return null;
     }
 
@@ -423,9 +580,20 @@ function getSavedTicket() {
 
 function clearSavedTicket() {
 
-    localStorage.removeItem(
-        "turnobarber_ticket"
-    );
+    try {
+
+        localStorage.removeItem(
+            SAVED_TICKET_KEY
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Error eliminando turno guardado:",
+            error
+        );
+
+    }
 
 }
 
@@ -437,6 +605,7 @@ function clearSavedTicket() {
 function showTicket() {
 
     if (!currentTicket) {
+
         return;
     }
 
@@ -523,7 +692,11 @@ function showTicket() {
 
 async function checkTicketStatus() {
 
-    if (!currentTicket || !currentTicket.id) {
+    if (
+        !currentTicket ||
+        !currentTicket.id
+    ) {
+
         return;
     }
 
@@ -532,10 +705,17 @@ async function checkTicketStatus() {
         await client.rpc(
             "public_ticket_status",
             {
-                p_ticket_id: currentTicket.id
+                p_ticket_id:
+                    currentTicket.id
             }
         );
 
+
+    // ======================================
+    // MUY IMPORTANTE:
+    // SI HAY ERROR DE RED NO BORRAMOS
+    // EL TURNO
+    // ======================================
 
     if (error) {
 
@@ -544,26 +724,75 @@ async function checkTicketStatus() {
             error
         );
 
+        const details =
+            document.getElementById(
+                "ticketDetails"
+            );
+
+
+        if (details) {
+
+            details.innerHTML = `
+
+                <div class="status-box">
+
+                    <p>
+                        🔄 Conectando con
+                        TurnoBarber...
+                    </p>
+
+                </div>
+
+            `;
+
+        }
+
+
         return;
     }
 
 
-    if (!data || data.length === 0) {
+    // ======================================
+    // SI NO HAY DATOS:
+    // NO BORRAR EL TURNO
+    // ======================================
+
+    if (
+        !data ||
+        data.length === 0
+    ) {
+
+        console.warn(
+            "No se recibió información del turno."
+        );
 
         return;
     }
 
 
-    const ticket = data[0];
+    const ticket =
+        data[0];
 
 
     currentTicket = {
+
         ...currentTicket,
+
         ...ticket
+
     };
 
 
-    renderTicketStatus(ticket);
+    // ======================================
+    // ACTUALIZAR INFORMACIÓN GUARDADA
+    // ======================================
+
+    saveTicket();
+
+
+    renderTicketStatus(
+        ticket
+    );
 
 }
 
@@ -587,6 +816,7 @@ function renderTicketStatus(ticket) {
 
 
     if (!details) {
+
         return;
     }
 
@@ -595,7 +825,9 @@ function renderTicketStatus(ticket) {
     // ESPERANDO
     // ======================================
 
-    if (ticket.status === "waiting") {
+    if (
+        ticket.status === "waiting"
+    ) {
 
         if (badge) {
 
@@ -678,7 +910,9 @@ function renderTicketStatus(ticket) {
     // FINALIZADO
     // ======================================
 
-    if (ticket.status === "done") {
+    if (
+        ticket.status === "done"
+    ) {
 
         if (badge) {
 
@@ -705,8 +939,10 @@ function renderTicketStatus(ticket) {
         `;
 
 
-        // El turno ya terminó.
-        // Lo quitamos del navegador.
+        // ==================================
+        // AHORA SÍ:
+        // EL TURNO TERMINÓ
+        // ==================================
 
         clearSavedTicket();
 
@@ -718,7 +954,9 @@ function renderTicketStatus(ticket) {
     // NO SE PRESENTÓ
     // ======================================
 
-    if (ticket.status === "no_show") {
+    if (
+        ticket.status === "no_show"
+    ) {
 
         if (badge) {
 
@@ -756,7 +994,9 @@ function renderTicketStatus(ticket) {
     // CANCELADO
     // ======================================
 
-    if (ticket.status === "cancelled") {
+    if (
+        ticket.status === "cancelled"
+    ) {
 
         if (badge) {
 
@@ -792,7 +1032,7 @@ function renderTicketStatus(ticket) {
 
 
 // ==========================================
-// RECUPERAR TURNO AL ABRIR LA PÁGINA
+// RECUPERAR TURNO AL ABRIR / ACTUALIZAR
 // ==========================================
 
 async function restoreSavedTicket() {
@@ -800,6 +1040,10 @@ async function restoreSavedTicket() {
     const savedTicket =
         getSavedTicket();
 
+
+    // ======================================
+    // NO HAY TURNO GUARDADO
+    // ======================================
 
     if (!savedTicket) {
 
@@ -809,11 +1053,13 @@ async function restoreSavedTicket() {
     }
 
 
-    // Comprobar que pertenece
-    // a esta barbería.
+    // ======================================
+    // COMPROBAR BARBERÍA
+    // ======================================
 
     if (
-        savedTicket.business_slug !== slug
+        savedTicket.business_slug !== slug ||
+        savedTicket.business_id !== business.id
     ) {
 
         clearSavedTicket();
@@ -824,15 +1070,56 @@ async function restoreSavedTicket() {
     }
 
 
-    // Reconstruimos el objeto mínimo
-    // necesario para consultar Supabase.
+    // ======================================
+    // COMPROBAR JORNADA
+    // ======================================
+
+    if (
+        savedTicket.jornada &&
+        savedTicket.jornada !== getColombiaDate()
+    ) {
+
+        clearSavedTicket();
+
+        renderCustomer();
+
+        return;
+    }
+
+
+    // ======================================
+    // RECONSTRUIR TURNO
+    // ======================================
 
     currentTicket = {
-        id: savedTicket.ticket_id
+
+        id:
+            savedTicket.ticket_id,
+
+        ticket_code:
+            savedTicket.ticket_code || "",
+
+        service_name:
+            savedTicket.service_name || ""
+
     };
 
 
-    // Consultamos el estado real.
+    // ======================================
+    // MOSTRARLO INMEDIATAMENTE
+    // ======================================
+    //
+    // Esto evita que al actualizar
+    // aparezca otra vez "Tomar turno".
+    //
+    // ======================================
+
+    showTicket();
+
+
+    // ======================================
+    // CONSULTAR ESTADO REAL
+    // ======================================
 
     const { data, error } =
         await client.rpc(
@@ -844,6 +1131,11 @@ async function restoreSavedTicket() {
         );
 
 
+    // ======================================
+    // SI HAY ERROR:
+    // MANTENER EL TURNO
+    // ======================================
+
     if (error) {
 
         console.error(
@@ -851,34 +1143,53 @@ async function restoreSavedTicket() {
             error
         );
 
-        clearSavedTicket();
+        return;
+    }
 
-        renderCustomer();
+
+    // ======================================
+    // SI NO HAY DATOS:
+    // MANTENER EL TURNO
+    // ======================================
+
+    if (
+        !data ||
+        data.length === 0
+    ) {
+
+        console.warn(
+            "No se recibió información del turno guardado."
+        );
 
         return;
     }
 
 
-    if (!data || data.length === 0) {
-
-        clearSavedTicket();
-
-        renderCustomer();
-
-        return;
-    }
-
-
-    const ticket = data[0];
+    const ticket =
+        data[0];
 
 
     currentTicket = {
-        id: savedTicket.ticket_id,
+
+        id:
+            savedTicket.ticket_id,
+
         ...ticket
+
     };
 
 
-    // Si ya terminó, no lo recuperamos.
+    // ======================================
+    // ACTUALIZAR DATOS GUARDADOS
+    // ======================================
+
+    saveTicket();
+
+
+    // ======================================
+    // SI TERMINÓ:
+    // LIMPIAR
+    // ======================================
 
     if (
         ticket.status === "done" ||
@@ -886,17 +1197,21 @@ async function restoreSavedTicket() {
         ticket.status === "no_show"
     ) {
 
-        clearSavedTicket();
-
-        renderCustomer();
+        renderTicketStatus(
+            ticket
+        );
 
         return;
     }
 
 
-    // Mostrar turno recuperado.
+    // ======================================
+    // MOSTRAR ESTADO ACTUAL
+    // ======================================
 
-    showTicket();
+    renderTicketStatus(
+        ticket
+    );
 
 }
 
@@ -922,6 +1237,7 @@ async function startApp() {
 
 
     if (!loaded) {
+
         return;
     }
 
@@ -932,3 +1248,4 @@ async function startApp() {
 
 
 startApp();
+```
