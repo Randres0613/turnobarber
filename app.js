@@ -795,21 +795,11 @@ function renderTicketStatus(ticket) {
 
 async function restoreSavedTicket() {
 
-    console.log("🔄 Recuperando turno guardado...");
-
     const savedTicket =
         getSavedTicket();
 
 
-    // ======================================
-    // NO HAY TURNO GUARDADO
-    // ======================================
-
     if (!savedTicket) {
-
-        console.log(
-            "ℹ️ No hay turno guardado."
-        );
 
         renderCustomer();
 
@@ -817,24 +807,9 @@ async function restoreSavedTicket() {
     }
 
 
-    console.log(
-        "🎫 Turno guardado:",
-        savedTicket
-    );
-
-
-    // ======================================
-    // COMPROBAR BARBERÍA
-    // ======================================
-
     if (
-        savedTicket.business_slug !== slug ||
-        savedTicket.business_id !== business.id
+        savedTicket.business_slug !== slug
     ) {
-
-        console.log(
-            "⚠️ El turno pertenece a otra barbería."
-        );
 
         clearSavedTicket();
 
@@ -844,9 +819,10 @@ async function restoreSavedTicket() {
     }
 
 
-    // ======================================
-    // CONSULTAR EL TURNO EN SUPABASE
-    // ======================================
+    currentTicket = {
+        id: savedTicket.ticket_id
+    };
+
 
     const { data, error } =
         await client.rpc(
@@ -858,89 +834,39 @@ async function restoreSavedTicket() {
         );
 
 
-    // ======================================
-    // ERROR
-    // ======================================
-
     if (error) {
 
         console.error(
-            "❌ Error recuperando turno:",
+            "Error recuperando turno:",
             error
         );
 
-        return;
-    }
+        clearSavedTicket();
 
-
-    // ======================================
-    // NO DEVOLVIÓ DATOS
-    // ======================================
-
-    if (
-        !data ||
-        data.length === 0
-    ) {
-
-        console.warn(
-            "⚠️ No se encontró el turno en Supabase."
-        );
+        renderCustomer();
 
         return;
     }
 
 
-    // ======================================
-    // TURNO ENCONTRADO
-    // ======================================
+    if (!data || data.length === 0) {
 
-    const ticket =
-        data[0];
+        clearSavedTicket();
 
+        renderCustomer();
 
-    console.log(
-        "✅ Turno recuperado:",
-        ticket
-    );
+        return;
+    }
 
 
-    // ======================================
-    // RECONSTRUIR TURNO COMPLETO
-    // ======================================
+    const ticket = data[0];
+
 
     currentTicket = {
-
-        id:
-            ticket.id,
-
-        ticket_code:
-            ticket.ticket_code,
-
-        service_name:
-            ticket.service_name,
-
-        status:
-            ticket.status,
-
-        people_ahead:
-            ticket.people_ahead,
-
-        estimated_minutes:
-            ticket.estimated_minutes
-
+        id: savedTicket.ticket_id,
+        ...ticket
     };
 
-
-    // ======================================
-    // GUARDAR INFORMACIÓN COMPLETA
-    // ======================================
-
-    saveTicket();
-
-
-    // ======================================
-    // SI YA TERMINÓ
-    // ======================================
 
     if (
         ticket.status === "done" ||
@@ -948,25 +874,18 @@ async function restoreSavedTicket() {
         ticket.status === "no_show"
     ) {
 
-        renderCustomer();
-
         clearSavedTicket();
+
+        renderCustomer();
 
         return;
     }
 
 
-    // ======================================
-    // MOSTRAR TURNO RECUPERADO
-    // ======================================
-
     showTicket();
 
 }
 
-// ==========================================
-// ACTUALIZACIÓN AUTOMÁTICA
-// ==========================================
 
 // ==========================================
 // ACTUALIZACIÓN AUTOMÁTICA
