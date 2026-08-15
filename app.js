@@ -795,7 +795,7 @@ function renderTicketStatus(ticket) {
 
 async function restoreSavedTicket() {
 
-    console.log("🔄 Buscando turno guardado...");
+    console.log("🔄 Recuperando turno guardado...");
 
     const savedTicket =
         getSavedTicket();
@@ -845,32 +845,7 @@ async function restoreSavedTicket() {
 
 
     // ======================================
-    // RECONSTRUIR TURNO
-    // ======================================
-
-    currentTicket = {
-
-        id:
-            savedTicket.ticket_id,
-
-        ticket_code:
-            savedTicket.ticket_code || "",
-
-        service_name:
-            savedTicket.service_name || ""
-
-    };
-
-
-    // ======================================
-    // MOSTRAR TURNO INMEDIATAMENTE
-    // ======================================
-
-    showTicket();
-
-
-    // ======================================
-    // CONSULTAR ESTADO REAL
+    // CONSULTAR EL TURNO EN SUPABASE
     // ======================================
 
     const { data, error } =
@@ -884,7 +859,7 @@ async function restoreSavedTicket() {
 
 
     // ======================================
-    // ERROR DE CONEXIÓN
+    // ERROR
     // ======================================
 
     if (error) {
@@ -894,13 +869,12 @@ async function restoreSavedTicket() {
             error
         );
 
-        // NO BORRAR EL TURNO
         return;
     }
 
 
     // ======================================
-    // SIN DATOS
+    // NO DEVOLVIÓ DATOS
     // ======================================
 
     if (
@@ -909,46 +883,63 @@ async function restoreSavedTicket() {
     ) {
 
         console.warn(
-            "⚠️ Supabase no devolvió el turno."
+            "⚠️ No se encontró el turno en Supabase."
         );
 
-        // NO BORRAR EL TURNO
         return;
     }
 
 
     // ======================================
-    // ACTUALIZAR TURNO
+    // TURNO ENCONTRADO
     // ======================================
 
     const ticket =
         data[0];
 
 
-    currentTicket = {
-
-        ...currentTicket,
-
-        ...ticket
-
-    };
-
-
     console.log(
-        "✅ Estado del turno:",
+        "✅ Turno recuperado:",
         ticket
     );
 
 
     // ======================================
-    // GUARDAR INFORMACIÓN ACTUALIZADA
+    // RECONSTRUIR TURNO COMPLETO
+    // ======================================
+
+    currentTicket = {
+
+        id:
+            ticket.id,
+
+        ticket_code:
+            ticket.ticket_code,
+
+        service_name:
+            ticket.service_name,
+
+        status:
+            ticket.status,
+
+        people_ahead:
+            ticket.people_ahead,
+
+        estimated_minutes:
+            ticket.estimated_minutes
+
+    };
+
+
+    // ======================================
+    // GUARDAR INFORMACIÓN COMPLETA
     // ======================================
 
     saveTicket();
 
 
     // ======================================
-    // SI TERMINÓ
+    // SI YA TERMINÓ
     // ======================================
 
     if (
@@ -957,24 +948,21 @@ async function restoreSavedTicket() {
         ticket.status === "no_show"
     ) {
 
-        renderTicketStatus(
-            ticket
-        );
+        renderCustomer();
+
+        clearSavedTicket();
 
         return;
     }
 
 
     // ======================================
-    // SIGUE ACTIVO
+    // MOSTRAR TURNO RECUPERADO
     // ======================================
 
-    renderTicketStatus(
-        ticket
-    );
+    showTicket();
 
 }
-
 
 // ==========================================
 // ACTUALIZACIÓN AUTOMÁTICA
