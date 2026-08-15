@@ -1,4 +1,3 @@
-```javascript
 const app = document.getElementById("app");
 const statusEl = document.getElementById("status");
 
@@ -707,9 +706,6 @@ function renderTicketStatus(ticket) {
         `;
 
 
-        // El turno ya terminó.
-        // Lo quitamos del navegador.
-
         clearSavedTicket();
 
         return;
@@ -811,9 +807,6 @@ async function restoreSavedTicket() {
     }
 
 
-    // Comprobar que pertenece
-    // a esta barbería.
-
     if (
         savedTicket.business_slug !== slug
     ) {
@@ -826,15 +819,10 @@ async function restoreSavedTicket() {
     }
 
 
-    // Reconstruimos el objeto mínimo
-    // necesario para consultar Supabase.
-
     currentTicket = {
         id: savedTicket.ticket_id
     };
 
-
-    // Consultamos el estado real.
 
     const { data, error } =
         await client.rpc(
@@ -880,8 +868,6 @@ async function restoreSavedTicket() {
     };
 
 
-    // Si ya terminó, no lo recuperamos.
-
     if (
         ticket.status === "done" ||
         ticket.status === "cancelled" ||
@@ -895,8 +881,6 @@ async function restoreSavedTicket() {
         return;
     }
 
-
-    // Mostrar turno recuperado.
 
     showTicket();
 
@@ -934,4 +918,3 @@ async function startApp() {
 
 
 startApp();
-```
