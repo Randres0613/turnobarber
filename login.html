@@ -14,7 +14,12 @@
 
 <body>
 
+    <!-- ==========================================
+         INICIO DE SESIÓN
+    =========================================== -->
+
     <main
+        id="loginApp"
         class="card hero"
         style="max-width: 500px; margin: 50px auto;"
     >
@@ -105,12 +110,101 @@
     </main>
 
 
+    <!-- ==========================================
+         CAMBIAR CONTRASEÑA
+    =========================================== -->
+
+    <main
+        id="recoveryApp"
+        class="card hero"
+        style="max-width: 500px; margin: 50px auto; display: none;"
+    >
+
+        <h1>💈 TurnoBarber</h1>
+
+        <h2>🔐 Crear nueva contraseña</h2>
+
+        <p>
+            Escribe una nueva contraseña para tu cuenta.
+        </p>
+
+
+        <form id="recoveryForm">
+
+            <div style="margin-bottom: 15px;">
+
+                <label for="newPassword">
+                    Nueva contraseña
+                </label>
+
+                <input
+                    id="newPassword"
+                    type="password"
+                    placeholder="Nueva contraseña"
+                    autocomplete="new-password"
+                    minlength="6"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                >
+
+            </div>
+
+
+            <div style="margin-bottom: 15px;">
+
+                <label for="confirmPassword">
+                    Confirmar contraseña
+                </label>
+
+                <input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Repite la contraseña"
+                    autocomplete="new-password"
+                    minlength="6"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                >
+
+            </div>
+
+
+            <button
+                id="recoveryButton"
+                type="submit"
+                class="btn primary big"
+                style="width: 100%;"
+            >
+                🔐 Guardar nueva contraseña
+            </button>
+
+
+            <p
+                id="recoveryMessage"
+                style="margin-top: 15px;"
+            ></p>
+
+        </form>
+
+    </main>
+
+
     <!-- SUPABASE -->
 
     <script src="supabase.js"></script>
 
 
     <script>
+
+        // ==========================================
+        // ELEMENTOS
+        // ==========================================
+
+        const loginApp =
+            document.getElementById("loginApp");
+
+        const recoveryApp =
+            document.getElementById("recoveryApp");
 
         const loginForm =
             document.getElementById("loginForm");
@@ -128,6 +222,43 @@
 
         const forgotMessage =
             document.getElementById("forgotMessage");
+
+        const recoveryForm =
+            document.getElementById("recoveryForm");
+
+        const recoveryButton =
+            document.getElementById("recoveryButton");
+
+        const recoveryMessage =
+            document.getElementById("recoveryMessage");
+
+
+        // ==========================================
+        // MOSTRAR LOGIN
+        // ==========================================
+
+        function showLogin() {
+
+            loginApp.style.display =
+                "block";
+
+            recoveryApp.style.display =
+                "none";
+        }
+
+
+        // ==========================================
+        // MOSTRAR RECUPERACIÓN
+        // ==========================================
+
+        function showRecovery() {
+
+            loginApp.style.display =
+                "none";
+
+            recoveryApp.style.display =
+                "block";
+        }
 
 
         // ==========================================
@@ -152,12 +283,14 @@
                         .value;
 
 
-                loginButton.disabled = true;
+                loginButton.disabled =
+                    true;
 
                 loginButton.textContent =
                     "🔄 Iniciando sesión...";
 
-                loginMessage.textContent = "";
+                loginMessage.textContent =
+                    "";
 
 
                 try {
@@ -195,7 +328,8 @@
                     loginMessage.textContent =
                         "❌ " + error.message;
 
-                    loginButton.disabled = false;
+                    loginButton.disabled =
+                        false;
 
                     loginButton.textContent =
                         "🔐 Iniciar sesión";
@@ -206,7 +340,7 @@
 
 
         // ==========================================
-        // RECUPERAR CONTRASEÑA
+        // ENVIAR RECUPERACIÓN
         // ==========================================
 
         forgotPasswordButton.addEventListener(
@@ -235,7 +369,8 @@
                 forgotPasswordButton.textContent =
                     "📨 Enviando...";
 
-                forgotMessage.textContent = "";
+                forgotMessage.textContent =
+                    "";
 
 
                 try {
@@ -248,7 +383,7 @@
                             {
                                 redirectTo:
                                     window.location.origin +
-                                    "/turnobarber/admin.html"
+                                    "/turnobarber/login.html"
                             }
                         );
 
@@ -283,6 +418,159 @@
 
             }
         );
+
+
+        // ==========================================
+        // GUARDAR NUEVA CONTRASEÑA
+        // ==========================================
+
+        recoveryForm.addEventListener(
+            "submit",
+            async function(event) {
+
+                event.preventDefault();
+
+
+                const newPassword =
+                    document
+                        .getElementById("newPassword")
+                        .value;
+
+                const confirmPassword =
+                    document
+                        .getElementById("confirmPassword")
+                        .value;
+
+
+                if (newPassword.length < 6) {
+
+                    recoveryMessage.textContent =
+                        "❌ La contraseña debe tener mínimo 6 caracteres.";
+
+                    return;
+                }
+
+
+                if (
+                    newPassword !==
+                    confirmPassword
+                ) {
+
+                    recoveryMessage.textContent =
+                        "❌ Las contraseñas no coinciden.";
+
+                    return;
+                }
+
+
+                recoveryButton.disabled =
+                    true;
+
+                recoveryButton.textContent =
+                    "🔄 Guardando...";
+
+                recoveryMessage.textContent =
+                    "";
+
+
+                try {
+
+                    const {
+                        error
+                    } =
+                        await client.auth.updateUser({
+                            password: newPassword
+                        });
+
+
+                    if (error) {
+                        throw error;
+                    }
+
+
+                    recoveryMessage.textContent =
+                        "✅ Contraseña actualizada correctamente.";
+
+
+                    recoveryButton.textContent =
+                        "✅ Contraseña guardada";
+
+
+                    setTimeout(
+                        async function() {
+
+                            await client.auth.signOut();
+
+                            window.location.href =
+                                "login.html";
+
+                        },
+                        1500
+                    );
+
+
+                } catch (error) {
+
+                    console.error(
+                        "ERROR CAMBIANDO CONTRASEÑA:",
+                        error
+                    );
+
+
+                    recoveryMessage.textContent =
+                        "❌ " + error.message;
+
+
+                    recoveryButton.disabled =
+                        false;
+
+                    recoveryButton.textContent =
+                        "🔐 Guardar nueva contraseña";
+                }
+
+            }
+        );
+
+
+        // ==========================================
+        // DETECTAR RECUPERACIÓN SUPABASE
+        // ==========================================
+
+        client.auth.onAuthStateChange(
+            function(event, session) {
+
+                console.log(
+                    "AUTH EVENT:",
+                    event
+                );
+
+
+                if (
+                    event ===
+                    "PASSWORD_RECOVERY"
+                ) {
+
+                    showRecovery();
+
+                }
+
+            }
+        );
+
+
+        // ==========================================
+        // RESPALDO: DETECTAR RECOVERY EN URL
+        // ==========================================
+
+        if (
+            window.location.hash.includes(
+                "type=recovery"
+            )
+        ) {
+
+            showRecovery();
+
+        }
 
     </script>
 
