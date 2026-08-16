@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="es">
 
@@ -414,74 +413,27 @@
                     }
 
 
-                    const user =
-                        data.user;
-
-
                     // ==========================================
-                    // CREAR SLUG
-                    // ==========================================
-
-                    const qrSlug =
-                        businessName
-                            .toLowerCase()
-                            .normalize("NFD")
-                            .replace(
-                                /[\u0300-\u036f]/g,
-                                ""
-                            )
-                            .replace(
-                                /[^a-z0-9]+/g,
-                                "-"
-                            )
-                            .replace(
-                                /^-+|-+$/g,
-                                ""
-                            );
-
-
-                    if (!qrSlug) {
-
-                        throw new Error(
-                            "No se pudo generar el identificador de la barbería."
-                        );
-
-                    }
-
-
-                    // ==========================================
-                    // CREAR BARBERÍA
+                    // CREAR BARBERÍA MEDIANTE FUNCIÓN SEGURA
                     // ==========================================
 
                     const {
                         data: businessData,
                         error: businessError
                     } =
-                        await client
-                            .from("businesses")
-                            .insert({
-
-                                name:
+                        await client.rpc(
+                            "create_business_for_current_user",
+                            {
+                                p_business_name:
                                     businessName,
 
-                                city:
+                                p_city:
                                     city,
 
-                                phone:
-                                    phone || null,
-
-                                qr_slug:
-                                    qrSlug,
-
-                                plan:
-                                    "basic",
-
-                                subscription_status:
-                                    "trial"
-
-                            })
-                            .select()
-                            .single();
+                                p_phone:
+                                    phone || null
+                            }
+                        );
 
 
                     if (businessError) {
@@ -489,31 +441,15 @@
                     }
 
 
-                    // ==========================================
-                    // CREAR RELACIÓN OWNER
-                    // ==========================================
+                    if (
+                        !businessData ||
+                        businessData.length === 0
+                    ) {
 
-                    const {
-                        error: memberError
-                    } =
-                        await client
-                            .from("business_members")
-                            .insert({
+                        throw new Error(
+                            "No se pudo crear la barbería."
+                        );
 
-                                business_id:
-                                    businessData.id,
-
-                                user_id:
-                                    user.id,
-
-                                role:
-                                    "owner"
-
-                            });
-
-
-                    if (memberError) {
-                        throw memberError;
                     }
 
 
@@ -572,4 +508,3 @@
 </body>
 
 </html>
-```
