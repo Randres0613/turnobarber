@@ -27,7 +27,87 @@
     </header>
 
 
-    <main id="adminApp">
+    <!-- ==========================================
+         ACCESO ADMINISTRADOR
+    =========================================== -->
+
+    <section
+        id="loginApp"
+        class="card hero"
+        style="max-width: 500px; margin: 30px auto; display: none;"
+    >
+
+        <h2>🔐 Acceso administrador</h2>
+
+        <p>
+            Inicia sesión para administrar tu barbería.
+        </p>
+
+        <form id="loginForm">
+
+            <div style="margin-bottom: 15px;">
+
+                <label for="loginEmail">
+                    Correo electrónico
+                </label>
+
+                <input
+                    id="loginEmail"
+                    type="email"
+                    placeholder="Correo electrónico"
+                    autocomplete="email"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                >
+
+            </div>
+
+
+            <div style="margin-bottom: 15px;">
+
+                <label for="loginPassword">
+                    Contraseña
+                </label>
+
+                <input
+                    id="loginPassword"
+                    type="password"
+                    placeholder="Contraseña"
+                    autocomplete="current-password"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                >
+
+            </div>
+
+
+            <button
+                id="loginButton"
+                type="submit"
+                class="btn primary big"
+            >
+                🔐 Iniciar sesión
+            </button>
+
+
+            <p
+                id="loginMessage"
+                style="margin-top: 15px;"
+            ></p>
+
+        </form>
+
+    </section>
+
+
+    <!-- ==========================================
+         PANEL ADMINISTRADOR
+    =========================================== -->
+
+    <main
+        id="adminApp"
+        style="display: none;"
+    >
 
         <div class="card hero">
 
