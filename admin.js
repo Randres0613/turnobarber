@@ -1,4 +1,11 @@
 const adminApp = document.getElementById("adminApp");
+const loginApp = document.getElementById("loginApp");
+const loginForm = document.getElementById("loginForm");
+const loginEmail = document.getElementById("loginEmail");
+const loginPassword = document.getElementById("loginPassword");
+const loginButton = document.getElementById("loginButton");
+const loginMessage = document.getElementById("loginMessage");
+
 const businessInfo = document.getElementById("businessInfo");
 const connectionStatus = document.getElementById("connectionStatus");
 
@@ -10,10 +17,11 @@ let business = null;
 let currentTicket = null;
 let waitingTickets = [];
 let services = [];
+let currentUser = null;
 
 
 // ==========================================
-// PROTEGER TEXTO PARA MOSTRAR EN HTML
+// PROTEGER TEXTO PARA HTML
 // ==========================================
 
 function escapeHTML(value) {
@@ -28,12 +36,167 @@ function escapeHTML(value) {
 
 
 // ==========================================
+// MOSTRAR LOGIN
+// ==========================================
+
+function showLogin(message = "") {
+
+    if (loginApp) {
+        loginApp.style.display = "block";
+    }
+
+    if (adminApp) {
+        adminApp.style.display = "none";
+    }
+
+    connectionStatus.textContent = "INICIAR SESIÓN";
+
+    if (loginMessage) {
+        loginMessage.textContent = message;
+    }
+}
+
+
+// ==========================================
+// MOSTRAR PANEL
+// ==========================================
+
+function showAdminPanel() {
+
+    if (loginApp) {
+        loginApp.style.display = "none";
+    }
+
+    if (adminApp) {
+        adminApp.style.display = "block";
+    }
+}
+
+
+// ==========================================
+// LOGIN
+// ==========================================
+
+async function loginAdmin(event) {
+
+    event.preventDefault();
+
+    const email =
+        loginEmail.value.trim();
+
+    const password =
+        loginPassword.value;
+
+    if (!email || !password) {
+
+        loginMessage.textContent =
+            "Debes escribir correo y contraseña.";
+
+        return;
+    }
+
+
+    loginButton.disabled = true;
+
+    loginButton.textContent =
+        "🔄 Iniciando sesión...";
+
+    loginMessage.textContent =
+        "";
+
+
+    try {
+
+        const { data, error } =
+            await client.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        currentUser =
+            data.user;
+
+
+        if (!currentUser) {
+            throw new Error(
+                "No se pudo obtener el usuario."
+            );
+        }
+
+
+        await loadBusiness();
+
+
+    } catch (error) {
+
+        console.error(
+            "ERROR LOGIN:",
+            error
+        );
+
+        loginMessage.textContent =
+            "❌ " + error.message;
+
+
+        loginButton.disabled = false;
+
+        loginButton.textContent =
+            "🔐 Iniciar sesión";
+    }
+}
+
+
+// ==========================================
+// COMPROBAR QUE EL USUARIO PERTENECE
+// A LA BARBERÍA
+// ==========================================
+
+async function verifyBusinessMember() {
+
+    if (!business || !currentUser) {
+        return false;
+    }
+
+
+    const { data, error } =
+        await client.rpc(
+            "is_business_member",
+            {
+                bid: business.id
+            }
+        );
+
+
+    if (error) {
+
+        console.error(
+            "ERROR VERIFICANDO MIEMBRO:",
+            error
+        );
+
+        throw error;
+    }
+
+
+    return data === true;
+}
+
+
+// ==========================================
 // CARGAR BARBERÍA
 // ==========================================
 
 async function loadBusiness() {
 
-    connectionStatus.textContent = "CONECTANDO...";
+    connectionStatus.textContent =
+        "CONECTANDO...";
+
 
     try {
 
@@ -41,51 +204,85 @@ async function loadBusiness() {
             await client.rpc(
                 "get_business_by_qr",
                 {
-                    p_qr_slug: "barberia-el-jefe"
+                    p_qr_slug:
+                        "barberia-el-jefe"
                 }
             );
+
 
         if (error) {
             throw error;
         }
 
+
         if (!data || data.length === 0) {
-            throw new Error("No se encontró la barbería.");
+
+            throw new Error(
+                "No se encontró la barbería."
+            );
         }
 
-        business = data[0];
+
+        business =
+            data[0];
+
 
         businessInfo.textContent =
             `${business.name} · ${business.city || ""}`;
 
-        connectionStatus.textContent = "ONLINE";
+
+        // ======================================
+        // VERIFICAR MEMBRESÍA
+        // ======================================
+
+        const isMember =
+            await verifyBusinessMember();
+
+
+        if (!isMember) {
+
+            await client.auth.signOut();
+
+
+            currentUser = null;
+            business = null;
+
+
+            throw new Error(
+                "Este usuario no está autorizado para administrar esta barbería."
+            );
+        }
+
+
+        connectionStatus.textContent =
+            "ONLINE";
+
+
+        showAdminPanel();
+
 
         await loadPanel();
 
+
     } catch (error) {
 
-        console.error("ERROR ADMIN:", error);
+        console.error(
+            "ERROR ADMIN:",
+            error
+        );
 
-        connectionStatus.textContent = "ERROR";
 
-        adminApp.innerHTML = `
-            <div class="card hero">
+        connectionStatus.textContent =
+            "ERROR";
 
-                <h2>⚠️ Error cargando el panel</h2>
 
-                <p>
-                    ${escapeHTML(error.message)}
-                </p>
+        if (loginApp) {
 
-                <button
-                    class="btn"
-                    onclick="location.reload()"
-                >
-                    🔄 Reintentar
-                </button>
+            showLogin(
+                "❌ " + error.message
+            );
 
-            </div>
-        `;
+        }
     }
 }
 
@@ -95,6 +292,11 @@ async function loadBusiness() {
 // ==========================================
 
 async function loadPanel() {
+
+    if (!business || !currentUser) {
+        return;
+    }
+
 
     await loadCurrentTicket();
 
@@ -116,15 +318,21 @@ async function loadCurrentTicket() {
         await client.rpc(
             "admin_current_ticket",
             {
-                p_business_id: business.id
+                p_business_id:
+                    business.id
             }
         );
 
+
     if (error) {
+
         console.error(error);
+
         currentTicket = null;
+
         return;
     }
+
 
     currentTicket =
         data && data.length > 0
@@ -143,17 +351,24 @@ async function loadWaitingTickets() {
         await client.rpc(
             "admin_waiting_tickets",
             {
-                p_business_id: business.id
+                p_business_id:
+                    business.id
             }
         );
 
+
     if (error) {
+
         console.error(error);
+
         waitingTickets = [];
+
         return;
     }
 
-    waitingTickets = data || [];
+
+    waitingTickets =
+        data || [];
 }
 
 
@@ -167,20 +382,39 @@ async function loadServices() {
         await client
             .from("services")
             .select("*")
-            .eq("business_id", business.id)
-            .order("active", { ascending: false })
-            .order("name", { ascending: true });
+            .eq(
+                "business_id",
+                business.id
+            )
+            .order(
+                "active",
+                {
+                    ascending: false
+                }
+            )
+            .order(
+                "name",
+                {
+                    ascending: true
+                }
+            );
+
 
     if (error) {
 
-        console.error("ERROR CARGANDO SERVICIOS:", error);
+        console.error(
+            "ERROR CARGANDO SERVICIOS:",
+            error
+        );
 
         services = [];
 
         return;
     }
 
-    services = data || [];
+
+    services =
+        data || [];
 }
 
 
@@ -203,11 +437,15 @@ function renderPanel() {
                 <div class="current-ticket">
 
                     <div class="ticket-number">
-                        ${escapeHTML(currentTicket.ticket_code)}
+                        ${escapeHTML(
+                            currentTicket.ticket_code
+                        )}
                     </div>
 
                     <h2>
-                        ${escapeHTML(currentTicket.service_name)}
+                        ${escapeHTML(
+                            currentTicket.service_name
+                        )}
                     </h2>
 
                     <p class="badge">
@@ -260,17 +498,23 @@ function renderPanel() {
                 <h2>PRÓXIMOS TURNOS</h2>
 
                 <span class="badge">
-                    ${waitingTickets.length} esperando
+                    ${waitingTickets.length}
+                    esperando
                 </span>
 
             </div>
+
 
             ${
                 waitingTickets.length === 0
                 ?
                 `
                 <div class="empty">
-                    <p>No hay clientes esperando.</p>
+
+                    <p>
+                        No hay clientes esperando.
+                    </p>
+
                 </div>
                 `
                 :
@@ -279,33 +523,41 @@ function renderPanel() {
 
                     ${
                         waitingTickets
-                            .map((ticket, index) => `
+                            .map(
+                                (ticket, index) => `
 
                                 <div class="queue-item">
 
                                     <div>
 
                                         <strong>
-                                            ${escapeHTML(ticket.ticket_code)}
+                                            ${escapeHTML(
+                                                ticket.ticket_code
+                                            )}
                                         </strong>
 
                                         <span>
-                                            ${escapeHTML(ticket.service_name)}
+                                            ${escapeHTML(
+                                                ticket.service_name
+                                            )}
                                         </span>
 
                                     </div>
 
                                     <small>
+
                                         ${
                                             index === 0
                                             ? "Siguiente"
                                             : `${index} antes`
                                         }
+
                                     </small>
 
                                 </div>
 
-                            `)
+                            `
+                            )
                             .join("")
                     }
 
@@ -344,6 +596,7 @@ function renderPanel() {
 
             </div>
 
+
             ${
                 services.length === 0
                 ?
@@ -362,20 +615,30 @@ function renderPanel() {
 
                     ${
                         services
-                            .map(service => `
+                            .map(
+                                service => `
 
                                 <div class="queue-item">
 
                                     <div>
 
                                         <strong>
-                                            ${escapeHTML(service.name)}
+                                            ${escapeHTML(
+                                                service.name
+                                            )}
                                         </strong>
 
                                         <span>
-                                            ${service.duration_minutes} min
+                                            ${
+                                                service.duration_minutes
+                                            }
+                                            min
                                             ·
-                                            $${Number(service.price).toLocaleString("es-CO")}
+                                            $${Number(
+                                                service.price
+                                            ).toLocaleString(
+                                                "es-CO"
+                                            )}
                                         </span>
 
                                         <small>
@@ -388,6 +651,7 @@ function renderPanel() {
 
                                     </div>
 
+
                                     <div class="actions">
 
                                         <button
@@ -397,32 +661,51 @@ function renderPanel() {
                                             ✏️ Editar
                                         </button>
 
+
                                         <button
                                             class="btn ${
                                                 service.active
                                                 ? "danger"
                                                 : "success"
                                             }"
-                                            onclick="toggleService('${service.id}', ${service.active})"
+                                            onclick="toggleService(
+                                                '${service.id}',
+                                                ${service.active}
+                                            )"
                                         >
+
                                             ${
                                                 service.active
                                                 ? "⛔ Desactivar"
                                                 : "🟢 Activar"
                                             }
+
                                         </button>
 
                                     </div>
 
                                 </div>
 
-                            `)
+                            `
+                            )
                             .join("")
                     }
 
                 </div>
                 `
             }
+
+        </section>
+
+
+        <section class="card">
+
+            <button
+                class="btn danger"
+                onclick="logoutAdmin()"
+            >
+                🚪 Cerrar sesión
+            </button>
 
         </section>
 
@@ -437,29 +720,40 @@ function renderPanel() {
 async function createService() {
 
     const name =
-        prompt("Nombre del nuevo servicio:");
+        prompt(
+            "Nombre del nuevo servicio:"
+        );
+
 
     if (name === null) {
         return;
     }
 
+
     const cleanName =
         name.trim();
 
+
     if (!cleanName) {
 
-        alert("Debes escribir un nombre.");
+        alert(
+            "Debes escribir un nombre."
+        );
 
         return;
     }
 
 
     const priceInput =
-        prompt("Precio del servicio en pesos:");
+        prompt(
+            "Precio del servicio en pesos:"
+        );
+
 
     if (priceInput === null) {
         return;
     }
+
 
     const price =
         Number(
@@ -468,30 +762,43 @@ async function createService() {
                 .replace(/,/g, ".")
         );
 
-    if (!Number.isFinite(price) || price < 0) {
 
-        alert("El precio no es válido.");
+    if (
+        !Number.isFinite(price) ||
+        price < 0
+    ) {
+
+        alert(
+            "El precio no es válido."
+        );
 
         return;
     }
 
 
     const durationInput =
-        prompt("Duración en minutos:");
+        prompt(
+            "Duración en minutos:"
+        );
+
 
     if (durationInput === null) {
         return;
     }
 
+
     const duration =
         Number(durationInput);
+
 
     if (
         !Number.isInteger(duration) ||
         duration <= 0
     ) {
 
-        alert("La duración debe ser un número entero mayor que 0.");
+        alert(
+            "La duración debe ser un número entero mayor que 0."
+        );
 
         return;
     }
@@ -501,12 +808,23 @@ async function createService() {
         await client
             .from("services")
             .insert({
-                business_id: business.id,
-                name: cleanName,
-                price: price,
-                duration_minutes: duration,
-                active: true
+
+                business_id:
+                    business.id,
+
+                name:
+                    cleanName,
+
+                price:
+                    price,
+
+                duration_minutes:
+                    duration,
+
+                active:
+                    true
             });
+
 
     if (error) {
 
@@ -515,16 +833,21 @@ async function createService() {
             error
         );
 
+
         alert(
             "No se pudo crear el servicio:\n\n" +
             error.message
         );
 
+
         return;
     }
 
 
-    alert("✅ Servicio creado correctamente.");
+    alert(
+        "✅ Servicio creado correctamente."
+    );
+
 
     await loadPanel();
 }
@@ -534,16 +857,22 @@ async function createService() {
 // EDITAR SERVICIO
 // ==========================================
 
-async function editService(serviceId) {
+async function editService(
+    serviceId
+) {
 
     const service =
         services.find(
-            item => item.id === serviceId
+            item =>
+                item.id === serviceId
         );
+
 
     if (!service) {
 
-        alert("No se encontró el servicio.");
+        alert(
+            "No se encontró el servicio."
+        );
 
         return;
     }
@@ -555,16 +884,21 @@ async function editService(serviceId) {
             service.name
         );
 
+
     if (name === null) {
         return;
     }
 
+
     const cleanName =
         name.trim();
 
+
     if (!cleanName) {
 
-        alert("El nombre no puede estar vacío.");
+        alert(
+            "El nombre no puede estar vacío."
+        );
 
         return;
     }
@@ -576,9 +910,11 @@ async function editService(serviceId) {
             Number(service.price)
         );
 
+
     if (priceInput === null) {
         return;
     }
+
 
     const price =
         Number(
@@ -587,9 +923,15 @@ async function editService(serviceId) {
                 .replace(/,/g, ".")
         );
 
-    if (!Number.isFinite(price) || price < 0) {
 
-        alert("El precio no es válido.");
+    if (
+        !Number.isFinite(price) ||
+        price < 0
+    ) {
+
+        alert(
+            "El precio no es válido."
+        );
 
         return;
     }
@@ -601,19 +943,24 @@ async function editService(serviceId) {
             service.duration_minutes
         );
 
+
     if (durationInput === null) {
         return;
     }
 
+
     const duration =
         Number(durationInput);
+
 
     if (
         !Number.isInteger(duration) ||
         duration <= 0
     ) {
 
-        alert("La duración debe ser un número entero mayor que 0.");
+        alert(
+            "La duración debe ser un número entero mayor que 0."
+        );
 
         return;
     }
@@ -623,12 +970,26 @@ async function editService(serviceId) {
         await client
             .from("services")
             .update({
-                name: cleanName,
-                price: price,
-                duration_minutes: duration
+
+                name:
+                    cleanName,
+
+                price:
+                    price,
+
+                duration_minutes:
+                    duration
+
             })
-            .eq("id", serviceId)
-            .eq("business_id", business.id);
+            .eq(
+                "id",
+                serviceId
+            )
+            .eq(
+                "business_id",
+                business.id
+            );
+
 
     if (error) {
 
@@ -637,16 +998,21 @@ async function editService(serviceId) {
             error
         );
 
+
         alert(
             "No se pudo editar el servicio:\n\n" +
             error.message
         );
 
+
         return;
     }
 
 
-    alert("✅ Servicio actualizado.");
+    alert(
+        "✅ Servicio actualizado."
+    );
+
 
     await loadPanel();
 }
@@ -663,8 +1029,10 @@ async function toggleService(
 
     const service =
         services.find(
-            item => item.id === serviceId
+            item =>
+                item.id === serviceId
         );
+
 
     if (!service) {
         return;
@@ -682,6 +1050,7 @@ async function toggleService(
             `¿Quieres ${action} "${service.name}"?`
         );
 
+
     if (!confirmed) {
         return;
     }
@@ -691,10 +1060,20 @@ async function toggleService(
         await client
             .from("services")
             .update({
-                active: !currentActive
+
+                active:
+                    !currentActive
+
             })
-            .eq("id", serviceId)
-            .eq("business_id", business.id);
+            .eq(
+                "id",
+                serviceId
+            )
+            .eq(
+                "business_id",
+                business.id
+            );
+
 
     if (error) {
 
@@ -703,10 +1082,12 @@ async function toggleService(
             error
         );
 
+
         alert(
             "No se pudo cambiar el estado:\n\n" +
             error.message
         );
+
 
         return;
     }
@@ -731,25 +1112,32 @@ async function callNext() {
         return;
     }
 
+
     const { data, error } =
         await client.rpc(
             "admin_call_next",
             {
-                p_business_id: business.id
+                p_business_id:
+                    business.id
             }
         );
 
+
     if (error) {
 
-        alert(error.message);
+        alert(
+            error.message
+        );
 
         return;
     }
+
 
     currentTicket =
         data && data.length > 0
             ? data[0]
             : null;
+
 
     await loadPanel();
 }
@@ -765,20 +1153,26 @@ async function finishCurrent() {
         return;
     }
 
+
     const { data, error } =
         await client.rpc(
             "admin_finish_ticket",
             {
-                p_ticket_id: currentTicket.id
+                p_ticket_id:
+                    currentTicket.id
             }
         );
 
+
     if (error) {
 
-        alert(error.message);
+        alert(
+            error.message
+        );
 
         return;
     }
+
 
     if (!data) {
 
@@ -789,7 +1183,10 @@ async function finishCurrent() {
         return;
     }
 
-    currentTicket = null;
+
+    currentTicket =
+        null;
+
 
     await loadPanel();
 }
@@ -805,20 +1202,26 @@ async function noShowCurrent() {
         return;
     }
 
+
     const { data, error } =
         await client.rpc(
             "admin_no_show_ticket",
             {
-                p_ticket_id: currentTicket.id
+                p_ticket_id:
+                    currentTicket.id
             }
         );
 
+
     if (error) {
 
-        alert(error.message);
+        alert(
+            error.message
+        );
 
         return;
     }
+
 
     if (!data) {
 
@@ -829,9 +1232,57 @@ async function noShowCurrent() {
         return;
     }
 
-    currentTicket = null;
+
+    currentTicket =
+        null;
+
 
     await loadPanel();
+}
+
+
+// ==========================================
+// CERRAR SESIÓN
+// ==========================================
+
+async function logoutAdmin() {
+
+    const confirmed =
+        confirm(
+            "¿Quieres cerrar sesión?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    const { error } =
+        await client.auth.signOut();
+
+
+    if (error) {
+
+        alert(
+            "No se pudo cerrar sesión:\n\n" +
+            error.message
+        );
+
+        return;
+    }
+
+
+    currentUser = null;
+    business = null;
+    currentTicket = null;
+    waitingTickets = [];
+    services = [];
+
+
+    showLogin(
+        "Sesión cerrada correctamente."
+    );
 }
 
 
@@ -840,13 +1291,143 @@ async function noShowCurrent() {
 // ==========================================
 
 setInterval(
-    loadPanel,
+    async function () {
+
+        if (
+            currentUser &&
+            business
+        ) {
+
+            await loadPanel();
+
+        }
+
+    },
     10000
 );
+
+
+// ==========================================
+// DETECTAR CAMBIOS DE SESIÓN
+// ==========================================
+
+client.auth.onAuthStateChange(
+    async function (
+        event,
+        session
+    ) {
+
+        console.log(
+            "AUTH:",
+            event
+        );
+
+
+        if (
+            session &&
+            session.user
+        ) {
+
+            currentUser =
+                session.user;
+
+
+            if (!business) {
+
+                await loadBusiness();
+
+            }
+
+        } else {
+
+            currentUser =
+                null;
+
+            business =
+                null;
+
+            currentTicket =
+                null;
+
+            waitingTickets =
+                [];
+
+            services =
+                [];
+
+
+            showLogin();
+        }
+
+    }
+);
+
+
+// ==========================================
+// FORMULARIO DE LOGIN
+// ==========================================
+
+if (loginForm) {
+
+    loginForm.addEventListener(
+        "submit",
+        loginAdmin
+    );
+
+}
 
 
 // ==========================================
 // INICIAR
 // ==========================================
 
-loadBusiness();
+async function initAdmin() {
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await client.auth.getSession();
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        if (
+            data &&
+            data.session &&
+            data.session.user
+        ) {
+
+            currentUser =
+                data.session.user;
+
+
+            await loadBusiness();
+
+        } else {
+
+            showLogin();
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "ERROR INICIANDO ADMIN:",
+            error
+        );
+
+
+        showLogin(
+            "❌ " + error.message
+        );
+    }
+}
+
+
+initAdmin();
