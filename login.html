@@ -1,0 +1,293 @@
+```html
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>TurnoBarber - Acceso</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+    <main
+        class="card hero"
+        style="max-width: 500px; margin: 50px auto;"
+    >
+
+        <h1>💈 TurnoBarber</h1>
+
+        <h2>🔐 Acceso administrador</h2>
+
+        <p>
+            Inicia sesión para administrar tu barbería.
+        </p>
+
+
+        <form id="loginForm">
+
+            <div style="margin-bottom: 15px;">
+
+                <label for="email">
+                    Correo electrónico
+                </label>
+
+                <input
+                    id="email"
+                    type="email"
+                    placeholder="Correo electrónico"
+                    autocomplete="email"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                >
+
+            </div>
+
+
+            <div style="margin-bottom: 15px;">
+
+                <label for="password">
+                    Contraseña
+                </label>
+
+                <input
+                    id="password"
+                    type="password"
+                    placeholder="Contraseña"
+                    autocomplete="current-password"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                >
+
+            </div>
+
+
+            <button
+                id="loginButton"
+                type="submit"
+                class="btn primary big"
+                style="width: 100%;"
+            >
+                🔐 Iniciar sesión
+            </button>
+
+
+            <p
+                id="loginMessage"
+                style="margin-top: 15px;"
+            ></p>
+
+        </form>
+
+
+        <hr style="margin: 25px 0;">
+
+
+        <button
+            id="forgotPasswordButton"
+            class="btn"
+            type="button"
+            style="width: 100%;"
+        >
+            🔑 Olvidé mi contraseña
+        </button>
+
+
+        <p
+            id="forgotMessage"
+            style="margin-top: 15px;"
+        ></p>
+
+    </main>
+
+
+    <!-- SUPABASE -->
+
+    <script src="supabase.js"></script>
+
+
+    <script>
+
+        const loginForm =
+            document.getElementById("loginForm");
+
+        const loginButton =
+            document.getElementById("loginButton");
+
+        const loginMessage =
+            document.getElementById("loginMessage");
+
+        const forgotPasswordButton =
+            document.getElementById(
+                "forgotPasswordButton"
+            );
+
+        const forgotMessage =
+            document.getElementById("forgotMessage");
+
+
+        // ==========================================
+        // INICIAR SESIÓN
+        // ==========================================
+
+        loginForm.addEventListener(
+            "submit",
+            async function(event) {
+
+                event.preventDefault();
+
+                const email =
+                    document
+                        .getElementById("email")
+                        .value
+                        .trim();
+
+                const password =
+                    document
+                        .getElementById("password")
+                        .value;
+
+
+                loginButton.disabled = true;
+
+                loginButton.textContent =
+                    "🔄 Iniciando sesión...";
+
+                loginMessage.textContent = "";
+
+
+                try {
+
+                    const {
+                        data,
+                        error
+                    } =
+                        await client.auth.signInWithPassword({
+                            email: email,
+                            password: password
+                        });
+
+
+                    if (error) {
+                        throw error;
+                    }
+
+
+                    loginMessage.textContent =
+                        "✅ Inicio de sesión correcto.";
+
+
+                    window.location.href =
+                        "admin.html";
+
+
+                } catch (error) {
+
+                    console.error(
+                        "ERROR LOGIN:",
+                        error
+                    );
+
+                    loginMessage.textContent =
+                        "❌ " + error.message;
+
+                    loginButton.disabled = false;
+
+                    loginButton.textContent =
+                        "🔐 Iniciar sesión";
+                }
+
+            }
+        );
+
+
+        // ==========================================
+        // RECUPERAR CONTRASEÑA
+        // ==========================================
+
+        forgotPasswordButton.addEventListener(
+            "click",
+            async function() {
+
+                const email =
+                    document
+                        .getElementById("email")
+                        .value
+                        .trim();
+
+
+                if (!email) {
+
+                    forgotMessage.textContent =
+                        "⚠️ Escribe primero tu correo electrónico.";
+
+                    return;
+                }
+
+
+                forgotPasswordButton.disabled =
+                    true;
+
+                forgotPasswordButton.textContent =
+                    "📨 Enviando...";
+
+                forgotMessage.textContent = "";
+
+
+                try {
+
+                    const {
+                        error
+                    } =
+                        await client.auth.resetPasswordForEmail(
+                            email,
+                            {
+                                redirectTo:
+                                    window.location.origin +
+                                    "/turnobarber/admin.html"
+                            }
+                        );
+
+
+                    if (error) {
+                        throw error;
+                    }
+
+
+                    forgotMessage.textContent =
+                        "✅ Hemos enviado un enlace de recuperación a tu correo.";
+
+
+                } catch (error) {
+
+                    console.error(
+                        "ERROR RECOVERY:",
+                        error
+                    );
+
+                    forgotMessage.textContent =
+                        "❌ " + error.message;
+
+                }
+
+
+                forgotPasswordButton.disabled =
+                    false;
+
+                forgotPasswordButton.textContent =
+                    "🔑 Olvidé mi contraseña";
+
+            }
+        );
+
+    </script>
+
+</body>
+
+</html>
+```
