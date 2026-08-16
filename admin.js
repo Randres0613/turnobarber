@@ -1,1433 +1,447 @@
-const adminApp = document.getElementById("adminApp");
-const loginApp = document.getElementById("loginApp");
-const loginForm = document.getElementById("loginForm");
-const loginEmail = document.getElementById("loginEmail");
-const loginPassword = document.getElementById("loginPassword");
-const loginButton = document.getElementById("loginButton");
-const loginMessage = document.getElementById("loginMessage");
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-const businessInfo = document.getElementById("businessInfo");
-const connectionStatus = document.getElementById("connectionStatus");
+    <title>TurnoBarber - Panel</title>
 
-const businessId =
-    new URLSearchParams(location.search).get("business")
-    || "d09f71b0-2010-42c2-8d5c-b14b0ab35dd1";
+    <link rel="stylesheet" href="style.css">
 
-let business = null;
-let currentTicket = null;
-let waitingTickets = [];
-let services = [];
-let currentUser = null;
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
 
+<body>
 
-// ==========================================
-// PROTEGER TEXTO PARA HTML
-// ==========================================
+    <header class="topbar">
 
-function escapeHTML(value) {
+        <div>
+            <h1>💈 TurnoBarber</h1>
+            <p id="businessInfo">Cargando barbería...</p>
+        </div>
 
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
+        <span id="connectionStatus" class="badge">
+            CONECTANDO
+        </span>
 
+    </header>
 
-// ==========================================
-// MOSTRAR LOGIN
-// ==========================================
 
-function showLogin(message = "") {
+    <!-- ==========================================
+         RECUPERAR / CAMBIAR CONTRASEÑA
+    =========================================== -->
 
-    if (loginApp) {
-        loginApp.style.display = "block";
-    }
+    <section
+        id="passwordRecoveryApp"
+        class="card hero"
+        style="max-width: 500px; margin: 30px auto; display: none;"
+    >
 
-    if (adminApp) {
-        adminApp.style.display = "none";
-    }
+        <h2>🔐 Crear nueva contraseña</h2>
 
-    connectionStatus.textContent = "INICIAR SESIÓN";
+        <p>
+            Escribe una nueva contraseña para tu cuenta de TurnoBarber.
+        </p>
 
-    if (loginMessage) {
-        loginMessage.textContent = message;
-    }
-}
 
+        <form id="passwordRecoveryForm">
 
-// ==========================================
-// MOSTRAR PANEL
-// ==========================================
+            <div style="margin-bottom: 15px;">
 
-function showAdminPanel() {
+                <label for="newPassword">
+                    Nueva contraseña
+                </label>
 
-    if (loginApp) {
-        loginApp.style.display = "none";
-    }
-
-    if (adminApp) {
-        adminApp.style.display = "block";
-    }
-}
-
-
-// ==========================================
-// LOGIN
-// ==========================================
-
-async function loginAdmin(event) {
-
-    event.preventDefault();
-
-    const email =
-        loginEmail.value.trim();
-
-    const password =
-        loginPassword.value;
-
-    if (!email || !password) {
-
-        loginMessage.textContent =
-            "Debes escribir correo y contraseña.";
-
-        return;
-    }
-
-
-    loginButton.disabled = true;
-
-    loginButton.textContent =
-        "🔄 Iniciando sesión...";
-
-    loginMessage.textContent =
-        "";
-
-
-    try {
-
-        const { data, error } =
-            await client.auth.signInWithPassword({
-                email: email,
-                password: password
-            });
-
-
-        if (error) {
-            throw error;
-        }
-
-
-        currentUser =
-            data.user;
-
-
-        if (!currentUser) {
-            throw new Error(
-                "No se pudo obtener el usuario."
-            );
-        }
-
-
-        await loadBusiness();
-
-
-    } catch (error) {
-
-        console.error(
-            "ERROR LOGIN:",
-            error
-        );
-
-        loginMessage.textContent =
-            "❌ " + error.message;
-
-
-        loginButton.disabled = false;
-
-        loginButton.textContent =
-            "🔐 Iniciar sesión";
-    }
-}
-
-
-// ==========================================
-// COMPROBAR QUE EL USUARIO PERTENECE
-// A LA BARBERÍA
-// ==========================================
-
-async function verifyBusinessMember() {
-
-    if (!business || !currentUser) {
-        return false;
-    }
-
-
-    const { data, error } =
-        await client.rpc(
-            "is_business_member",
-            {
-                bid: business.id
-            }
-        );
-
-
-    if (error) {
-
-        console.error(
-            "ERROR VERIFICANDO MIEMBRO:",
-            error
-        );
-
-        throw error;
-    }
-
-
-    return data === true;
-}
-
-
-// ==========================================
-// CARGAR BARBERÍA
-// ==========================================
-
-async function loadBusiness() {
-
-    connectionStatus.textContent =
-        "CONECTANDO...";
-
-
-    try {
-
-        const { data, error } =
-            await client.rpc(
-                "get_business_by_qr",
-                {
-                    p_qr_slug:
-                        "barberia-el-jefe"
-                }
-            );
-
-
-        if (error) {
-            throw error;
-        }
-
-
-        if (!data || data.length === 0) {
-
-            throw new Error(
-                "No se encontró la barbería."
-            );
-        }
-
-
-        business =
-            data[0];
-
-
-        businessInfo.textContent =
-            `${business.name} · ${business.city || ""}`;
-
-
-        // ======================================
-        // VERIFICAR MEMBRESÍA
-        // ======================================
-
-        const isMember =
-            await verifyBusinessMember();
-
-
-        if (!isMember) {
-
-            await client.auth.signOut();
-
-
-            currentUser = null;
-            business = null;
-
-
-            throw new Error(
-                "Este usuario no está autorizado para administrar esta barbería."
-            );
-        }
-
-
-        connectionStatus.textContent =
-            "ONLINE";
-
-
-        showAdminPanel();
-
-
-        await loadPanel();
-
-
-    } catch (error) {
-
-        console.error(
-            "ERROR ADMIN:",
-            error
-        );
-
-
-        connectionStatus.textContent =
-            "ERROR";
-
-
-        if (loginApp) {
-
-            showLogin(
-                "❌ " + error.message
-            );
-
-        }
-    }
-}
-
-
-// ==========================================
-// CARGAR PANEL
-// ==========================================
-
-async function loadPanel() {
-
-    if (!business || !currentUser) {
-        return;
-    }
-
-
-    await loadCurrentTicket();
-
-    await loadWaitingTickets();
-
-    await loadServices();
-
-    renderPanel();
-}
-
-
-// ==========================================
-// TURNO ACTUAL
-// ==========================================
-
-async function loadCurrentTicket() {
-
-    const { data, error } =
-        await client.rpc(
-            "admin_current_ticket",
-            {
-                p_business_id:
-                    business.id
-            }
-        );
-
-
-    if (error) {
-
-        console.error(error);
-
-        currentTicket = null;
-
-        return;
-    }
-
-
-    currentTicket =
-        data && data.length > 0
-            ? data[0]
-            : null;
-}
-
-
-// ==========================================
-// TURNOS EN ESPERA
-// ==========================================
-
-async function loadWaitingTickets() {
-
-    const { data, error } =
-        await client.rpc(
-            "admin_waiting_tickets",
-            {
-                p_business_id:
-                    business.id
-            }
-        );
-
-
-    if (error) {
-
-        console.error(error);
-
-        waitingTickets = [];
-
-        return;
-    }
-
-
-    waitingTickets =
-        data || [];
-}
-
-
-// ==========================================
-// SERVICIOS
-// ==========================================
-
-async function loadServices() {
-
-    const { data, error } =
-        await client
-            .from("services")
-            .select("*")
-            .eq(
-                "business_id",
-                business.id
-            )
-            .order(
-                "active",
-                {
-                    ascending: false
-                }
-            )
-            .order(
-                "name",
-                {
-                    ascending: true
-                }
-            );
-
-
-    if (error) {
-
-        console.error(
-            "ERROR CARGANDO SERVICIOS:",
-            error
-        );
-
-        services = [];
-
-        return;
-    }
-
-
-    services =
-        data || [];
-}
-
-
-// ==========================================
-// MOSTRAR PANEL
-// ==========================================
-
-function renderPanel() {
-
-    adminApp.innerHTML = `
-
-        <section class="card current">
-
-            <h2>TURNO ACTUAL</h2>
-
-            ${
-                currentTicket
-                ?
-                `
-                <div class="current-ticket">
-
-                    <div class="ticket-number">
-                        ${escapeHTML(
-                            currentTicket.ticket_code
-                        )}
-                    </div>
-
-                    <h2>
-                        ${escapeHTML(
-                            currentTicket.service_name
-                        )}
-                    </h2>
-
-                    <p class="badge">
-                        🟢 EN ATENCIÓN
-                    </p>
-
-                </div>
-
-                <div class="actions">
-
-                    <button
-                        class="btn success"
-                        onclick="finishCurrent()"
-                    >
-                        ✅ Finalizar
-                    </button>
-
-                    <button
-                        class="btn danger"
-                        onclick="noShowCurrent()"
-                    >
-                        🚫 No se presentó
-                    </button>
-
-                </div>
-                `
-                :
-                `
-                <div class="empty">
-
-                    <h2>
-                        No hay turno en atención
-                    </h2>
-
-                    <p>
-                        Listo para llamar al siguiente cliente.
-                    </p>
-
-                </div>
-                `
-            }
-
-        </section>
-
-
-        <section class="card">
-
-            <div class="queue-header">
-
-                <h2>PRÓXIMOS TURNOS</h2>
-
-                <span class="badge">
-                    ${waitingTickets.length}
-                    esperando
-                </span>
-
-            </div>
-
-
-            ${
-                waitingTickets.length === 0
-                ?
-                `
-                <div class="empty">
-
-                    <p>
-                        No hay clientes esperando.
-                    </p>
-
-                </div>
-                `
-                :
-                `
-                <div class="queue">
-
-                    ${
-                        waitingTickets
-                            .map(
-                                (ticket, index) => `
-
-                                <div class="queue-item">
-
-                                    <div>
-
-                                        <strong>
-                                            ${escapeHTML(
-                                                ticket.ticket_code
-                                            )}
-                                        </strong>
-
-                                        <span>
-                                            ${escapeHTML(
-                                                ticket.service_name
-                                            )}
-                                        </span>
-
-                                    </div>
-
-                                    <small>
-
-                                        ${
-                                            index === 0
-                                            ? "Siguiente"
-                                            : `${index} antes`
-                                        }
-
-                                    </small>
-
-                                </div>
-
-                            `
-                            )
-                            .join("")
-                    }
-
-                </div>
-                `
-            }
-
-        </section>
-
-
-        <button
-            class="btn primary big"
-            onclick="callNext()"
-            ${currentTicket ? "disabled" : ""}
-        >
-            📢 Llamar siguiente
-        </button>
-
-
-        <!-- =====================================
-             SERVICIOS
-        ====================================== -->
-
-        <section class="card services-admin">
-
-            <div class="queue-header">
-
-                <h2>🛠️ SERVICIOS</h2>
-
-                <button
-                    class="btn primary"
-                    onclick="createService()"
+                <input
+                    id="newPassword"
+                    type="password"
+                    placeholder="Nueva contraseña"
+                    autocomplete="new-password"
+                    required
+                    minlength="6"
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
                 >
-                    ➕ Nuevo servicio
-                </button>
 
             </div>
 
 
-            ${
-                services.length === 0
-                ?
-                `
-                <div class="empty">
+            <div style="margin-bottom: 15px;">
 
-                    <p>
-                        No hay servicios configurados.
-                    </p>
+                <label for="confirmPassword">
+                    Confirmar contraseña
+                </label>
 
-                </div>
-                `
-                :
-                `
-                <div class="queue">
+                <input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Repite la contraseña"
+                    autocomplete="new-password"
+                    required
+                    minlength="6"
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                >
 
-                    ${
-                        services
-                            .map(
-                                service => `
+            </div>
 
-                                <div class="queue-item">
-
-                                    <div>
-
-                                        <strong>
-                                            ${escapeHTML(
-                                                service.name
-                                            )}
-                                        </strong>
-
-                                        <span>
-                                            ${
-                                                service.duration_minutes
-                                            }
-                                            min
-                                            ·
-                                            $${Number(
-                                                service.price
-                                            ).toLocaleString(
-                                                "es-CO"
-                                            )}
-                                        </span>
-
-                                        <small>
-                                            ${
-                                                service.active
-                                                ? "🟢 Activo"
-                                                : "⚪ Inactivo"
-                                            }
-                                        </small>
-
-                                    </div>
-
-
-                                    <div class="actions">
-
-                                        <button
-                                            class="btn"
-                                            onclick="editService('${service.id}')"
-                                        >
-                                            ✏️ Editar
-                                        </button>
-
-
-                                        <button
-                                            class="btn ${
-                                                service.active
-                                                ? "danger"
-                                                : "success"
-                                            }"
-                                            onclick="toggleService(
-                                                '${service.id}',
-                                                ${service.active}
-                                            )"
-                                        >
-
-                                            ${
-                                                service.active
-                                                ? "⛔ Desactivar"
-                                                : "🟢 Activar"
-                                            }
-
-                                        </button>
-
-                                    </div>
-
-                                </div>
-
-                            `
-                            )
-                            .join("")
-                    }
-
-                </div>
-                `
-            }
-
-        </section>
-
-
-        <section class="card">
 
             <button
-                class="btn danger"
-                onclick="logoutAdmin()"
+                id="passwordRecoveryButton"
+                type="submit"
+                class="btn primary big"
             >
-                🚪 Cerrar sesión
+                🔐 Guardar nueva contraseña
             </button>
 
-        </section>
 
-    `;
-}
+            <p
+                id="passwordRecoveryMessage"
+                style="margin-top: 15px;"
+            ></p>
 
+        </form>
 
-// ==========================================
-// CREAR SERVICIO
-// ==========================================
+    </section>
 
-async function createService() {
 
-    const name =
-        prompt(
-            "Nombre del nuevo servicio:"
-        );
+    <!-- ==========================================
+         ACCESO ADMINISTRADOR
+    =========================================== -->
 
+    <section
+        id="loginApp"
+        class="card hero"
+        style="max-width: 500px; margin: 30px auto; display: none;"
+    >
 
-    if (name === null) {
-        return;
-    }
+        <h2>🔐 Acceso administrador</h2>
 
+        <p>
+            Inicia sesión para administrar tu barbería.
+        </p>
 
-    const cleanName =
-        name.trim();
 
+        <form id="loginForm">
 
-    if (!cleanName) {
+            <div style="margin-bottom: 15px;">
 
-        alert(
-            "Debes escribir un nombre."
-        );
+                <label for="loginEmail">
+                    Correo electrónico
+                </label>
 
-        return;
-    }
+                <input
+                    id="loginEmail"
+                    type="email"
+                    placeholder="Correo electrónico"
+                    autocomplete="email"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                >
 
+            </div>
 
-    const priceInput =
-        prompt(
-            "Precio del servicio en pesos:"
-        );
 
+            <div style="margin-bottom: 15px;">
 
-    if (priceInput === null) {
-        return;
-    }
+                <label for="loginPassword">
+                    Contraseña
+                </label>
 
+                <input
+                    id="loginPassword"
+                    type="password"
+                    placeholder="Contraseña"
+                    autocomplete="current-password"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                >
 
-    const price =
-        Number(
-            priceInput
-                .replace(/\./g, "")
-                .replace(/,/g, ".")
-        );
+            </div>
 
 
-    if (
-        !Number.isFinite(price) ||
-        price < 0
-    ) {
+            <button
+                id="loginButton"
+                type="submit"
+                class="btn primary big"
+            >
+                🔐 Iniciar sesión
+            </button>
 
-        alert(
-            "El precio no es válido."
-        );
 
-        return;
-    }
+            <p
+                id="loginMessage"
+                style="margin-top: 15px;"
+            ></p>
 
+        </form>
 
-    const durationInput =
-        prompt(
-            "Duración en minutos:"
-        );
+    </section>
 
 
-    if (durationInput === null) {
-        return;
-    }
+    <!-- ==========================================
+         PANEL ADMINISTRADOR
+    =========================================== -->
 
+    <main
+        id="adminApp"
+        style="display: none;"
+    >
 
-    const duration =
-        Number(durationInput);
+        <div class="card hero">
 
+            <h2>
+                ⏳ Cargando panel...
+            </h2>
 
-    if (
-        !Number.isInteger(duration) ||
-        duration <= 0
-    ) {
+            <p>
+                Espera un momento.
+            </p>
 
-        alert(
-            "La duración debe ser un número entero mayor que 0."
-        );
+        </div>
 
-        return;
-    }
+    </main>
 
 
-    const { error } =
-        await client
-            .from("services")
-            .insert({
+    <!-- SUPABASE -->
+    <script src="supabase.js"></script>
 
-                business_id:
-                    business.id,
+    <!-- ADMIN -->
+    <script src="admin.js"></script>
 
-                name:
-                    cleanName,
 
-                price:
-                    price,
+    <!-- ==========================================
+         CONTROL DE RECUPERACIÓN
+    =========================================== -->
 
-                duration_minutes:
-                    duration,
+    <script>
 
-                active:
-                    true
-            });
+        const passwordRecoveryApp =
+            document.getElementById(
+                "passwordRecoveryApp"
+            );
 
+        const passwordRecoveryForm =
+            document.getElementById(
+                "passwordRecoveryForm"
+            );
 
-    if (error) {
+        const passwordRecoveryMessage =
+            document.getElementById(
+                "passwordRecoveryMessage"
+            );
 
-        console.error(
-            "ERROR CREANDO SERVICIO:",
-            error
-        );
+        const passwordRecoveryButton =
+            document.getElementById(
+                "passwordRecoveryButton"
+            );
 
+        const loginAppElement =
+            document.getElementById(
+                "loginApp"
+            );
 
-        alert(
-            "No se pudo crear el servicio:\n\n" +
-            error.message
-        );
-
-
-        return;
-    }
-
-
-    alert(
-        "✅ Servicio creado correctamente."
-    );
-
-
-    await loadPanel();
-}
-
-
-// ==========================================
-// EDITAR SERVICIO
-// ==========================================
-
-async function editService(
-    serviceId
-) {
-
-    const service =
-        services.find(
-            item =>
-                item.id === serviceId
-        );
-
-
-    if (!service) {
-
-        alert(
-            "No se encontró el servicio."
-        );
-
-        return;
-    }
-
-
-    const name =
-        prompt(
-            "Nombre del servicio:",
-            service.name
-        );
-
-
-    if (name === null) {
-        return;
-    }
-
-
-    const cleanName =
-        name.trim();
-
-
-    if (!cleanName) {
-
-        alert(
-            "El nombre no puede estar vacío."
-        );
-
-        return;
-    }
-
-
-    const priceInput =
-        prompt(
-            "Precio en pesos:",
-            Number(service.price)
-        );
-
-
-    if (priceInput === null) {
-        return;
-    }
-
-
-    const price =
-        Number(
-            priceInput
-                .replace(/\./g, "")
-                .replace(/,/g, ".")
-        );
-
-
-    if (
-        !Number.isFinite(price) ||
-        price < 0
-    ) {
-
-        alert(
-            "El precio no es válido."
-        );
-
-        return;
-    }
-
-
-    const durationInput =
-        prompt(
-            "Duración en minutos:",
-            service.duration_minutes
-        );
-
-
-    if (durationInput === null) {
-        return;
-    }
-
-
-    const duration =
-        Number(durationInput);
-
-
-    if (
-        !Number.isInteger(duration) ||
-        duration <= 0
-    ) {
-
-        alert(
-            "La duración debe ser un número entero mayor que 0."
-        );
-
-        return;
-    }
-
-
-    const { error } =
-        await client
-            .from("services")
-            .update({
-
-                name:
-                    cleanName,
-
-                price:
-                    price,
-
-                duration_minutes:
-                    duration
-
-            })
-            .eq(
-                "id",
-                serviceId
-            )
-            .eq(
-                "business_id",
-                business.id
+        const adminAppElement =
+            document.getElementById(
+                "adminApp"
             );
 
 
-    if (error) {
+        function showPasswordRecovery() {
 
-        console.error(
-            "ERROR EDITANDO SERVICIO:",
-            error
-        );
+            if (passwordRecoveryApp) {
+                passwordRecoveryApp.style.display =
+                    "block";
+            }
 
+            if (loginAppElement) {
+                loginAppElement.style.display =
+                    "none";
+            }
 
-        alert(
-            "No se pudo editar el servicio:\n\n" +
-            error.message
-        );
+            if (adminAppElement) {
+                adminAppElement.style.display =
+                    "none";
+            }
 
+            const status =
+                document.getElementById(
+                    "connectionStatus"
+                );
 
-        return;
-    }
-
-
-    alert(
-        "✅ Servicio actualizado."
-    );
-
-
-    await loadPanel();
-}
-
-
-// ==========================================
-// ACTIVAR / DESACTIVAR SERVICIO
-// ==========================================
-
-async function toggleService(
-    serviceId,
-    currentActive
-) {
-
-    const service =
-        services.find(
-            item =>
-                item.id === serviceId
-        );
+            if (status) {
+                status.textContent =
+                    "CAMBIAR CONTRASEÑA";
+            }
+        }
 
 
-    if (!service) {
-        return;
-    }
+        async function updatePassword() {
+
+            const newPassword =
+                document.getElementById(
+                    "newPassword"
+                ).value;
+
+            const confirmPassword =
+                document.getElementById(
+                    "confirmPassword"
+                ).value;
 
 
-    const action =
-        currentActive
-        ? "desactivar"
-        : "activar";
+            if (newPassword.length < 6) {
+
+                passwordRecoveryMessage.textContent =
+                    "❌ La contraseña debe tener mínimo 6 caracteres.";
+
+                return;
+            }
 
 
-    const confirmed =
-        confirm(
-            `¿Quieres ${action} "${service.name}"?`
-        );
+            if (
+                newPassword !==
+                confirmPassword
+            ) {
+
+                passwordRecoveryMessage.textContent =
+                    "❌ Las contraseñas no coinciden.";
+
+                return;
+            }
 
 
-    if (!confirmed) {
-        return;
-    }
+            passwordRecoveryButton.disabled =
+                true;
+
+            passwordRecoveryButton.textContent =
+                "🔄 Guardando...";
+
+            passwordRecoveryMessage.textContent =
+                "";
 
 
-    const { error } =
-        await client
-            .from("services")
-            .update({
+            try {
 
-                active:
-                    !currentActive
+                const {
+                    data,
+                    error
+                } =
+                    await client.auth.updateUser({
+                        password:
+                            newPassword
+                    });
 
-            })
-            .eq(
-                "id",
-                serviceId
-            )
-            .eq(
-                "business_id",
-                business.id
+
+                if (error) {
+                    throw error;
+                }
+
+
+                passwordRecoveryMessage.textContent =
+                    "✅ Contraseña actualizada correctamente.";
+
+
+                passwordRecoveryButton.textContent =
+                    "✅ Contraseña guardada";
+
+
+                setTimeout(
+                    async function () {
+
+                        await client.auth.signOut();
+
+                        window.location.href =
+                            "admin.html";
+
+                    },
+                    1500
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "ERROR CAMBIANDO CONTRASEÑA:",
+                    error
+                );
+
+
+                passwordRecoveryMessage.textContent =
+                    "❌ " + error.message;
+
+
+                passwordRecoveryButton.disabled =
+                    false;
+
+                passwordRecoveryButton.textContent =
+                    "🔐 Guardar nueva contraseña";
+            }
+        }
+
+
+        if (passwordRecoveryForm) {
+
+            passwordRecoveryForm.addEventListener(
+                "submit",
+                function (event) {
+
+                    event.preventDefault();
+
+                    updatePassword();
+
+                }
             );
 
-
-    if (error) {
-
-        console.error(
-            "ERROR CAMBIANDO SERVICIO:",
-            error
-        );
+        }
 
 
-        alert(
-            "No se pudo cambiar el estado:\n\n" +
-            error.message
-        );
+        /*
+         * Supabase utiliza el evento PASSWORD_RECOVERY
+         * cuando el usuario llega mediante un enlace
+         * de recuperación de contraseña.
+         */
+
+        client.auth.onAuthStateChange(
+            function (
+                event,
+                session
+            ) {
+
+                console.log(
+                    "AUTH RECOVERY:",
+                    event
+                );
 
 
-        return;
-    }
+                if (
+                    event ===
+                    "PASSWORD_RECOVERY"
+                ) {
 
+                    showPasswordRecovery();
 
-    await loadPanel();
-}
+                }
 
-
-// ==========================================
-// LLAMAR SIGUIENTE
-// ==========================================
-
-async function callNext() {
-
-    if (currentTicket) {
-
-        alert(
-            "Primero debes finalizar el turno actual."
-        );
-
-        return;
-    }
-
-
-    const { data, error } =
-        await client.rpc(
-            "admin_call_next",
-            {
-                p_business_id:
-                    business.id
             }
         );
 
 
-    if (error) {
-
-        alert(
-            error.message
-        );
-
-        return;
-    }
-
-
-    currentTicket =
-        data && data.length > 0
-            ? data[0]
-            : null;
-
-
-    await loadPanel();
-}
-
-
-// ==========================================
-// FINALIZAR
-// ==========================================
-
-async function finishCurrent() {
-
-    if (!currentTicket) {
-        return;
-    }
-
-
-    const { data, error } =
-        await client.rpc(
-            "admin_finish_ticket",
-            {
-                p_ticket_id:
-                    currentTicket.id
-            }
-        );
-
-
-    if (error) {
-
-        alert(
-            error.message
-        );
-
-        return;
-    }
-
-
-    if (!data) {
-
-        alert(
-            "No se pudo finalizar el turno."
-        );
-
-        return;
-    }
-
-
-    currentTicket =
-        null;
-
-
-    await loadPanel();
-}
-
-
-// ==========================================
-// NO SE PRESENTÓ
-// ==========================================
-
-async function noShowCurrent() {
-
-    if (!currentTicket) {
-        return;
-    }
-
-
-    const { data, error } =
-        await client.rpc(
-            "admin_no_show_ticket",
-            {
-                p_ticket_id:
-                    currentTicket.id
-            }
-        );
-
-
-    if (error) {
-
-        alert(
-            error.message
-        );
-
-        return;
-    }
-
-
-    if (!data) {
-
-        alert(
-            "No se pudo cambiar el estado."
-        );
-
-        return;
-    }
-
-
-    currentTicket =
-        null;
-
-
-    await loadPanel();
-}
-
-
-// ==========================================
-// CERRAR SESIÓN
-// ==========================================
-
-async function logoutAdmin() {
-
-    const confirmed =
-        confirm(
-            "¿Quieres cerrar sesión?"
-        );
-
-
-    if (!confirmed) {
-        return;
-    }
-
-
-    const { error } =
-        await client.auth.signOut();
-
-
-    if (error) {
-
-        alert(
-            "No se pudo cerrar sesión:\n\n" +
-            error.message
-        );
-
-        return;
-    }
-
-
-    currentUser = null;
-    business = null;
-    currentTicket = null;
-    waitingTickets = [];
-    services = [];
-
-
-    showLogin(
-        "Sesión cerrada correctamente."
-    );
-}
-
-
-// ==========================================
-// ACTUALIZACIÓN AUTOMÁTICA
-// ==========================================
-
-setInterval(
-    async function () {
+        /*
+         * También detectamos el tipo recovery
+         * directamente en la URL como respaldo.
+         */
 
         if (
-            currentUser &&
-            business
+            window.location.hash.includes(
+                "type=recovery"
+            )
         ) {
 
-            await loadPanel();
+            showPasswordRecovery();
 
         }
 
-    },
-    10000
-);
+    </script>
 
-
-// ==========================================
-// DETECTAR CAMBIOS DE SESIÓN
-// ==========================================
-
-client.auth.onAuthStateChange(
-    async function (
-        event,
-        session
-    ) {
-
-        console.log(
-            "AUTH:",
-            event
-        );
-
-
-        if (
-            session &&
-            session.user
-        ) {
-
-            currentUser =
-                session.user;
-
-
-            if (!business) {
-
-                await loadBusiness();
-
-            }
-
-        } else {
-
-            currentUser =
-                null;
-
-            business =
-                null;
-
-            currentTicket =
-                null;
-
-            waitingTickets =
-                [];
-
-            services =
-                [];
-
-
-            showLogin();
-        }
-
-    }
-);
-
-
-// ==========================================
-// FORMULARIO DE LOGIN
-// ==========================================
-
-if (loginForm) {
-
-    loginForm.addEventListener(
-        "submit",
-        loginAdmin
-    );
-
-}
-
-
-// ==========================================
-// INICIAR
-// ==========================================
-
-async function initAdmin() {
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await client.auth.getSession();
-
-
-        if (error) {
-            throw error;
-        }
-
-
-        if (
-            data &&
-            data.session &&
-            data.session.user
-        ) {
-
-            currentUser =
-                data.session.user;
-
-
-            await loadBusiness();
-
-        } else {
-
-            showLogin();
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "ERROR INICIANDO ADMIN:",
-            error
-        );
-
-
-        showLogin(
-            "❌ " + error.message
-        );
-    }
-}
-
-
-initAdmin();
+</body>
+</html>
+```
