@@ -1,447 +1,399 @@
-```html
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+const adminApp = document.getElementById("adminApp");
+const businessInfo = document.getElementById("businessInfo");
+const connectionStatus = document.getElementById("connectionStatus");
 
-    <title>TurnoBarber - Panel</title>
+const businessId =
+    new URLSearchParams(location.search).get("business")
+    || "d09f71b0-2010-42c2-8d5c-b14b0ab35dd1";
 
-    <link rel="stylesheet" href="style.css">
+let business = null;
+let currentTicket = null;
+let waitingTickets = [];
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
 
-<body>
+// ==========================================
+// CARGAR BARBERÍA
+// ==========================================
 
-    <header class="topbar">
+async function loadBusiness() {
 
-        <div>
-            <h1>💈 TurnoBarber</h1>
-            <p id="businessInfo">Cargando barbería...</p>
-        </div>
+    connectionStatus.textContent = "CONECTANDO...";
 
-        <span id="connectionStatus" class="badge">
-            CONECTANDO
-        </span>
+    try {
 
-    </header>
-
-
-    <!-- ==========================================
-         RECUPERAR / CAMBIAR CONTRASEÑA
-    =========================================== -->
-
-    <section
-        id="passwordRecoveryApp"
-        class="card hero"
-        style="max-width: 500px; margin: 30px auto; display: none;"
-    >
-
-        <h2>🔐 Crear nueva contraseña</h2>
-
-        <p>
-            Escribe una nueva contraseña para tu cuenta de TurnoBarber.
-        </p>
-
-
-        <form id="passwordRecoveryForm">
-
-            <div style="margin-bottom: 15px;">
-
-                <label for="newPassword">
-                    Nueva contraseña
-                </label>
-
-                <input
-                    id="newPassword"
-                    type="password"
-                    placeholder="Nueva contraseña"
-                    autocomplete="new-password"
-                    required
-                    minlength="6"
-                    style="width: 100%; padding: 10px; margin-top: 5px;"
-                >
-
-            </div>
-
-
-            <div style="margin-bottom: 15px;">
-
-                <label for="confirmPassword">
-                    Confirmar contraseña
-                </label>
-
-                <input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="Repite la contraseña"
-                    autocomplete="new-password"
-                    required
-                    minlength="6"
-                    style="width: 100%; padding: 10px; margin-top: 5px;"
-                >
-
-            </div>
-
-
-            <button
-                id="passwordRecoveryButton"
-                type="submit"
-                class="btn primary big"
-            >
-                🔐 Guardar nueva contraseña
-            </button>
-
-
-            <p
-                id="passwordRecoveryMessage"
-                style="margin-top: 15px;"
-            ></p>
-
-        </form>
-
-    </section>
-
-
-    <!-- ==========================================
-         ACCESO ADMINISTRADOR
-    =========================================== -->
-
-    <section
-        id="loginApp"
-        class="card hero"
-        style="max-width: 500px; margin: 30px auto; display: none;"
-    >
-
-        <h2>🔐 Acceso administrador</h2>
-
-        <p>
-            Inicia sesión para administrar tu barbería.
-        </p>
-
-
-        <form id="loginForm">
-
-            <div style="margin-bottom: 15px;">
-
-                <label for="loginEmail">
-                    Correo electrónico
-                </label>
-
-                <input
-                    id="loginEmail"
-                    type="email"
-                    placeholder="Correo electrónico"
-                    autocomplete="email"
-                    required
-                    style="width: 100%; padding: 10px; margin-top: 5px;"
-                >
-
-            </div>
-
-
-            <div style="margin-bottom: 15px;">
-
-                <label for="loginPassword">
-                    Contraseña
-                </label>
-
-                <input
-                    id="loginPassword"
-                    type="password"
-                    placeholder="Contraseña"
-                    autocomplete="current-password"
-                    required
-                    style="width: 100%; padding: 10px; margin-top: 5px;"
-                >
-
-            </div>
-
-
-            <button
-                id="loginButton"
-                type="submit"
-                class="btn primary big"
-            >
-                🔐 Iniciar sesión
-            </button>
-
-
-            <p
-                id="loginMessage"
-                style="margin-top: 15px;"
-            ></p>
-
-        </form>
-
-    </section>
-
-
-    <!-- ==========================================
-         PANEL ADMINISTRADOR
-    =========================================== -->
-
-    <main
-        id="adminApp"
-        style="display: none;"
-    >
-
-        <div class="card hero">
-
-            <h2>
-                ⏳ Cargando panel...
-            </h2>
-
-            <p>
-                Espera un momento.
-            </p>
-
-        </div>
-
-    </main>
-
-
-    <!-- SUPABASE -->
-    <script src="supabase.js"></script>
-
-    <!-- ADMIN -->
-    <script src="admin.js"></script>
-
-
-    <!-- ==========================================
-         CONTROL DE RECUPERACIÓN
-    =========================================== -->
-
-    <script>
-
-        const passwordRecoveryApp =
-            document.getElementById(
-                "passwordRecoveryApp"
-            );
-
-        const passwordRecoveryForm =
-            document.getElementById(
-                "passwordRecoveryForm"
-            );
-
-        const passwordRecoveryMessage =
-            document.getElementById(
-                "passwordRecoveryMessage"
-            );
-
-        const passwordRecoveryButton =
-            document.getElementById(
-                "passwordRecoveryButton"
-            );
-
-        const loginAppElement =
-            document.getElementById(
-                "loginApp"
-            );
-
-        const adminAppElement =
-            document.getElementById(
-                "adminApp"
-            );
-
-
-        function showPasswordRecovery() {
-
-            if (passwordRecoveryApp) {
-                passwordRecoveryApp.style.display =
-                    "block";
-            }
-
-            if (loginAppElement) {
-                loginAppElement.style.display =
-                    "none";
-            }
-
-            if (adminAppElement) {
-                adminAppElement.style.display =
-                    "none";
-            }
-
-            const status =
-                document.getElementById(
-                    "connectionStatus"
-                );
-
-            if (status) {
-                status.textContent =
-                    "CAMBIAR CONTRASEÑA";
-            }
-        }
-
-
-        async function updatePassword() {
-
-            const newPassword =
-                document.getElementById(
-                    "newPassword"
-                ).value;
-
-            const confirmPassword =
-                document.getElementById(
-                    "confirmPassword"
-                ).value;
-
-
-            if (newPassword.length < 6) {
-
-                passwordRecoveryMessage.textContent =
-                    "❌ La contraseña debe tener mínimo 6 caracteres.";
-
-                return;
-            }
-
-
-            if (
-                newPassword !==
-                confirmPassword
-            ) {
-
-                passwordRecoveryMessage.textContent =
-                    "❌ Las contraseñas no coinciden.";
-
-                return;
-            }
-
-
-            passwordRecoveryButton.disabled =
-                true;
-
-            passwordRecoveryButton.textContent =
-                "🔄 Guardando...";
-
-            passwordRecoveryMessage.textContent =
-                "";
-
-
-            try {
-
-                const {
-                    data,
-                    error
-                } =
-                    await client.auth.updateUser({
-                        password:
-                            newPassword
-                    });
-
-
-                if (error) {
-                    throw error;
-                }
-
-
-                passwordRecoveryMessage.textContent =
-                    "✅ Contraseña actualizada correctamente.";
-
-
-                passwordRecoveryButton.textContent =
-                    "✅ Contraseña guardada";
-
-
-                setTimeout(
-                    async function () {
-
-                        await client.auth.signOut();
-
-                        window.location.href =
-                            "admin.html";
-
-                    },
-                    1500
-                );
-
-
-            } catch (error) {
-
-                console.error(
-                    "ERROR CAMBIANDO CONTRASEÑA:",
-                    error
-                );
-
-
-                passwordRecoveryMessage.textContent =
-                    "❌ " + error.message;
-
-
-                passwordRecoveryButton.disabled =
-                    false;
-
-                passwordRecoveryButton.textContent =
-                    "🔐 Guardar nueva contraseña";
-            }
-        }
-
-
-        if (passwordRecoveryForm) {
-
-            passwordRecoveryForm.addEventListener(
-                "submit",
-                function (event) {
-
-                    event.preventDefault();
-
-                    updatePassword();
-
+        // Buscamos la barbería mediante su QR.
+        // Por ahora usamos el slug conocido.
+        const { data, error } =
+            await client.rpc(
+                "get_business_by_qr",
+                {
+                    p_qr_slug: "barberia-el-jefe"
                 }
             );
 
+        if (error) {
+            throw error;
         }
 
+        if (!data || data.length === 0) {
+            throw new Error("No se encontró la barbería.");
+        }
 
-        /*
-         * Supabase utiliza el evento PASSWORD_RECOVERY
-         * cuando el usuario llega mediante un enlace
-         * de recuperación de contraseña.
-         */
+        business = data[0];
 
-        client.auth.onAuthStateChange(
-            function (
-                event,
-                session
-            ) {
+        businessInfo.textContent =
+            `${business.name} · ${business.city || ""}`;
 
-                console.log(
-                    "AUTH RECOVERY:",
-                    event
-                );
+        connectionStatus.textContent = "ONLINE";
+
+        await loadPanel();
+
+    } catch (error) {
+
+        console.error("ERROR ADMIN:", error);
+
+        connectionStatus.textContent = "ERROR";
+
+        adminApp.innerHTML = `
+            <div class="card hero">
+
+                <h2>⚠️ Error cargando el panel</h2>
+
+                <p>
+                    ${error.message}
+                </p>
+
+                <button
+                    class="btn"
+                    onclick="location.reload()"
+                >
+                    🔄 Reintentar
+                </button>
+
+            </div>
+        `;
+    }
+}
 
 
-                if (
-                    event ===
-                    "PASSWORD_RECOVERY"
-                ) {
+// ==========================================
+// CARGAR PANEL
+// ==========================================
 
-                    showPasswordRecovery();
+async function loadPanel() {
 
-                }
+    await loadCurrentTicket();
 
+    await loadWaitingTickets();
+
+    renderPanel();
+}
+
+
+// ==========================================
+// TURNO ACTUAL
+// ==========================================
+
+async function loadCurrentTicket() {
+
+    const { data, error } =
+        await client.rpc(
+            "admin_current_ticket",
+            {
+                p_business_id: business.id
             }
         );
 
+    if (error) {
+        console.error(error);
+        currentTicket = null;
+        return;
+    }
 
-        /*
-         * También detectamos el tipo recovery
-         * directamente en la URL como respaldo.
-         */
+    currentTicket =
+        data && data.length > 0
+            ? data[0]
+            : null;
+}
 
-        if (
-            window.location.hash.includes(
-                "type=recovery"
-            )
-        ) {
 
-            showPasswordRecovery();
+// ==========================================
+// TURNOS EN ESPERA
+// ==========================================
 
-        }
+async function loadWaitingTickets() {
 
-    </script>
+    const { data, error } =
+        await client.rpc(
+            "admin_waiting_tickets",
+            {
+                p_business_id: business.id
+            }
+        );
 
-</body>
-</html>
-```
+    if (error) {
+        console.error(error);
+        waitingTickets = [];
+        return;
+    }
+
+    waitingTickets = data || [];
+}
+
+
+// ==========================================
+// MOSTRAR PANEL
+// ==========================================
+
+function renderPanel() {
+
+    adminApp.innerHTML = `
+
+        <section class="card current">
+
+            <h2>TURNO ACTUAL</h2>
+
+            ${
+                currentTicket
+                ?
+                `
+                <div class="current-ticket">
+
+                    <div class="ticket-number">
+                        ${currentTicket.ticket_code}
+                    </div>
+
+                    <h2>
+                        ${currentTicket.service_name}
+                    </h2>
+
+                    <p class="badge">
+                        🟢 EN ATENCIÓN
+                    </p>
+
+                </div>
+
+                <div class="actions">
+
+                    <button
+                        class="btn success"
+                        onclick="finishCurrent()"
+                    >
+                        ✅ Finalizar
+                    </button>
+
+                    <button
+                        class="btn danger"
+                        onclick="noShowCurrent()"
+                    >
+                        🚫 No se presentó
+                    </button>
+
+                </div>
+                `
+                :
+                `
+                <div class="empty">
+
+                    <h2>
+                        No hay turno en atención
+                    </h2>
+
+                    <p>
+                        Listo para llamar al siguiente cliente.
+                    </p>
+
+                </div>
+                `
+            }
+
+        </section>
+
+
+        <section class="card">
+
+            <div class="queue-header">
+
+                <h2>PRÓXIMOS TURNOS</h2>
+
+                <span class="badge">
+                    ${waitingTickets.length} esperando
+                </span>
+
+            </div>
+
+            ${
+                waitingTickets.length === 0
+                ?
+                `
+                <div class="empty">
+                    <p>No hay clientes esperando.</p>
+                </div>
+                `
+                :
+                `
+                <div class="queue">
+
+                    ${
+                        waitingTickets
+                            .map((ticket, index) => `
+
+                                <div class="queue-item">
+
+                                    <div>
+
+                                        <strong>
+                                            ${ticket.ticket_code}
+                                        </strong>
+
+                                        <span>
+                                            ${ticket.service_name}
+                                        </span>
+
+                                    </div>
+
+                                    <small>
+                                        ${
+                                            index === 0
+                                            ? "Siguiente"
+                                            : `${index} antes`
+                                        }
+                                    </small>
+
+                                </div>
+
+                            `)
+                            .join("")
+                    }
+
+                </div>
+                `
+            }
+
+        </section>
+
+
+        <button
+            class="btn primary big"
+            onclick="callNext()"
+            ${currentTicket ? "disabled" : ""}
+        >
+            📢 Llamar siguiente
+        </button>
+
+    `;
+}
+
+
+// ==========================================
+// LLAMAR SIGUIENTE
+// ==========================================
+
+async function callNext() {
+
+    if (currentTicket) {
+        alert("Primero debes finalizar el turno actual.");
+        return;
+    }
+
+    const { data, error } =
+        await client.rpc(
+            "admin_call_next",
+            {
+                p_business_id: business.id
+            }
+        );
+
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
+    currentTicket =
+        data && data.length > 0
+            ? data[0]
+            : null;
+
+    await loadPanel();
+}
+
+
+// ==========================================
+// FINALIZAR
+// ==========================================
+
+async function finishCurrent() {
+
+    if (!currentTicket) return;
+
+    const { data, error } =
+        await client.rpc(
+            "admin_finish_ticket",
+            {
+                p_ticket_id: currentTicket.id
+            }
+        );
+
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
+    if (!data) {
+        alert("No se pudo finalizar el turno.");
+        return;
+    }
+
+    currentTicket = null;
+
+    await loadPanel();
+}
+
+
+// ==========================================
+// NO SE PRESENTÓ
+// ==========================================
+
+async function noShowCurrent() {
+
+    if (!currentTicket) return;
+
+    const { data, error } =
+        await client.rpc(
+            "admin_no_show_ticket",
+            {
+                p_ticket_id: currentTicket.id
+            }
+        );
+
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
+    if (!data) {
+        alert("No se pudo cambiar el estado.");
+        return;
+    }
+
+    currentTicket = null;
+
+    await loadPanel();
+}
+
+
+// ==========================================
+// ACTUALIZACIÓN AUTOMÁTICA
+// ==========================================
+
+setInterval(
+    loadPanel,
+    10000
+);
+
+
+// ==========================================
+// INICIAR
+// ==========================================
+
+loadBusiness();
