@@ -3,20 +3,30 @@ const statusEl = document.getElementById("status");
 
 
 // ==========================================
-// REDIRECCIÓN DESPUÉS DE CONFIRMAR CORREO
+// DETECTAR CONFIRMACIÓN DE CORREO
 // ==========================================
 //
-// Cuando Supabase confirma una cuenta nueva,
-// vuelve a index.html con type=signup.
+// Supabase puede devolver la confirmación mediante
+// el hash (#) o mediante parámetros en la URL.
 //
-// En ese caso NO debemos mostrar la página
-// pública de turnos.
-// Debemos enviar al usuario al login.
-//
+// Si detectamos que acaba de confirmar una cuenta,
+// enviamos al usuario directamente al inicio de sesión.
+// ==========================================
 
-if (
-    window.location.hash.includes("type=signup")
-) {
+const hashParams = new URLSearchParams(
+    window.location.hash.replace(/^#/, "")
+);
+
+const queryParams = new URLSearchParams(
+    window.location.search
+);
+
+const isSignupConfirmation =
+    hashParams.get("type") === "signup" ||
+    queryParams.get("type") === "signup" ||
+    queryParams.has("code");
+
+if (isSignupConfirmation) {
 
     window.location.replace("login.html");
 
@@ -368,7 +378,6 @@ async function takeTurn(serviceId) {
 
     currentTicket = data[0];
 
-
     saveTicket();
 
     showTicket();
@@ -611,6 +620,10 @@ function renderTicketStatus(ticket) {
     }
 
 
+    // ======================================
+    // ESPERANDO
+    // ======================================
+
     if (ticket.status === "waiting") {
 
         if (badge) {
@@ -653,6 +666,10 @@ function renderTicketStatus(ticket) {
     }
 
 
+    // ======================================
+    // LLAMADO / EN ATENCIÓN
+    // ======================================
+
     if (
         ticket.status === "called" ||
         ticket.status === "serving"
@@ -685,6 +702,10 @@ function renderTicketStatus(ticket) {
         return;
     }
 
+
+    // ======================================
+    // FINALIZADO
+    // ======================================
 
     if (ticket.status === "done") {
 
@@ -719,6 +740,10 @@ function renderTicketStatus(ticket) {
     }
 
 
+    // ======================================
+    // NO SE PRESENTÓ
+    // ======================================
+
     if (ticket.status === "no_show") {
 
         if (badge) {
@@ -752,6 +777,10 @@ function renderTicketStatus(ticket) {
         return;
     }
 
+
+    // ======================================
+    // CANCELADO
+    // ======================================
 
     if (ticket.status === "cancelled") {
 
