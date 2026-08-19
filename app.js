@@ -47,6 +47,31 @@ let currentTicket = null;
 
 
 // ==========================================
+// FECHA ACTUAL DE COLOMBIA
+// ==========================================
+//
+// Utilizamos America/Bogota para que el cambio
+// de jornada sea correcto para Cartagena.
+// ==========================================
+
+function getColombiaDate() {
+
+    return new Intl.DateTimeFormat(
+        "en-CA",
+        {
+            timeZone: "America/Bogota",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit"
+        }
+    ).format(
+        new Date()
+    );
+
+}
+
+
+// ==========================================
 // CARGAR BARBERÍA
 // ==========================================
 
@@ -388,6 +413,13 @@ async function takeTurn(serviceId) {
 // ==========================================
 // GUARDAR TURNO
 // ==========================================
+//
+// Además del ID del turno, guardamos la fecha
+// de la jornada en Colombia.
+//
+// Esto permite saber si el turno pertenece
+// al día actual o a una jornada anterior.
+// ==========================================
 
 function saveTicket() {
 
@@ -401,7 +433,8 @@ function saveTicket() {
         JSON.stringify({
             ticket_id: currentTicket.id,
             business_id: business.id,
-            business_slug: slug
+            business_slug: slug,
+            ticket_date: getColombiaDate()
         })
     );
 
@@ -820,6 +853,12 @@ function renderTicketStatus(ticket) {
 // ==========================================
 // RECUPERAR TURNO AL ABRIR LA PÁGINA
 // ==========================================
+//
+// Si el turno guardado pertenece a otro día,
+// se elimina solamente del navegador.
+//
+// El registro de Supabase NO se elimina.
+// ==========================================
 
 async function restoreSavedTicket() {
 
@@ -837,6 +876,33 @@ async function restoreSavedTicket() {
 
     if (
         savedTicket.business_slug !== slug
+    ) {
+
+        clearSavedTicket();
+
+        renderCustomer();
+
+        return;
+    }
+
+
+    // ======================================
+    // COMPROBAR JORNADA
+    // ======================================
+
+    const today =
+        getColombiaDate();
+
+
+    // Si el turno no tiene fecha guardada,
+    // es un turno anterior a esta actualización.
+    //
+    // Lo eliminamos del navegador para evitar
+    // que un turno viejo siga bloqueando al cliente.
+
+    if (
+        !savedTicket.ticket_date ||
+        savedTicket.ticket_date !== today
     ) {
 
         clearSavedTicket();
