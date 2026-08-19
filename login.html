@@ -105,6 +105,36 @@
         <hr style="margin: 25px 0;">
 
 
+        <!-- ==========================================
+             CREAR CUENTA
+        =========================================== -->
+
+        <div style="text-align: center; margin-bottom: 20px;">
+
+            <p style="margin-bottom: 10px;">
+                ¿Aún no tienes una cuenta?
+            </p>
+
+            <a
+                href="registro.html"
+                class="btn primary big"
+                style="
+                    display: block;
+                    width: 100%;
+                    box-sizing: border-box;
+                    text-decoration: none;
+                "
+            >
+                🆕 Crear mi barbería
+            </a>
+
+        </div>
+
+
+        <!-- ==========================================
+             RECUPERAR CONTRASEÑA
+        =========================================== -->
+
         <button
             id="forgotPasswordButton"
             class="btn"
@@ -390,14 +420,6 @@
                 );
 
 
-                /*
-                 * Si la barbería ya existe para este usuario,
-                 * no dejamos datos pendientes almacenados
-                 * indefinidamente.
-                 *
-                 * El usuario puede continuar al administrador.
-                 */
-
                 if (
                     error.message &&
                     error.message.includes(
@@ -489,10 +511,6 @@
 
                 try {
 
-                    // ======================================
-                    // AUTENTICAR USUARIO
-                    // ======================================
-
                     const {
                         data,
                         error
@@ -527,10 +545,6 @@
                     }
 
 
-                    // ======================================
-                    // VERIFICAR CONFIRMACIÓN DEL CORREO
-                    // ======================================
-
                     if (
                         !data.user.email_confirmed_at
                     ) {
@@ -549,16 +563,8 @@
                         "✅ Inicio de sesión correcto.";
 
 
-                    // ======================================
-                    // CREAR BARBERÍA PENDIENTE
-                    // ======================================
-
                     await createPendingBusiness();
 
-
-                    // ======================================
-                    // ENTRAR AL PANEL
-                    // ======================================
 
                     loginMessage.textContent =
                         "✅ Todo listo. Entrando al panel...";
