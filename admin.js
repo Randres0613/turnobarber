@@ -2,62 +2,144 @@ const adminApp = document.getElementById("adminApp");
 const businessInfo = document.getElementById("businessInfo");
 const connectionStatus = document.getElementById("connectionStatus");
 
-const businessId =
-    new URLSearchParams(location.search).get("business")
-    || "d09f71b0-2010-42c2-8d5c-b14b0ab35dd1";
-
 let business = null;
 let currentTicket = null;
 let waitingTickets = [];
 
 
 // ==========================================
-// CARGAR BARBERÍA
+// VERIFICAR SESIÓN
+// ==========================================
+
+async function checkSession() {
+
+    const {
+        data,
+        error
+    } = await client.auth.getSession();
+
+
+    if (error) {
+
+        console.error(
+            "ERROR OBTENIENDO SESIÓN:",
+            error
+        );
+
+        return false;
+    }
+
+
+    if (
+        !data ||
+        !data.session ||
+        !data.session.user
+    ) {
+
+        window.location.href =
+            "login.html";
+
+        return false;
+    }
+
+
+    return true;
+}
+
+
+// ==========================================
+// OBTENER BARBERÍA DEL USUARIO
 // ==========================================
 
 async function loadBusiness() {
 
-    connectionStatus.textContent = "CONECTANDO...";
+    connectionStatus.textContent =
+        "CONECTANDO...";
+
 
     try {
 
-        // Buscamos la barbería mediante su QR.
-        // Por ahora usamos el slug conocido.
-        const { data, error } =
+        const {
+            data,
+            error
+        } =
             await client.rpc(
-                "get_business_by_qr",
-                {
-                    p_qr_slug: "barberia-el-jefe"
-                }
+                "get_my_business"
             );
 
+
         if (error) {
+
             throw error;
+
         }
 
-        if (!data || data.length === 0) {
-            throw new Error("No se encontró la barbería.");
+
+        if (
+            !data ||
+            data.length === 0
+        ) {
+
+            throw new Error(
+                "No encontramos una barbería asociada a tu cuenta."
+            );
+
         }
 
-        business = data[0];
+
+        business =
+            data[0];
+
+
+        // ======================================
+        // VERIFICAR ROL
+        // ======================================
+
+        if (
+            business.role !== "owner"
+        ) {
+
+            throw new Error(
+                "Tu cuenta no tiene permisos de administrador."
+            );
+
+        }
+
+
+        // ======================================
+        // MOSTRAR INFORMACIÓN
+        // ======================================
 
         businessInfo.textContent =
             `${business.name} · ${business.city || ""}`;
 
-        connectionStatus.textContent = "ONLINE";
+
+        connectionStatus.textContent =
+            "ONLINE";
+
 
         await loadPanel();
 
+
     } catch (error) {
 
-        console.error("ERROR ADMIN:", error);
+        console.error(
+            "ERROR ADMIN:",
+            error
+        );
 
-        connectionStatus.textContent = "ERROR";
+
+        connectionStatus.textContent =
+            "ERROR";
+
 
         adminApp.innerHTML = `
+
             <div class="card hero">
 
-                <h2>⚠️ Error cargando el panel</h2>
+                <h2>
+                    ⚠️ Error cargando el panel
+                </h2>
 
                 <p>
                     ${error.message}
@@ -70,9 +152,19 @@ async function loadBusiness() {
                     🔄 Reintentar
                 </button>
 
+                <button
+                    class="btn"
+                    onclick="logout()"
+                >
+                    🚪 Cerrar sesión
+                </button>
+
             </div>
+
         `;
+
     }
+
 }
 
 
@@ -82,11 +174,19 @@ async function loadBusiness() {
 
 async function loadPanel() {
 
+    if (!business) {
+
+        return;
+
+    }
+
+
     await loadCurrentTicket();
 
     await loadWaitingTickets();
 
     renderPanel();
+
 }
 
 
@@ -96,24 +196,39 @@ async function loadPanel() {
 
 async function loadCurrentTicket() {
 
-    const { data, error } =
+    const {
+        data,
+        error
+    } =
         await client.rpc(
             "admin_current_ticket",
             {
-                p_business_id: business.id
+                p_business_id:
+                    business.id
             }
         );
 
+
     if (error) {
-        console.error(error);
+
+        console.error(
+            "ERROR TURNO ACTUAL:",
+            error
+        );
+
         currentTicket = null;
+
         return;
+
     }
 
+
     currentTicket =
-        data && data.length > 0
+        data &&
+        data.length > 0
             ? data[0]
             : null;
+
 }
 
 
@@ -123,21 +238,36 @@ async function loadCurrentTicket() {
 
 async function loadWaitingTickets() {
 
-    const { data, error } =
+    const {
+        data,
+        error
+    } =
         await client.rpc(
             "admin_waiting_tickets",
             {
-                p_business_id: business.id
+                p_business_id:
+                    business.id
             }
         );
 
+
     if (error) {
-        console.error(error);
+
+        console.error(
+            "ERROR TURNOS EN ESPERA:",
+            error
+        );
+
         waitingTickets = [];
+
         return;
+
     }
 
-    waitingTickets = data || [];
+
+    waitingTickets =
+        data || [];
+
 }
 
 
@@ -151,27 +281,41 @@ function renderPanel() {
 
         <section class="card current">
 
-            <h2>TURNO ACTUAL</h2>
+            <h2>
+                TURNO ACTUAL
+            </h2>
+
 
             ${
                 currentTicket
+
                 ?
+
                 `
                 <div class="current-ticket">
 
                     <div class="ticket-number">
+
                         ${currentTicket.ticket_code}
+
                     </div>
 
+
                     <h2>
+
                         ${currentTicket.service_name}
+
                     </h2>
 
+
                     <p class="badge">
+
                         🟢 EN ATENCIÓN
+
                     </p>
 
                 </div>
+
 
                 <div class="actions">
 
@@ -182,6 +326,7 @@ function renderPanel() {
                         ✅ Finalizar
                     </button>
 
+
                     <button
                         class="btn danger"
                         onclick="noShowCurrent()"
@@ -191,16 +336,23 @@ function renderPanel() {
 
                 </div>
                 `
+
                 :
+
                 `
                 <div class="empty">
 
                     <h2>
+
                         No hay turno en atención
+
                     </h2>
 
+
                     <p>
+
                         Listo para llamar al siguiente cliente.
+
                     </p>
 
                 </div>
@@ -214,55 +366,78 @@ function renderPanel() {
 
             <div class="queue-header">
 
-                <h2>PRÓXIMOS TURNOS</h2>
+                <h2>
+                    PRÓXIMOS TURNOS
+                </h2>
+
 
                 <span class="badge">
-                    ${waitingTickets.length} esperando
+
+                    ${waitingTickets.length}
+                    esperando
+
                 </span>
 
             </div>
 
+
             ${
                 waitingTickets.length === 0
+
                 ?
+
                 `
                 <div class="empty">
-                    <p>No hay clientes esperando.</p>
+
+                    <p>
+                        No hay clientes esperando.
+                    </p>
+
                 </div>
                 `
+
                 :
+
                 `
                 <div class="queue">
 
                     ${
                         waitingTickets
-                            .map((ticket, index) => `
+                            .map(
+                                (
+                                    ticket,
+                                    index
+                                ) => `
 
-                                <div class="queue-item">
+                                    <div class="queue-item">
 
-                                    <div>
+                                        <div>
 
-                                        <strong>
-                                            ${ticket.ticket_code}
-                                        </strong>
+                                            <strong>
+                                                ${ticket.ticket_code}
+                                            </strong>
 
-                                        <span>
-                                            ${ticket.service_name}
-                                        </span>
+                                            <span>
+                                                ${ticket.service_name}
+                                            </span>
+
+                                        </div>
+
+
+                                        <small>
+
+                                            ${
+                                                index === 0
+                                                    ? "Siguiente"
+                                                    : `${index} antes`
+                                            }
+
+                                        </small>
 
                                     </div>
 
-                                    <small>
-                                        ${
-                                            index === 0
-                                            ? "Siguiente"
-                                            : `${index} antes`
-                                        }
-                                    </small>
-
-                                </div>
-
-                            `)
+                                `
+                            )
                             .join("")
                     }
 
@@ -278,10 +453,24 @@ function renderPanel() {
             onclick="callNext()"
             ${currentTicket ? "disabled" : ""}
         >
+
             📢 Llamar siguiente
+
+        </button>
+
+
+        <button
+            class="btn"
+            onclick="logout()"
+            style="margin-top: 10px;"
+        >
+
+            🚪 Cerrar sesión
+
         </button>
 
     `;
+
 }
 
 
@@ -291,30 +480,70 @@ function renderPanel() {
 
 async function callNext() {
 
-    if (currentTicket) {
-        alert("Primero debes finalizar el turno actual.");
+    if (!business) {
+
         return;
+
     }
 
-    const { data, error } =
-        await client.rpc(
-            "admin_call_next",
-            {
-                p_business_id: business.id
-            }
+
+    if (currentTicket) {
+
+        alert(
+            "Primero debes finalizar el turno actual."
         );
 
-    if (error) {
-        alert(error.message);
         return;
+
     }
 
-    currentTicket =
-        data && data.length > 0
-            ? data[0]
-            : null;
 
-    await loadPanel();
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await client.rpc(
+                "admin_call_next",
+                {
+                    p_business_id:
+                        business.id
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        currentTicket =
+            data &&
+            data.length > 0
+                ? data[0]
+                : null;
+
+
+        await loadPanel();
+
+
+    } catch (error) {
+
+        console.error(
+            "ERROR LLAMANDO SIGUIENTE:",
+            error
+        );
+
+
+        alert(
+            error.message
+        );
+
+    }
+
 }
 
 
@@ -324,29 +553,67 @@ async function callNext() {
 
 async function finishCurrent() {
 
-    if (!currentTicket) return;
+    if (!currentTicket) {
 
-    const { data, error } =
-        await client.rpc(
-            "admin_finish_ticket",
-            {
-                p_ticket_id: currentTicket.id
-            }
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await client.rpc(
+                "admin_finish_ticket",
+                {
+                    p_ticket_id:
+                        currentTicket.id
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        if (!data) {
+
+            alert(
+                "No se pudo finalizar el turno."
+            );
+
+            return;
+
+        }
+
+
+        currentTicket =
+            null;
+
+
+        await loadPanel();
+
+
+    } catch (error) {
+
+        console.error(
+            "ERROR FINALIZANDO:",
+            error
         );
 
-    if (error) {
-        alert(error.message);
-        return;
+
+        alert(
+            error.message
+        );
+
     }
 
-    if (!data) {
-        alert("No se pudo finalizar el turno.");
-        return;
-    }
-
-    currentTicket = null;
-
-    await loadPanel();
 }
 
 
@@ -356,29 +623,93 @@ async function finishCurrent() {
 
 async function noShowCurrent() {
 
-    if (!currentTicket) return;
+    if (!currentTicket) {
 
-    const { data, error } =
-        await client.rpc(
-            "admin_no_show_ticket",
-            {
-                p_ticket_id: currentTicket.id
-            }
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await client.rpc(
+                "admin_no_show_ticket",
+                {
+                    p_ticket_id:
+                        currentTicket.id
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        if (!data) {
+
+            alert(
+                "No se pudo cambiar el estado."
+            );
+
+            return;
+
+        }
+
+
+        currentTicket =
+            null;
+
+
+        await loadPanel();
+
+
+    } catch (error) {
+
+        console.error(
+            "ERROR NO PRESENTADO:",
+            error
         );
 
-    if (error) {
-        alert(error.message);
-        return;
+
+        alert(
+            error.message
+        );
+
     }
 
-    if (!data) {
-        alert("No se pudo cambiar el estado.");
-        return;
+}
+
+
+// ==========================================
+// CERRAR SESIÓN
+// ==========================================
+
+async function logout() {
+
+    try {
+
+        await client.auth.signOut();
+
+    } catch (error) {
+
+        console.error(
+            "ERROR CERRANDO SESIÓN:",
+            error
+        );
+
     }
 
-    currentTicket = null;
 
-    await loadPanel();
+    window.location.href =
+        "login.html";
+
 }
 
 
@@ -387,7 +718,18 @@ async function noShowCurrent() {
 // ==========================================
 
 setInterval(
-    loadPanel,
+    async function() {
+
+        if (!business) {
+
+            return;
+
+        }
+
+
+        await loadPanel();
+
+    },
     10000
 );
 
@@ -396,4 +738,22 @@ setInterval(
 // INICIAR
 // ==========================================
 
-loadBusiness();
+async function startAdmin() {
+
+    const hasSession =
+        await checkSession();
+
+
+    if (!hasSession) {
+
+        return;
+
+    }
+
+
+    await loadBusiness();
+
+}
+
+
+startAdmin();
