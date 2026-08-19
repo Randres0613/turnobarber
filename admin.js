@@ -5,6 +5,7 @@ const connectionStatus = document.getElementById("connectionStatus");
 let business = null;
 let currentTicket = null;
 let waitingTickets = [];
+let myServices = [];
 
 
 // ==========================================
@@ -90,9 +91,7 @@ function showCreateBusiness() {
 
                 <div style="margin-bottom: 18px;">
 
-                    <label
-                        for="businessName"
-                    >
+                    <label for="businessName">
                         Nombre de la barbería
                     </label>
 
@@ -115,9 +114,7 @@ function showCreateBusiness() {
 
                 <div style="margin-bottom: 18px;">
 
-                    <label
-                        for="businessCity"
-                    >
+                    <label for="businessCity">
                         Ciudad
                     </label>
 
@@ -140,9 +137,7 @@ function showCreateBusiness() {
 
                 <div style="margin-bottom: 18px;">
 
-                    <label
-                        for="businessPhone"
-                    >
+                    <label for="businessPhone">
                         Teléfono
                     </label>
 
@@ -324,7 +319,7 @@ async function createBusiness(event) {
         }
 
 
-        business =
+        const createdBusiness =
             data[0];
 
 
@@ -332,20 +327,9 @@ async function createBusiness(event) {
             "✅ Barbería creada correctamente.";
 
 
-        businessInfo.textContent =
-            `${business.business_name} · ${business.city || ""}`;
-
-
-        connectionStatus.textContent =
-            "ONLINE";
-
-
         button.textContent =
             "✅ Barbería creada";
 
-
-        // Pequeña pausa para que el usuario
-        // vea el mensaje de confirmación.
 
         setTimeout(
             async function() {
@@ -382,7 +366,7 @@ async function createBusiness(event) {
 
 
 // ==========================================
-// OBTENER BARBERÍA DEL USUARIO
+// CARGAR BARBERÍA DEL USUARIO
 // ==========================================
 
 async function loadBusiness() {
@@ -409,10 +393,6 @@ async function loadBusiness() {
         }
 
 
-        // ======================================
-        // USUARIO SIN BARBERÍA
-        // ======================================
-
         if (
             !data ||
             data.length === 0
@@ -429,11 +409,8 @@ async function loadBusiness() {
             data[0];
 
 
-        // ======================================
-        // VERIFICAR ROL
-        // ======================================
-
         if (
+            business.role &&
             business.role !== "owner"
         ) {
 
@@ -443,10 +420,6 @@ async function loadBusiness() {
 
         }
 
-
-        // ======================================
-        // MOSTRAR INFORMACIÓN
-        // ======================================
 
         businessInfo.textContent =
             `${business.name} · ${business.city || ""}`;
@@ -525,6 +498,8 @@ async function loadPanel() {
     await loadCurrentTicket();
 
     await loadWaitingTickets();
+
+    await loadServices();
 
     renderPanel();
 
@@ -613,6 +588,41 @@ async function loadWaitingTickets() {
 
 
 // ==========================================
+// CARGAR MIS SERVICIOS
+// ==========================================
+
+async function loadServices() {
+
+    const {
+        data,
+        error
+    } =
+        await client.rpc(
+            "admin_my_services"
+        );
+
+
+    if (error) {
+
+        console.error(
+            "ERROR CARGANDO SERVICIOS:",
+            error
+        );
+
+        myServices = [];
+
+        return;
+
+    }
+
+
+    myServices =
+        data || [];
+
+}
+
+
+// ==========================================
 // MOSTRAR PANEL
 // ==========================================
 
@@ -636,23 +646,15 @@ function renderPanel() {
                 <div class="current-ticket">
 
                     <div class="ticket-number">
-
                         ${currentTicket.ticket_code}
-
                     </div>
 
-
                     <h2>
-
                         ${currentTicket.service_name}
-
                     </h2>
 
-
                     <p class="badge">
-
                         🟢 EN ATENCIÓN
-
                     </p>
 
                 </div>
@@ -684,16 +686,11 @@ function renderPanel() {
                 <div class="empty">
 
                     <h2>
-
                         No hay turno en atención
-
                     </h2>
 
-
                     <p>
-
                         Listo para llamar al siguiente cliente.
-
                     </p>
 
                 </div>
@@ -713,10 +710,8 @@ function renderPanel() {
 
 
                 <span class="badge">
-
                     ${waitingTickets.length}
                     esperando
-
                 </span>
 
             </div>
@@ -750,7 +745,9 @@ function renderPanel() {
                                     index
                                 ) => `
 
-                                    <div class="queue-item">
+                                    <div
+                                        class="queue-item"
+                                    >
 
                                         <div>
 
@@ -789,14 +786,15 @@ function renderPanel() {
         </section>
 
 
+        ${renderServices()}
+
+
         <button
             class="btn primary big"
             onclick="callNext()"
             ${currentTicket ? "disabled" : ""}
         >
-
             📢 Llamar siguiente
-
         </button>
 
 
@@ -805,12 +803,871 @@ function renderPanel() {
             onclick="logout()"
             style="margin-top: 10px;"
         >
-
             🚪 Cerrar sesión
-
         </button>
 
     `;
+
+}
+
+
+// ==========================================
+// RENDERIZAR SERVICIOS
+// ==========================================
+
+function renderServices() {
+
+    return `
+
+        <section class="card">
+
+            <div class="queue-header">
+
+                <h2>
+                    ⚙️ MIS SERVICIOS
+                </h2>
+
+
+                <span class="badge">
+                    ${myServices.length}
+                    servicios
+                </span>
+
+            </div>
+
+
+            <button
+                class="btn primary"
+                onclick="showCreateServiceForm()"
+            >
+                ➕ Nuevo servicio
+            </button>
+
+
+            <div
+                id="serviceFormContainer"
+                style="margin-top: 20px;"
+            ></div>
+
+
+            <div style="margin-top: 20px;">
+
+                ${
+                    myServices.length === 0
+
+                    ?
+
+                    `
+                    <div class="empty">
+
+                        <p>
+                            Todavía no tienes servicios.
+                        </p>
+
+                        <p>
+                            Crea el primero para que tus
+                            clientes puedan tomar turnos.
+                        </p>
+
+                    </div>
+                    `
+
+                    :
+
+                    `
+                    <div class="queue">
+
+                        ${
+                            myServices
+                                .map(
+                                    service => `
+
+                                        <div
+                                            class="queue-item"
+                                            style="margin-bottom: 10px;"
+                                        >
+
+                                            <div>
+
+                                                <strong>
+                                                    ${escapeHtml(service.name)}
+                                                </strong>
+
+
+                                                <span>
+
+                                                    $${Number(
+                                                        service.price || 0
+                                                    ).toLocaleString("es-CO")}
+
+                                                    ·
+
+                                                    ${service.duration_minutes}
+                                                    min
+
+                                                </span>
+
+                                            </div>
+
+
+                                            <div
+                                                style="
+                                                    display: flex;
+                                                    gap: 6px;
+                                                    flex-wrap: wrap;
+                                                    justify-content: flex-end;
+                                                "
+                                            >
+
+                                                ${
+                                                    service.active
+
+                                                    ?
+
+                                                    `
+                                                    <button
+                                                        class="btn success"
+                                                        onclick="toggleService(
+                                                            '${service.id}',
+                                                            false
+                                                        )"
+                                                    >
+                                                        🟢 Activo
+                                                    </button>
+                                                    `
+
+                                                    :
+
+                                                    `
+                                                    <button
+                                                        class="btn danger"
+                                                        onclick="toggleService(
+                                                            '${service.id}',
+                                                            true
+                                                        )"
+                                                    >
+                                                        🔴 Inactivo
+                                                    </button>
+                                                    `
+                                                }
+
+
+                                                <button
+                                                    class="btn"
+                                                    onclick="showEditServiceForm(
+                                                        '${service.id}'
+                                                    )"
+                                                >
+                                                    ✏️ Editar
+                                                </button>
+
+                                            </div>
+
+                                        </div>
+
+                                    `
+                                )
+                                .join("")
+                        }
+
+                    </div>
+                    `
+                }
+
+            </div>
+
+        </section>
+
+    `;
+
+}
+
+
+// ==========================================
+// ESCAPAR TEXTO
+// ==========================================
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+// ==========================================
+// FORMULARIO NUEVO SERVICIO
+// ==========================================
+
+function showCreateServiceForm() {
+
+    const container =
+        document.getElementById(
+            "serviceFormContainer"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    container.innerHTML = `
+
+        <div class="card">
+
+            <h3>
+                ➕ Nuevo servicio
+            </h3>
+
+
+            <div style="margin-bottom: 10px;">
+
+                <label>
+                    Nombre
+                </label>
+
+                <input
+                    id="newServiceName"
+                    type="text"
+                    placeholder="Ej. Corte"
+                    maxlength="100"
+                    style="
+                        width: 100%;
+                        box-sizing: border-box;
+                        padding: 12px;
+                        margin-top: 5px;
+                    "
+                >
+
+            </div>
+
+
+            <div style="margin-bottom: 10px;">
+
+                <label>
+                    Precio
+                </label>
+
+                <input
+                    id="newServicePrice"
+                    type="number"
+                    min="0"
+                    step="100"
+                    placeholder="Ej. 20000"
+                    style="
+                        width: 100%;
+                        box-sizing: border-box;
+                        padding: 12px;
+                        margin-top: 5px;
+                    "
+                >
+
+            </div>
+
+
+            <div style="margin-bottom: 10px;">
+
+                <label>
+                    Duración en minutos
+                </label>
+
+                <input
+                    id="newServiceDuration"
+                    type="number"
+                    min="1"
+                    max="480"
+                    placeholder="Ej. 30"
+                    style="
+                        width: 100%;
+                        box-sizing: border-box;
+                        padding: 12px;
+                        margin-top: 5px;
+                    "
+                >
+
+            </div>
+
+
+            <button
+                class="btn primary"
+                onclick="createService()"
+            >
+                💾 Guardar servicio
+            </button>
+
+
+            <button
+                class="btn"
+                onclick="closeServiceForm()"
+                style="margin-top: 5px;"
+            >
+                Cancelar
+            </button>
+
+
+            <p
+                id="serviceFormMessage"
+                style="margin-top: 10px;"
+            ></p>
+
+        </div>
+
+    `;
+
+}
+
+
+// ==========================================
+// CERRAR FORMULARIO DE SERVICIO
+// ==========================================
+
+function closeServiceForm() {
+
+    const container =
+        document.getElementById(
+            "serviceFormContainer"
+        );
+
+
+    if (container) {
+
+        container.innerHTML = "";
+
+    }
+
+}
+
+
+// ==========================================
+// CREAR SERVICIO
+// ==========================================
+
+async function createService() {
+
+    const nameElement =
+        document.getElementById(
+            "newServiceName"
+        );
+
+
+    const priceElement =
+        document.getElementById(
+            "newServicePrice"
+        );
+
+
+    const durationElement =
+        document.getElementById(
+            "newServiceDuration"
+        );
+
+
+    const message =
+        document.getElementById(
+            "serviceFormMessage"
+        );
+
+
+    if (
+        !nameElement ||
+        !priceElement ||
+        !durationElement ||
+        !message
+    ) {
+
+        return;
+
+    }
+
+
+    const name =
+        nameElement.value.trim();
+
+
+    const price =
+        Number(priceElement.value);
+
+
+    const duration =
+        Number(durationElement.value);
+
+
+    if (!name) {
+
+        message.textContent =
+            "⚠️ Escribe el nombre del servicio.";
+
+        return;
+
+    }
+
+
+    if (
+        !Number.isFinite(price) ||
+        price < 0
+    ) {
+
+        message.textContent =
+            "⚠️ Escribe un precio válido.";
+
+        return;
+
+    }
+
+
+    if (
+        !Number.isInteger(duration) ||
+        duration <= 0 ||
+        duration > 480
+    ) {
+
+        message.textContent =
+            "⚠️ La duración debe estar entre 1 y 480 minutos.";
+
+        return;
+
+    }
+
+
+    message.textContent =
+        "⏳ Creando servicio...";
+
+
+    const {
+        data,
+        error
+    } =
+        await client.rpc(
+            "admin_create_service",
+            {
+                p_name:
+                    name,
+
+                p_price:
+                    price,
+
+                p_duration_minutes:
+                    duration
+            }
+        );
+
+
+    if (error) {
+
+        console.error(
+            "ERROR CREANDO SERVICIO:",
+            error
+        );
+
+
+        message.textContent =
+            "❌ " + error.message;
+
+        return;
+
+    }
+
+
+    if (
+        !data ||
+        data.length === 0
+    ) {
+
+        message.textContent =
+            "❌ No se pudo crear el servicio.";
+
+        return;
+
+    }
+
+
+    await loadServices();
+
+    renderPanel();
+
+}
+
+
+// ==========================================
+// FORMULARIO EDITAR SERVICIO
+// ==========================================
+
+function showEditServiceForm(
+    serviceId
+) {
+
+    const service =
+        myServices.find(
+            s => s.id === serviceId
+        );
+
+
+    if (!service) {
+
+        alert(
+            "No se encontró el servicio."
+        );
+
+        return;
+
+    }
+
+
+    const container =
+        document.getElementById(
+            "serviceFormContainer"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    container.innerHTML = `
+
+        <div class="card">
+
+            <h3>
+                ✏️ Editar servicio
+            </h3>
+
+
+            <div style="margin-bottom: 10px;">
+
+                <label>
+                    Nombre
+                </label>
+
+                <input
+                    id="editServiceName"
+                    type="text"
+                    value="${escapeHtml(service.name)}"
+                    maxlength="100"
+                    style="
+                        width: 100%;
+                        box-sizing: border-box;
+                        padding: 12px;
+                        margin-top: 5px;
+                    "
+                >
+
+            </div>
+
+
+            <div style="margin-bottom: 10px;">
+
+                <label>
+                    Precio
+                </label>
+
+                <input
+                    id="editServicePrice"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value="${service.price ?? 0}"
+                    style="
+                        width: 100%;
+                        box-sizing: border-box;
+                        padding: 12px;
+                        margin-top: 5px;
+                    "
+                >
+
+            </div>
+
+
+            <div style="margin-bottom: 10px;">
+
+                <label>
+                    Duración en minutos
+                </label>
+
+                <input
+                    id="editServiceDuration"
+                    type="number"
+                    min="1"
+                    max="480"
+                    value="${service.duration_minutes ?? 30}"
+                    style="
+                        width: 100%;
+                        box-sizing: border-box;
+                        padding: 12px;
+                        margin-top: 5px;
+                    "
+                >
+
+            </div>
+
+
+            <button
+                class="btn primary"
+                onclick="updateService(
+                    '${service.id}'
+                )"
+            >
+                💾 Guardar cambios
+            </button>
+
+
+            <button
+                class="btn"
+                onclick="closeServiceForm()"
+                style="margin-top: 5px;"
+            >
+                Cancelar
+            </button>
+
+
+            <p
+                id="serviceFormMessage"
+                style="margin-top: 10px;"
+            ></p>
+
+        </div>
+
+    `;
+
+}
+
+
+// ==========================================
+// ACTUALIZAR SERVICIO
+// ==========================================
+
+async function updateService(
+    serviceId
+) {
+
+    const nameElement =
+        document.getElementById(
+            "editServiceName"
+        );
+
+
+    const priceElement =
+        document.getElementById(
+            "editServicePrice"
+        );
+
+
+    const durationElement =
+        document.getElementById(
+            "editServiceDuration"
+        );
+
+
+    const message =
+        document.getElementById(
+            "serviceFormMessage"
+        );
+
+
+    if (
+        !nameElement ||
+        !priceElement ||
+        !durationElement ||
+        !message
+    ) {
+
+        return;
+
+    }
+
+
+    const name =
+        nameElement.value.trim();
+
+
+    const price =
+        Number(priceElement.value);
+
+
+    const duration =
+        Number(durationElement.value);
+
+
+    if (!name) {
+
+        message.textContent =
+            "⚠️ Escribe el nombre.";
+
+        return;
+
+    }
+
+
+    if (
+        !Number.isFinite(price) ||
+        price < 0
+    ) {
+
+        message.textContent =
+            "⚠️ Escribe un precio válido.";
+
+        return;
+
+    }
+
+
+    if (
+        !Number.isInteger(duration) ||
+        duration <= 0 ||
+        duration > 480
+    ) {
+
+        message.textContent =
+            "⚠️ La duración debe estar entre 1 y 480 minutos.";
+
+        return;
+
+    }
+
+
+    message.textContent =
+        "⏳ Guardando cambios...";
+
+
+    const {
+        data,
+        error
+    } =
+        await client.rpc(
+            "admin_update_service",
+            {
+                p_service_id:
+                    serviceId,
+
+                p_name:
+                    name,
+
+                p_price:
+                    price,
+
+                p_duration_minutes:
+                    duration
+            }
+        );
+
+
+    if (error) {
+
+        console.error(
+            "ERROR ACTUALIZANDO SERVICIO:",
+            error
+        );
+
+
+        message.textContent =
+            "❌ " + error.message;
+
+        return;
+
+    }
+
+
+    if (!data) {
+
+        message.textContent =
+            "❌ No se pudo actualizar.";
+
+        return;
+
+    }
+
+
+    await loadServices();
+
+    renderPanel();
+
+}
+
+
+// ==========================================
+// ACTIVAR / DESACTIVAR SERVICIO
+// ==========================================
+
+async function toggleService(
+    serviceId,
+    active
+) {
+
+    const action =
+        active
+            ? "activar"
+            : "desactivar";
+
+
+    const confirmed =
+        confirm(
+            `¿Quieres ${action} este servicio?`
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await client.rpc(
+            "admin_toggle_service",
+            {
+                p_service_id:
+                    serviceId,
+
+                p_active:
+                    active
+            }
+        );
+
+
+    if (error) {
+
+        console.error(
+            "ERROR CAMBIANDO SERVICIO:",
+            error
+        );
+
+
+        alert(
+            error.message
+        );
+
+        return;
+
+    }
+
+
+    if (!data) {
+
+        alert(
+            "No se pudo cambiar el estado."
+        );
+
+        return;
+
+    }
+
+
+    await loadServices();
+
+    renderPanel();
 
 }
 
@@ -870,7 +1727,6 @@ async function callNext() {
 
         await loadPanel();
 
-
     } catch (error) {
 
         console.error(
@@ -889,7 +1745,7 @@ async function callNext() {
 
 
 // ==========================================
-// FINALIZAR
+// FINALIZAR TURNO
 // ==========================================
 
 async function finishCurrent() {
@@ -939,7 +1795,6 @@ async function finishCurrent() {
 
 
         await loadPanel();
-
 
     } catch (error) {
 
@@ -1009,7 +1864,6 @@ async function noShowCurrent() {
 
 
         await loadPanel();
-
 
     } catch (error) {
 
