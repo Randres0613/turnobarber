@@ -103,7 +103,7 @@
                     autocomplete="new-password"
                     minlength="6"
                     required
-                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                style="width: 100%; padding: 10px; margin-top: 5px;"
                 >
 
             </div>
@@ -391,7 +391,14 @@
                                 email,
 
                             password:
-                                password
+                                password,
+
+                            options: {
+
+                                emailRedirectTo:
+                                    "https://randres0613.github.io/turnobarber/login.html"
+
+                            }
 
                         });
 
@@ -414,43 +421,33 @@
 
 
                     // ==========================================
-                    // CREAR BARBERÍA MEDIANTE FUNCIÓN SEGURA
+                    // GUARDAR DATOS DE LA BARBERÍA
                     // ==========================================
+                    //
+                    // Como la cuenta debe confirmar primero
+                    // el correo, guardamos temporalmente los
+                    // datos necesarios para continuar después
+                    // del inicio de sesión.
+                    //
 
-                    const {
-                        data: businessData,
-                        error: businessError
-                    } =
-                        await client.rpc(
-                            "create_business_for_current_user",
-                            {
-                                p_business_name:
-                                    businessName,
+                    localStorage.setItem(
+                        "turnobarber_pending_business",
+                        JSON.stringify({
 
-                                p_city:
-                                    city,
+                            owner_name:
+                                ownerName,
 
-                                p_phone:
-                                    phone || null
-                            }
-                        );
+                            business_name:
+                                businessName,
 
+                            city:
+                                city,
 
-                    if (businessError) {
-                        throw businessError;
-                    }
+                            phone:
+                                phone || null
 
-
-                    if (
-                        !businessData ||
-                        businessData.length === 0
-                    ) {
-
-                        throw new Error(
-                            "No se pudo crear la barbería."
-                        );
-
-                    }
+                        })
+                    );
 
 
                     // ==========================================
@@ -458,22 +455,24 @@
                     // ==========================================
 
                     registerMessage.textContent =
-                        "✅ Cuenta y barbería creadas correctamente.";
+                        "✅ Cuenta creada. Revisa tu correo para confirmar la cuenta.";
 
 
                     registerButton.textContent =
-                        "✅ Cuenta creada";
+                        "📧 Revisa tu correo";
 
 
-                    setTimeout(
-                        function() {
+                    // ==========================================
+                    // NO INTENTAR CREAR LA BARBERÍA TODAVÍA
+                    // ==========================================
+                    //
+                    // La cuenta aún no está confirmada.
+                    // La creación de la barbería se hará después
+                    // de confirmar el correo e iniciar sesión.
+                    //
 
-                            window.location.href =
-                                "login.html";
-
-                        },
-                        2000
-                    );
+                    registerButton.disabled =
+                        true;
 
 
                 } catch (error) {
