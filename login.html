@@ -2,17 +2,30 @@
 <html lang="es">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>TurnoBarber - Acceso</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    ></script>
+
 </head>
 
+
 <body>
+
 
     <!-- ==========================================
          INICIO DE SESIÓN
@@ -196,6 +209,7 @@
 
     <script>
 
+
         // ==========================================
         // ELEMENTOS
         // ==========================================
@@ -203,31 +217,40 @@
         const loginApp =
             document.getElementById("loginApp");
 
+
         const recoveryApp =
             document.getElementById("recoveryApp");
+
 
         const loginForm =
             document.getElementById("loginForm");
 
+
         const loginButton =
             document.getElementById("loginButton");
 
+
         const loginMessage =
             document.getElementById("loginMessage");
+
 
         const forgotPasswordButton =
             document.getElementById(
                 "forgotPasswordButton"
             );
 
+
         const forgotMessage =
             document.getElementById("forgotMessage");
+
 
         const recoveryForm =
             document.getElementById("recoveryForm");
 
+
         const recoveryButton =
             document.getElementById("recoveryButton");
+
 
         const recoveryMessage =
             document.getElementById("recoveryMessage");
@@ -244,6 +267,7 @@
 
             recoveryApp.style.display =
                 "none";
+
         }
 
 
@@ -258,6 +282,172 @@
 
             recoveryApp.style.display =
                 "block";
+
+        }
+
+
+        // ==========================================
+        // OBTENER BARBERÍA PENDIENTE
+        // ==========================================
+
+        function getPendingBusiness() {
+
+            const saved =
+                localStorage.getItem(
+                    "turnobarber_pending_business"
+                );
+
+
+            if (!saved) {
+
+                return null;
+
+            }
+
+
+            try {
+
+                return JSON.parse(saved);
+
+            } catch (error) {
+
+                console.error(
+                    "ERROR LEYENDO BARBERÍA PENDIENTE:",
+                    error
+                );
+
+
+                localStorage.removeItem(
+                    "turnobarber_pending_business"
+                );
+
+
+                return null;
+
+            }
+
+        }
+
+
+        // ==========================================
+        // BORRAR BARBERÍA PENDIENTE
+        // ==========================================
+
+        function clearPendingBusiness() {
+
+            localStorage.removeItem(
+                "turnobarber_pending_business"
+            );
+
+        }
+
+
+        // ==========================================
+        // CREAR BARBERÍA DESPUÉS DEL LOGIN
+        // ==========================================
+
+        async function createPendingBusiness() {
+
+            const pendingBusiness =
+                getPendingBusiness();
+
+
+            if (!pendingBusiness) {
+
+                return true;
+
+            }
+
+
+            loginMessage.textContent =
+                "🏪 Configurando tu barbería...";
+
+
+            const {
+                data,
+                error
+            } =
+                await client.rpc(
+                    "create_business_for_current_user",
+                    {
+                        p_business_name:
+                            pendingBusiness.business_name,
+
+                        p_city:
+                            pendingBusiness.city,
+
+                        p_phone:
+                            pendingBusiness.phone || null
+                    }
+                );
+
+
+            if (error) {
+
+                console.error(
+                    "ERROR CREANDO BARBERÍA:",
+                    error
+                );
+
+
+                /*
+                 * Si la barbería ya existe para este usuario,
+                 * no dejamos datos pendientes almacenados
+                 * indefinidamente.
+                 *
+                 * El usuario puede continuar al administrador.
+                 */
+
+                if (
+                    error.message &&
+                    error.message.includes(
+                        "Este usuario ya tiene una barbería"
+                    )
+                ) {
+
+                    clearPendingBusiness();
+
+                    return true;
+
+                }
+
+
+                throw error;
+
+            }
+
+
+            if (
+                !data ||
+                data.length === 0
+            ) {
+
+                throw new Error(
+                    "No se pudo crear la barbería."
+                );
+
+            }
+
+
+            const createdBusiness =
+                data[0];
+
+
+            console.log(
+                "BARBERÍA CREADA:",
+                createdBusiness
+            );
+
+
+            clearPendingBusiness();
+
+
+            loginMessage.textContent =
+                "✅ Barbería creada correctamente.";
+
+
+            return true;
+
         }
 
 
@@ -271,11 +461,13 @@
 
                 event.preventDefault();
 
+
                 const email =
                     document
                         .getElementById("email")
                         .value
                         .trim();
+
 
                 const password =
                     document
@@ -286,8 +478,10 @@
                 loginButton.disabled =
                     true;
 
+
                 loginButton.textContent =
                     "🔄 Iniciando sesión...";
+
 
                 loginMessage.textContent =
                     "";
@@ -295,18 +489,59 @@
 
                 try {
 
+                    // ======================================
+                    // AUTENTICAR USUARIO
+                    // ======================================
+
                     const {
                         data,
                         error
                     } =
                         await client.auth.signInWithPassword({
-                            email: email,
-                            password: password
+
+                            email:
+                                email,
+
+                            password:
+                                password
+
                         });
 
 
                     if (error) {
+
                         throw error;
+
+                    }
+
+
+                    if (
+                        !data ||
+                        !data.user
+                    ) {
+
+                        throw new Error(
+                            "No se pudo iniciar sesión."
+                        );
+
+                    }
+
+
+                    // ======================================
+                    // VERIFICAR CONFIRMACIÓN DEL CORREO
+                    // ======================================
+
+                    if (
+                        !data.user.email_confirmed_at
+                    ) {
+
+                        await client.auth.signOut();
+
+
+                        throw new Error(
+                            "Debes confirmar tu correo electrónico antes de iniciar sesión."
+                        );
+
                     }
 
 
@@ -314,8 +549,30 @@
                         "✅ Inicio de sesión correcto.";
 
 
-                    window.location.href =
-                        "admin.html";
+                    // ======================================
+                    // CREAR BARBERÍA PENDIENTE
+                    // ======================================
+
+                    await createPendingBusiness();
+
+
+                    // ======================================
+                    // ENTRAR AL PANEL
+                    // ======================================
+
+                    loginMessage.textContent =
+                        "✅ Todo listo. Entrando al panel...";
+
+
+                    setTimeout(
+                        function() {
+
+                            window.location.href =
+                                "admin.html";
+
+                        },
+                        700
+                    );
 
 
                 } catch (error) {
@@ -325,14 +582,18 @@
                         error
                     );
 
+
                     loginMessage.textContent =
                         "❌ " + error.message;
+
 
                     loginButton.disabled =
                         false;
 
+
                     loginButton.textContent =
                         "🔐 Iniciar sesión";
+
                 }
 
             }
@@ -360,14 +621,17 @@
                         "⚠️ Escribe primero tu correo electrónico.";
 
                     return;
+
                 }
 
 
                 forgotPasswordButton.disabled =
                     true;
 
+
                 forgotPasswordButton.textContent =
                     "📨 Enviando...";
+
 
                 forgotMessage.textContent =
                     "";
@@ -382,14 +646,15 @@
                             email,
                             {
                                 redirectTo:
-                                    window.location.origin +
-                                    "/turnobarber/login.html"
+                                    "https://randres0613.github.io/turnobarber/login.html"
                             }
                         );
 
 
                     if (error) {
+
                         throw error;
+
                     }
 
 
@@ -404,6 +669,7 @@
                         error
                     );
 
+
                     forgotMessage.textContent =
                         "❌ " + error.message;
 
@@ -412,6 +678,7 @@
 
                 forgotPasswordButton.disabled =
                     false;
+
 
                 forgotPasswordButton.textContent =
                     "🔑 Olvidé mi contraseña";
@@ -436,18 +703,23 @@
                         .getElementById("newPassword")
                         .value;
 
+
                 const confirmPassword =
                     document
                         .getElementById("confirmPassword")
                         .value;
 
 
-                if (newPassword.length < 6) {
+                if (
+                    newPassword.length <
+                    6
+                ) {
 
                     recoveryMessage.textContent =
                         "❌ La contraseña debe tener mínimo 6 caracteres.";
 
                     return;
+
                 }
 
 
@@ -460,14 +732,17 @@
                         "❌ Las contraseñas no coinciden.";
 
                     return;
+
                 }
 
 
                 recoveryButton.disabled =
                     true;
 
+
                 recoveryButton.textContent =
                     "🔄 Guardando...";
+
 
                 recoveryMessage.textContent =
                     "";
@@ -479,12 +754,15 @@
                         error
                     } =
                         await client.auth.updateUser({
-                            password: newPassword
+                            password:
+                                newPassword
                         });
 
 
                     if (error) {
+
                         throw error;
+
                     }
 
 
@@ -500,6 +778,7 @@
                         async function() {
 
                             await client.auth.signOut();
+
 
                             window.location.href =
                                 "login.html";
@@ -524,8 +803,10 @@
                     recoveryButton.disabled =
                         false;
 
+
                     recoveryButton.textContent =
                         "🔐 Guardar nueva contraseña";
+
                 }
 
             }
@@ -572,7 +853,9 @@
 
         }
 
+
     </script>
+
 
 </body>
 
