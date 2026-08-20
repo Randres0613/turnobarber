@@ -1,11 +1,22 @@
-const adminApp = document.getElementById("adminApp");
-const businessInfo = document.getElementById("businessInfo");
-const connectionStatus = document.getElementById("connectionStatus");
+const adminApp =
+    document.getElementById("adminApp");
+
+const businessInfo =
+    document.getElementById("businessInfo");
+
+const connectionStatus =
+    document.getElementById("connectionStatus");
+
 
 let business = null;
+
 let currentTicket = null;
+
 let waitingTickets = [];
+
 let myServices = [];
+
+let myBarbers = [];
 
 
 // ==========================================
@@ -28,6 +39,7 @@ async function checkSession() {
         );
 
         return false;
+
     }
 
 
@@ -41,10 +53,12 @@ async function checkSession() {
             "login.html";
 
         return false;
+
     }
 
 
     return true;
+
 }
 
 
@@ -73,10 +87,12 @@ function showCreateBusiness() {
                 🏪 Crea tu barbería
             </h2>
 
+
             <p>
                 Tu cuenta está confirmada, pero todavía
                 no tienes una barbería asociada.
             </p>
+
 
             <p>
                 Completa los datos para comenzar a utilizar
@@ -319,10 +335,6 @@ async function createBusiness(event) {
         }
 
 
-        const createdBusiness =
-            data[0];
-
-
         message.textContent =
             "✅ Barbería creada correctamente.";
 
@@ -452,8 +464,9 @@ async function loadBusiness() {
                     ⚠️ Error cargando el panel
                 </h2>
 
+
                 <p>
-                    ${error.message}
+                    ${escapeHtml(error.message)}
                 </p>
 
 
@@ -501,6 +514,8 @@ async function loadPanel() {
 
     await loadServices();
 
+    await loadBarbers();
+
     renderPanel();
 
 }
@@ -532,7 +547,8 @@ async function loadCurrentTicket() {
             error
         );
 
-        currentTicket = null;
+        currentTicket =
+            null;
 
         return;
 
@@ -574,7 +590,8 @@ async function loadWaitingTickets() {
             error
         );
 
-        waitingTickets = [];
+        waitingTickets =
+            [];
 
         return;
 
@@ -609,7 +626,8 @@ async function loadServices() {
             error
         );
 
-        myServices = [];
+        myServices =
+            [];
 
         return;
 
@@ -617,6 +635,42 @@ async function loadServices() {
 
 
     myServices =
+        data || [];
+
+}
+
+
+// ==========================================
+// CARGAR MIS BARBEROS
+// ==========================================
+
+async function loadBarbers() {
+
+    const {
+        data,
+        error
+    } =
+        await client.rpc(
+            "admin_my_barbers"
+        );
+
+
+    if (error) {
+
+        console.error(
+            "ERROR CARGANDO BARBEROS:",
+            error
+        );
+
+        myBarbers =
+            [];
+
+        return;
+
+    }
+
+
+    myBarbers =
         data || [];
 
 }
@@ -646,12 +700,18 @@ function renderPanel() {
                 <div class="current-ticket">
 
                     <div class="ticket-number">
-                        ${currentTicket.ticket_code}
+                        ${escapeHtml(
+                            currentTicket.ticket_code
+                        )}
                     </div>
 
+
                     <h2>
-                        ${currentTicket.service_name}
+                        ${escapeHtml(
+                            currentTicket.service_name
+                        )}
                     </h2>
+
 
                     <p class="badge">
                         🟢 EN ATENCIÓN
@@ -688,6 +748,7 @@ function renderPanel() {
                     <h2>
                         No hay turno en atención
                     </h2>
+
 
                     <p>
                         Listo para llamar al siguiente cliente.
@@ -752,11 +813,16 @@ function renderPanel() {
                                         <div>
 
                                             <strong>
-                                                ${ticket.ticket_code}
+                                                ${escapeHtml(
+                                                    ticket.ticket_code
+                                                )}
                                             </strong>
 
+
                                             <span>
-                                                ${ticket.service_name}
+                                                ${escapeHtml(
+                                                    ticket.service_name
+                                                )}
                                             </span>
 
                                         </div>
@@ -786,6 +852,9 @@ function renderPanel() {
         </section>
 
 
+        ${renderBarbers()}
+
+
         ${renderServices()}
 
 
@@ -807,6 +876,657 @@ function renderPanel() {
         </button>
 
     `;
+
+}
+
+
+// ==========================================
+// RENDERIZAR BARBEROS
+// ==========================================
+
+function renderBarbers() {
+
+    return `
+
+        <section class="card">
+
+            <div class="queue-header">
+
+                <h2>
+                    👨‍💼 MIS BARBEROS
+                </h2>
+
+
+                <span class="badge">
+                    ${myBarbers.length}
+                    barberos
+                </span>
+
+            </div>
+
+
+            <button
+                class="btn primary"
+                onclick="showCreateBarberForm()"
+            >
+                ➕ Nuevo barbero
+            </button>
+
+
+            <div
+                id="barberFormContainer"
+                style="margin-top: 20px;"
+            ></div>
+
+
+            <div style="margin-top: 20px;">
+
+                ${
+                    myBarbers.length === 0
+
+                    ?
+
+                    `
+                    <div class="empty">
+
+                        <p>
+                            Todavía no tienes barberos.
+                        </p>
+
+
+                        <p>
+                            Crea el primero para comenzar
+                            a organizar tu equipo.
+                        </p>
+
+                    </div>
+                    `
+
+                    :
+
+                    `
+                    <div class="queue">
+
+                        ${
+                            myBarbers
+                                .map(
+                                    barber => `
+
+                                        <div
+                                            class="queue-item"
+                                            style="
+                                                margin-bottom: 10px;
+                                            "
+                                        >
+
+                                            <div>
+
+                                                <strong>
+                                                    👤
+                                                    ${escapeHtml(
+                                                        barber.name
+                                                    )}
+                                                </strong>
+
+
+                                                <span>
+
+                                                    ${
+                                                        barber.active
+                                                            ? "🟢 Activo"
+                                                            : "🔴 Inactivo"
+                                                    }
+
+                                                </span>
+
+                                            </div>
+
+
+                                            <div
+                                                style="
+                                                    display: flex;
+                                                    gap: 6px;
+                                                    flex-wrap: wrap;
+                                                    justify-content: flex-end;
+                                                "
+                                            >
+
+                                                ${
+                                                    barber.active
+
+                                                    ?
+
+                                                    `
+                                                    <button
+                                                        class="btn success"
+                                                        onclick="toggleBarber(
+                                                            '${barber.id}',
+                                                            false
+                                                        )"
+                                                    >
+                                                        🟢 Activo
+                                                    </button>
+                                                    `
+
+                                                    :
+
+                                                    `
+                                                    <button
+                                                        class="btn danger"
+                                                        onclick="toggleBarber(
+                                                            '${barber.id}',
+                                                            true
+                                                        )"
+                                                    >
+                                                        🔴 Inactivo
+                                                    </button>
+                                                    `
+                                                }
+
+
+                                                <button
+                                                    class="btn"
+                                                    onclick="showEditBarberForm(
+                                                        '${barber.id}'
+                                                    )"
+                                                >
+                                                    ✏️ Editar
+                                                </button>
+
+                                            </div>
+
+                                        </div>
+
+                                    `
+                                )
+                                .join("")
+                        }
+
+                    </div>
+                    `
+                }
+
+            </div>
+
+        </section>
+
+    `;
+
+}
+
+
+// ==========================================
+// FORMULARIO NUEVO BARBERO
+// ==========================================
+
+function showCreateBarberForm() {
+
+    const container =
+        document.getElementById(
+            "barberFormContainer"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    container.innerHTML = `
+
+        <div class="card">
+
+            <h3>
+                ➕ Nuevo barbero
+            </h3>
+
+
+            <div style="margin-bottom: 10px;">
+
+                <label>
+                    Nombre del barbero
+                </label>
+
+
+                <input
+                    id="newBarberName"
+                    type="text"
+                    placeholder="Ej. Andrés"
+                    maxlength="100"
+                    style="
+                        width: 100%;
+                        box-sizing: border-box;
+                        padding: 12px;
+                        margin-top: 5px;
+                    "
+                >
+
+            </div>
+
+
+            <button
+                class="btn primary"
+                onclick="createBarber()"
+            >
+                💾 Guardar barbero
+            </button>
+
+
+            <button
+                class="btn"
+                onclick="closeBarberForm()"
+                style="margin-top: 5px;"
+            >
+                Cancelar
+            </button>
+
+
+            <p
+                id="barberFormMessage"
+                style="margin-top: 10px;"
+            ></p>
+
+        </div>
+
+    `;
+
+}
+
+
+// ==========================================
+// CERRAR FORMULARIO BARBERO
+// ==========================================
+
+function closeBarberForm() {
+
+    const container =
+        document.getElementById(
+            "barberFormContainer"
+        );
+
+
+    if (container) {
+
+        container.innerHTML =
+            "";
+
+    }
+
+}
+
+
+// ==========================================
+// CREAR BARBERO
+// ==========================================
+
+async function createBarber() {
+
+    const nameElement =
+        document.getElementById(
+            "newBarberName"
+        );
+
+
+    const message =
+        document.getElementById(
+            "barberFormMessage"
+        );
+
+
+    if (
+        !nameElement ||
+        !message
+    ) {
+
+        return;
+
+    }
+
+
+    const name =
+        nameElement.value.trim();
+
+
+    if (!name) {
+
+        message.textContent =
+            "⚠️ Escribe el nombre del barbero.";
+
+        return;
+
+    }
+
+
+    message.textContent =
+        "⏳ Creando barbero...";
+
+
+    const {
+        data,
+        error
+    } =
+        await client.rpc(
+            "admin_create_barber",
+            {
+                p_name:
+                    name
+            }
+        );
+
+
+    if (error) {
+
+        console.error(
+            "ERROR CREANDO BARBERO:",
+            error
+        );
+
+
+        message.textContent =
+            "❌ " + error.message;
+
+        return;
+
+    }
+
+
+    if (
+        !data ||
+        data.length === 0
+    ) {
+
+        message.textContent =
+            "❌ No se pudo crear el barbero.";
+
+        return;
+
+    }
+
+
+    await loadBarbers();
+
+    renderPanel();
+
+}
+
+
+// ==========================================
+// FORMULARIO EDITAR BARBERO
+// ==========================================
+
+function showEditBarberForm(
+    barberId
+) {
+
+    const barber =
+        myBarbers.find(
+            b => b.id === barberId
+        );
+
+
+    if (!barber) {
+
+        alert(
+            "No se encontró el barbero."
+        );
+
+        return;
+
+    }
+
+
+    const container =
+        document.getElementById(
+            "barberFormContainer"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    container.innerHTML = `
+
+        <div class="card">
+
+            <h3>
+                ✏️ Editar barbero
+            </h3>
+
+
+            <div style="margin-bottom: 10px;">
+
+                <label>
+                    Nombre
+                </label>
+
+
+                <input
+                    id="editBarberName"
+                    type="text"
+                    value="${escapeHtml(
+                        barber.name
+                    )}"
+                    maxlength="100"
+                    style="
+                        width: 100%;
+                        box-sizing: border-box;
+                        padding: 12px;
+                        margin-top: 5px;
+                    "
+                >
+
+            </div>
+
+
+            <button
+                class="btn primary"
+                onclick="updateBarber(
+                    '${barber.id}'
+                )"
+            >
+                💾 Guardar cambios
+            </button>
+
+
+            <button
+                class="btn"
+                onclick="closeBarberForm()"
+                style="margin-top: 5px;"
+            >
+                Cancelar
+            </button>
+
+
+            <p
+                id="barberFormMessage"
+                style="margin-top: 10px;"
+            ></p>
+
+        </div>
+
+    `;
+
+}
+
+
+// ==========================================
+// ACTUALIZAR BARBERO
+// ==========================================
+
+async function updateBarber(
+    barberId
+) {
+
+    const nameElement =
+        document.getElementById(
+            "editBarberName"
+        );
+
+
+    const message =
+        document.getElementById(
+            "barberFormMessage"
+        );
+
+
+    if (
+        !nameElement ||
+        !message
+    ) {
+
+        return;
+
+    }
+
+
+    const name =
+        nameElement.value.trim();
+
+
+    if (!name) {
+
+        message.textContent =
+            "⚠️ Escribe el nombre.";
+
+        return;
+
+    }
+
+
+    message.textContent =
+        "⏳ Guardando cambios...";
+
+
+    const {
+        data,
+        error
+    } =
+        await client.rpc(
+            "admin_update_barber",
+            {
+                p_barber_id:
+                    barberId,
+
+                p_name:
+                    name
+            }
+        );
+
+
+    if (error) {
+
+        console.error(
+            "ERROR ACTUALIZANDO BARBERO:",
+            error
+        );
+
+
+        message.textContent =
+            "❌ " + error.message;
+
+        return;
+
+    }
+
+
+    if (!data) {
+
+        message.textContent =
+            "❌ No se pudo actualizar.";
+
+        return;
+
+    }
+
+
+    await loadBarbers();
+
+    renderPanel();
+
+}
+
+
+// ==========================================
+// ACTIVAR / DESACTIVAR BARBERO
+// ==========================================
+
+async function toggleBarber(
+    barberId,
+    active
+) {
+
+    const action =
+        active
+            ? "activar"
+            : "desactivar";
+
+
+    const confirmed =
+        confirm(
+            `¿Quieres ${action} este barbero?`
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await client.rpc(
+            "admin_toggle_barber",
+            {
+                p_barber_id:
+                    barberId,
+
+                p_active:
+                    active
+            }
+        );
+
+
+    if (error) {
+
+        console.error(
+            "ERROR CAMBIANDO BARBERO:",
+            error
+        );
+
+
+        alert(
+            error.message
+        );
+
+        return;
+
+    }
+
+
+    if (!data) {
+
+        alert(
+            "No se pudo cambiar el estado."
+        );
+
+        return;
+
+    }
+
+
+    await loadBarbers();
+
+    renderPanel();
 
 }
 
@@ -864,6 +1584,7 @@ function renderServices() {
                             Todavía no tienes servicios.
                         </p>
 
+
                         <p>
                             Crea el primero para que tus
                             clientes puedan tomar turnos.
@@ -884,13 +1605,17 @@ function renderServices() {
 
                                         <div
                                             class="queue-item"
-                                            style="margin-bottom: 10px;"
+                                            style="
+                                                margin-bottom: 10px;
+                                            "
                                         >
 
                                             <div>
 
                                                 <strong>
-                                                    ${escapeHtml(service.name)}
+                                                    ${escapeHtml(
+                                                        service.name
+                                                    )}
                                                 </strong>
 
 
@@ -898,7 +1623,9 @@ function renderServices() {
 
                                                     $${Number(
                                                         service.price || 0
-                                                    ).toLocaleString("es-CO")}
+                                                    ).toLocaleString(
+                                                        "es-CO"
+                                                    )}
 
                                                     ·
 
@@ -1033,6 +1760,7 @@ function showCreateServiceForm() {
                     Nombre
                 </label>
 
+
                 <input
                     id="newServiceName"
                     type="text"
@@ -1054,6 +1782,7 @@ function showCreateServiceForm() {
                 <label>
                     Precio
                 </label>
+
 
                 <input
                     id="newServicePrice"
@@ -1077,6 +1806,7 @@ function showCreateServiceForm() {
                 <label>
                     Duración en minutos
                 </label>
+
 
                 <input
                     id="newServiceDuration"
@@ -1125,7 +1855,7 @@ function showCreateServiceForm() {
 
 
 // ==========================================
-// CERRAR FORMULARIO DE SERVICIO
+// CERRAR FORMULARIO SERVICIO
 // ==========================================
 
 function closeServiceForm() {
@@ -1138,7 +1868,8 @@ function closeServiceForm() {
 
     if (container) {
 
-        container.innerHTML = "";
+        container.innerHTML =
+            "";
 
     }
 
@@ -1348,10 +2079,13 @@ function showEditServiceForm(
                     Nombre
                 </label>
 
+
                 <input
                     id="editServiceName"
                     type="text"
-                    value="${escapeHtml(service.name)}"
+                    value="${escapeHtml(
+                        service.name
+                    )}"
                     maxlength="100"
                     style="
                         width: 100%;
@@ -1369,6 +2103,7 @@ function showEditServiceForm(
                 <label>
                     Precio
                 </label>
+
 
                 <input
                     id="editServicePrice"
@@ -1392,6 +2127,7 @@ function showEditServiceForm(
                 <label>
                     Duración en minutos
                 </label>
+
 
                 <input
                     id="editServiceDuration"
