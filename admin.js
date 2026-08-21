@@ -18,6 +18,8 @@ let myServices = [];
 
 let myBarbers = [];
 
+let barberQueues = [];
+
 
 // ==========================================
 // VERIFICAR SESIÓN
@@ -502,21 +504,49 @@ async function loadBusiness() {
 async function loadPanel() {
 
     if (!business) {
+        return;
+    }
 
+    await loadBarberQueues();
+    await loadServices();
+    await loadBarbers();
+
+    renderPanel();
+
+}
+
+
+// ==========================================
+// CARGAR COLAS POR BARBERO
+// ==========================================
+
+async function loadBarberQueues() {
+
+    const {
+        data,
+        error
+    } =
+        await client.rpc(
+            "admin_barber_queues",
+            {
+                p_business_id:
+                    business.id
+            }
+        );
+
+    if (error) {
+
+        console.error(
+            "ERROR CARGANDO COLAS POR BARBERO:",
+            error
+        );
+
+        barberQueues = [];
         return;
 
     }
 
-
-    await loadCurrentTicket();
-
-    await loadWaitingTickets();
-
-    await loadServices();
-
-    await loadBarbers();
-
-    renderPanel();
+    barberQueues = data || [];
 
 }
 
@@ -682,190 +712,20 @@ async function loadBarbers() {
 
 function renderPanel() {
 
+    const totalWaiting =
+        barberQueues.reduce(
+            (sum, barber) =>
+                sum + Number(barber.waiting_count || 0),
+            0
+        );
+
     adminApp.innerHTML = `
 
-        <section class="card current">
-
-            <h2>
-                TURNO ACTUAL
-            </h2>
-
-
-            ${
-                currentTicket
-
-                ?
-
-                `
-                <div class="current-ticket">
-
-                    <div class="ticket-number">
-                        ${escapeHtml(
-                            currentTicket.ticket_code
-                        )}
-                    </div>
-
-
-                    <h2>
-                        ${escapeHtml(
-                            currentTicket.service_name
-                        )}
-                    </h2>
-
-
-                    <p class="badge">
-                        🟢 EN ATENCIÓN
-                    </p>
-
-                </div>
-
-
-                <div class="actions">
-
-                    <button
-                        class="btn success"
-                        onclick="finishCurrent()"
-                    >
-                        ✅ Finalizar
-                    </button>
-
-
-                    <button
-                        class="btn danger"
-                        onclick="noShowCurrent()"
-                    >
-                        🚫 No se presentó
-                    </button>
-
-                </div>
-                `
-
-                :
-
-                `
-                <div class="empty">
-
-                    <h2>
-                        No hay turno en atención
-                    </h2>
-
-
-                    <p>
-                        Listo para llamar al siguiente cliente.
-                    </p>
-
-                </div>
-                `
-            }
-
-        </section>
-
-
-        <section class="card">
-
-            <div class="queue-header">
-
-                <h2>
-                    PRÓXIMOS TURNOS
-                </h2>
-
-
-                <span class="badge">
-                    ${waitingTickets.length}
-                    esperando
-                </span>
-
-            </div>
-
-
-            ${
-                waitingTickets.length === 0
-
-                ?
-
-                `
-                <div class="empty">
-
-                    <p>
-                        No hay clientes esperando.
-                    </p>
-
-                </div>
-                `
-
-                :
-
-                `
-                <div class="queue">
-
-                    ${
-                        waitingTickets
-                            .map(
-                                (
-                                    ticket,
-                                    index
-                                ) => `
-
-                                    <div
-                                        class="queue-item"
-                                    >
-
-                                        <div>
-
-                                            <strong>
-                                                ${escapeHtml(
-                                                    ticket.ticket_code
-                                                )}
-                                            </strong>
-
-
-                                            <span>
-                                                ${escapeHtml(
-                                                    ticket.service_name
-                                                )}
-                                            </span>
-
-                                        </div>
-
-
-                                        <small>
-
-                                            ${
-                                                index === 0
-                                                    ? "Siguiente"
-                                                    : `${index} antes`
-                                            }
-
-                                        </small>
-
-                                    </div>
-
-                                `
-                            )
-                            .join("")
-                    }
-
-                </div>
-                `
-            }
-
-        </section>
-
+        ${renderBarberQueues()}
 
         ${renderBarbers()}
 
-
         ${renderServices()}
-
-
-        <button
-            class="btn primary big"
-            onclick="callNext()"
-            ${currentTicket ? "disabled" : ""}
-        >
-            📢 Llamar siguiente
-        </button>
-
 
         <button
             class="btn"
@@ -874,6 +734,115 @@ function renderPanel() {
         >
             🚪 Cerrar sesión
         </button>
+
+    `;
+
+}
+
+
+// ==========================================
+// COLAS INDEPENDIENTES POR BARBERO
+// ==========================================
+
+function renderBarberQueues() {
+
+    return `
+
+        <section class="card">
+
+            <div class="queue-header">
+                <h2>💈 ATENCIÓN POR BARBERO</h2>
+                <span class="badge">
+                    ${barberQueues.length} barberos
+                </span>
+            </div>
+
+            <p style="margin-top: 0;">
+                Cada barbero maneja su propia cola.
+            </p>
+
+            ${
+                barberQueues.length === 0
+                    ? `
+                        <div class="empty">
+                            <p>No hay barberos activos.</p>
+                        </div>
+                      `
+                    : `
+                        <div class="queue">
+                            ${barberQueues.map(barber => `
+
+                                <div class="queue-item" style="margin-bottom: 12px; align-items: center;">
+
+                                    <div>
+                                        <strong>
+                                            💈 ${escapeHtml(barber.barber_name)}
+                                        </strong>
+
+                                        <span>
+                                            ${
+                                                barber.current_ticket_code
+                                                    ? `🟢 Atendiendo ${escapeHtml(barber.current_ticket_code)}`
+                                                    : `🟢 Disponible`
+                                            }
+                                        </span>
+
+                                        <span>
+                                            ${
+                                                barber.next_ticket_code
+                                                    ? `⏭️ Siguiente: ${escapeHtml(barber.next_ticket_code)} · ${escapeHtml(barber.next_service_name || '')}`
+                                                    : `⏭️ Sin clientes esperando`
+                                            }
+                                        </span>
+
+                                        <small>
+                                            👥 ${Number(barber.waiting_count || 0)} esperando
+                                        </small>
+                                    </div>
+
+                                    <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+
+                                        ${
+                                            barber.current_ticket_id
+                                                ? `
+                                                    <button
+                                                        class="btn success"
+                                                        onclick="finishTicket('${barber.current_ticket_id}')"
+                                                    >
+                                                        ✅ Finalizar ${escapeHtml(barber.current_ticket_code)}
+                                                    </button>
+
+                                                    <button
+                                                        class="btn danger"
+                                                        onclick="noShowTicket('${barber.current_ticket_id}')"
+                                                    >
+                                                        🚫 No se presentó
+                                                    </button>
+                                                  `
+                                                : barber.next_ticket_id
+                                                    ? `
+                                                        <button
+                                                            class="btn primary"
+                                                            onclick="callNext('${barber.barber_id}')"
+                                                        >
+                                                            📢 Llamar ${escapeHtml(barber.next_ticket_code)}
+                                                        </button>
+                                                      `
+                                                    : `
+                                                        <span class="badge">Sin turno para llamar</span>
+                                                      `
+                                        }
+
+                                    </div>
+
+                                </div>
+
+                            `).join('')}
+                        </div>
+                      `
+            }
+
+        </section>
 
     `;
 
@@ -2409,28 +2378,14 @@ async function toggleService(
 
 
 // ==========================================
-// LLAMAR SIGUIENTE
+// LLAMAR SIGUIENTE DE UN BARBERO
 // ==========================================
 
-async function callNext() {
+async function callNext(barberId) {
 
-    if (!business) {
-
+    if (!business || !barberId) {
         return;
-
     }
-
-
-    if (currentTicket) {
-
-        alert(
-            "Primero debes finalizar el turno actual."
-        );
-
-        return;
-
-    }
-
 
     try {
 
@@ -2442,24 +2397,20 @@ async function callNext() {
                 "admin_call_next",
                 {
                     p_business_id:
-                        business.id
+                        business.id,
+                    p_barber_id:
+                        barberId
                 }
             );
 
-
         if (error) {
-
             throw error;
-
         }
 
-
-        currentTicket =
-            data &&
-            data.length > 0
-                ? data[0]
-                : null;
-
+        if (!data || data.length === 0) {
+            alert("No se pudo llamar el siguiente turno.");
+            return;
+        }
 
         await loadPanel();
 
@@ -2470,10 +2421,105 @@ async function callNext() {
             error
         );
 
+        alert(error.message);
 
-        alert(
-            error.message
+    }
+
+}
+
+
+// ==========================================
+// FINALIZAR TURNO POR ID
+// ==========================================
+
+async function finishTicket(ticketId) {
+
+    if (!ticketId) {
+        return;
+    }
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await client.rpc(
+                "admin_finish_ticket",
+                {
+                    p_ticket_id:
+                        ticketId
+                }
+            );
+
+        if (error) {
+            throw error;
+        }
+
+        if (!data) {
+            alert("No se pudo finalizar el turno.");
+            return;
+        }
+
+        await loadPanel();
+
+    } catch (error) {
+
+        console.error(
+            "ERROR FINALIZANDO TURNO:",
+            error
         );
+
+        alert(error.message);
+
+    }
+
+}
+
+
+// ==========================================
+// NO SE PRESENTÓ POR ID
+// ==========================================
+
+async function noShowTicket(ticketId) {
+
+    if (!ticketId) {
+        return;
+    }
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await client.rpc(
+                "admin_no_show_ticket",
+                {
+                    p_ticket_id:
+                        ticketId
+                }
+            );
+
+        if (error) {
+            throw error;
+        }
+
+        if (!data) {
+            alert("No se pudo cambiar el estado del turno.");
+            return;
+        }
+
+        await loadPanel();
+
+    } catch (error) {
+
+        console.error(
+            "ERROR NO PRESENTADO:",
+            error
+        );
+
+        alert(error.message);
 
     }
 
