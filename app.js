@@ -43,23 +43,26 @@ const slug =
 
 let business = null;
 let services = [];
+let barbers = [];
 let currentTicket = null;
+let businessTimezone = "UTC";
 
 
 // ==========================================
-// FECHA ACTUAL DE COLOMBIA
+// FECHA ACTUAL DE LA BARBERÍA
 // ==========================================
 //
-// Utilizamos America/Bogota para que el cambio
-// de jornada sea correcto para Cartagena.
+// La jornada se calcula usando la zona horaria
+// configurada para cada barbería.
+// Así TurnoBarber puede funcionar en Colombia,
+// México, Chile, Argentina, España, etc.
 // ==========================================
 
-function getColombiaDate() {
-
+function getBusinessDate() {
     return new Intl.DateTimeFormat(
         "en-CA",
         {
-            timeZone: "America/Bogota",
+            timeZone: businessTimezone || "UTC",
             year: "numeric",
             month: "2-digit",
             day: "2-digit"
@@ -68,6 +71,81 @@ function getColombiaDate() {
         new Date()
     );
 
+}
+
+
+// ==========================================
+// CARGAR ZONA HORARIA DE LA BARBERÍA
+// ==========================================
+
+async function loadBusinessTimezone() {
+
+    const { data, error } =
+        await client.rpc(
+            "get_business_timezone",
+            {
+                p_business_id: business.id
+            }
+        );
+
+    if (error) {
+        console.warn(
+            "No se pudo obtener la zona horaria de la barbería. Se usará UTC.",
+            error
+        );
+        businessTimezone = "UTC";
+        return;
+    }
+
+    if (typeof data === "string" && data) {
+        businessTimezone = data;
+        return;
+    }
+
+    if (Array.isArray(data) && data.length > 0) {
+        businessTimezone =
+            data[0]?.timezone ||
+            data[0] ||
+            "UTC";
+        return;
+    }
+
+    if (data && typeof data === "object") {
+        businessTimezone =
+            data.timezone ||
+            "UTC";
+        return;
+    }
+
+    businessTimezone = "UTC";
+}
+
+
+// ==========================================
+// CARGAR BARBEROS ACTIVOS
+// ==========================================
+
+async function loadBarbers() {
+
+    const { data, error } =
+        await client.rpc(
+            "public_get_barbers",
+            {
+                p_business_id: business.id
+            }
+        );
+
+    if (error) {
+        console.error(
+            "Error cargando barberos:",
+            error
+        );
+        barbers = [];
+        return false;
+    }
+
+    barbers = data || [];
+    return true;
 }
 
 
@@ -311,9 +389,148 @@ async function takeTurn(serviceId) {
 
 
     if (!service) {
-
         alert("No se encontró el servicio.");
+        return;
+    }
 
+
+    const loaded = await loadBarbers();
+
+
+    if (!loaded) {
+        app.innerHTML = `
+            <div class="card hero">
+                <h2>⚠️ No pudimos cargar los barberos</h2>
+                <p>Intenta nuevamente.</p>
+                <button
+                    class="btn"
+                    onclick="renderCustomer()"
+                >
+                    Volver
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+
+    renderBarberSelection(service);
+}
+
+
+// ==========================================
+// ELEGIR BARBERO
+// ==========================================
+
+function renderBarberSelection(service) {
+
+    app.innerHTML = `
+
+        <div class="card hero">
+
+            <h1>
+                💈 ${business.name}
+            </h1>
+
+            <p class="muted">
+                ${business.city || ""}
+            </p>
+
+            <span class="badge">
+                ONLINE
+            </span>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>
+                Elige tu barbero
+            </h2>
+
+            <p>
+                Servicio: <strong>${service.name}</strong>
+            </p>
+
+            <p class="muted">
+                ${service.duration_minutes} min · ${money(service.price)}
+            </p>
+
+            ${
+                barbers.length === 0
+                ? `
+                    <div class="status-box">
+                        <h3>⚠️ No hay barberos disponibles</h3>
+                        <p>En este momento no hay barberos activos.</p>
+                    </div>
+                `
+                : `
+                    <div class="grid">
+                        ${
+                            barbers
+                                .map(barber => `
+                                    <div class="service">
+                                        <h3>
+                                            💈 ${barber.name}
+                                        </h3>
+
+                                        <p>
+                                            🟢 Disponible
+                                        </p>
+
+                                        <button
+                                            class="btn"
+                                            onclick="takeTurnWithBarber(
+                                                '${service.id}',
+                                                '${barber.id}'
+                                            )"
+                                        >
+                                            Elegir ${barber.name}
+                                        </button>
+                                    </div>
+                                `)
+                                .join("")
+                        }
+                    </div>
+                `
+            }
+
+            <button
+                class="btn"
+                onclick="renderCustomer()"
+                style="margin-top: 15px;"
+            >
+                ← Volver a servicios
+            </button>
+
+        </div>
+    `;
+}
+
+
+// ==========================================
+// CREAR TURNO CON BARBERO
+// ==========================================
+
+async function takeTurnWithBarber(
+    serviceId,
+    barberId
+) {
+
+    const service =
+        services.find(
+            s => s.id === serviceId
+        );
+
+    const barber =
+        barbers.find(
+            b => b.id === barberId
+        );
+
+
+    if (!service || !barber) {
+        alert("No se encontró el servicio o el barbero.");
         return;
     }
 
@@ -325,6 +542,10 @@ async function takeTurn(serviceId) {
             <h2>
                 ⏳ Tomando tu turno...
             </h2>
+
+            <p>
+                ${barber.name} · ${service.name}
+            </p>
 
             <p>
                 Espera un momento.
@@ -340,7 +561,8 @@ async function takeTurn(serviceId) {
             "public_take_ticket",
             {
                 p_business_id: business.id,
-                p_service_id: service.id
+                p_service_id: service.id,
+                p_barber_id: barber.id
             }
         );
 
@@ -371,7 +593,6 @@ async function takeTurn(serviceId) {
             </div>
 
         `;
-
         return;
     }
 
@@ -401,12 +622,14 @@ async function takeTurn(serviceId) {
     }
 
 
-    currentTicket = data[0];
+    currentTicket = {
+        ...data[0],
+        barber_id: barber.id,
+        barber_name: barber.name
+    };
 
     saveTicket();
-
     showTicket();
-
 }
 
 
@@ -415,7 +638,7 @@ async function takeTurn(serviceId) {
 // ==========================================
 //
 // Además del ID del turno, guardamos la fecha
-// de la jornada en Colombia.
+// de la jornada en la zona horaria de la barbería.
 //
 // Esto permite saber si el turno pertenece
 // al día actual o a una jornada anterior.
@@ -434,7 +657,7 @@ function saveTicket() {
             ticket_id: currentTicket.id,
             business_id: business.id,
             business_slug: slug,
-            ticket_date: getColombiaDate()
+            ticket_date: getBusinessDate()
         })
     );
 
@@ -891,7 +1114,7 @@ async function restoreSavedTicket() {
     // ======================================
 
     const today =
-        getColombiaDate();
+        getBusinessDate();
 
 
     // Si el turno no tiene fecha guardada,
