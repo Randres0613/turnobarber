@@ -1,3 +1,4 @@
+
 const app = document.getElementById("app");
 const statusEl = document.getElementById("status");
 
@@ -907,11 +908,13 @@ function renderTicketStatus(ticket) {
                 </p>
 
                 <p>
-                    ⏱️ Tiempo estimado:
-                    <strong>
-                        ${ticket.estimated_minutes}
-                        min
-                    </strong>
+                    ${
+                        Number(ticket.people_ahead || 0) === 0
+                        ? "🟢 Atención inmediata"
+                        : Number(ticket.estimated_minutes || 0) > 0
+                            ? `⏱️ Tiempo estimado: <strong>${ticket.estimated_minutes} min</strong>`
+                            : "🟢 Próximo turno"
+                    }
                 </p>
 
             </div>
