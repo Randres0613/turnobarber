@@ -1231,7 +1231,7 @@ async function startApp() {
         return;
     }
 
-
+await loadBusinessTimezone();
     await restoreSavedTicket();
 
 }
