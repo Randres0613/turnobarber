@@ -910,7 +910,7 @@ function renderTicketStatus(ticket) {
                 <p>
                     ${
                         Number(ticket.people_ahead || 0) === 0
-                        ? "🟢 Atención inmediata"
+                        ? "🟢 Eres el próximo, espera el llamado"
                         : Number(ticket.estimated_minutes || 0) > 0
                             ? `⏱️ Tiempo estimado: <strong>${ticket.estimated_minutes} min</strong>`
                             : "🟢 Próximo turno"
