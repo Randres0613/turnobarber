@@ -65,7 +65,7 @@ body {
     position: fixed;
     top: 14px;
     right: 16px;
-    z-index: 50;
+    z-index: 150;
     border: 1px solid #555;
     border-radius: 28px;
     padding: 9px 15px;
@@ -214,6 +214,10 @@ body {
     opacity: .45;
 }
 
+/* ==========================================
+   PANTALLA GRANDE DE LLAMADO
+   ========================================== */
+
 .call-overlay {
     position: fixed;
     left: 0;
@@ -243,6 +247,7 @@ body {
     font-size: 42px;
     font-weight: 700;
     opacity: .9;
+    margin-top: 10px;
 }
 
 .call-ticket {
@@ -274,6 +279,7 @@ body {
 }
 
 @keyframes pulse {
+
     from {
         transform: scale(1);
     }
@@ -281,7 +287,12 @@ body {
     to {
         transform: scale(1.04);
     }
+
 }
+
+/* ==========================================
+   TV PEQUEÑA / ANTIGUA
+   ========================================== */
 
 @media(max-height:700px) {
 
@@ -313,7 +324,12 @@ body {
     .current-ticket {
         font-size: 78px;
     }
+
 }
+
+/* ==========================================
+   CELULAR
+   ========================================== */
 
 @media(max-width:800px) {
 
@@ -377,6 +393,7 @@ body {
     .call-message {
         font-size: 28px;
     }
+
 }
 </style>
 </head>
@@ -413,20 +430,29 @@ body {
         class="barber-grid">
 
         <div class="barber-card">
+
             <div class="empty">
                 Cargando barberos...
             </div>
+
         </div>
 
     </section>
 
     <footer class="footer">
+
         <span id="updateStatus">
             Conectando...
         </span>
+
     </footer>
 
 </main>
+
+
+<!-- ==========================================
+     PANTALLA DE LLAMADO
+     ========================================== -->
 
 <div
     id="callOverlay"
@@ -464,7 +490,12 @@ body {
 
 </div>
 
+
 <script>
+
+/* ==========================================
+   SUPABASE
+   ========================================== */
 
 var SUPABASE_URL =
     "https://dkgkejulxkgvjrppsmly.supabase.co";
@@ -472,68 +503,188 @@ var SUPABASE_URL =
 var SUPABASE_ANON_KEY =
     "sb_publishable_7mxRDvndqfxuf6rCbi8CpA_VWKgK9e2";
 
+
+/* ==========================================
+   IDENTIFICAR BARBERÍA
+   ========================================== */
+
 var params =
-    new URLSearchParams(window.location.search);
+    new URLSearchParams(
+        window.location.search
+    );
 
 var slug =
-    params.get("b") || "barberia-el-jefe";
+    params.get("b") ||
+    "barberia-el-jefe";
 
-var business = null;
 
-var previousServing = {};
+/* ==========================================
+   VARIABLES
+   ========================================== */
 
-var firstLoad = true;
+var business =
+    null;
 
-var soundEnabled = false;
+var previousServing =
+    {};
 
-var audioContext = null;
+var firstLoad =
+    true;
 
-var overlayTimer = null;
+var soundEnabled =
+    false;
+
+var audioContext =
+    null;
+
+var overlayTimer =
+    null;
+
+
+/*
+    Control de solicitudes.
+
+    Evita que una respuesta vieja de Supabase
+    llegue después de una nueva y cambie
+    nuevamente la información de la TV.
+*/
+
+var requestNumber =
+    0;
+
+
+/*
+    Día actual.
+
+    Se utiliza para que un A-001 de un nuevo día
+    pueda volver a ser anunciado.
+*/
+
+var currentDayKey =
+    getTodayKey();
+
+
+/* ==========================================
+   ELEMENTOS
+   ========================================== */
 
 var businessName =
-    document.getElementById("businessName");
+    document.getElementById(
+        "businessName"
+    );
 
 var businessCity =
-    document.getElementById("businessCity");
+    document.getElementById(
+        "businessCity"
+    );
 
 var barberGrid =
-    document.getElementById("barberGrid");
+    document.getElementById(
+        "barberGrid"
+    );
 
 var updateStatus =
-    document.getElementById("updateStatus");
+    document.getElementById(
+        "updateStatus"
+    );
 
 var soundButton =
-    document.getElementById("soundButton");
+    document.getElementById(
+        "soundButton"
+    );
 
 var callOverlay =
-    document.getElementById("callOverlay");
+    document.getElementById(
+        "callOverlay"
+    );
 
 var callBarber =
-    document.getElementById("callBarber");
+    document.getElementById(
+        "callBarber"
+    );
 
 var callTicket =
-    document.getElementById("callTicket");
+    document.getElementById(
+        "callTicket"
+    );
 
 var callService =
-    document.getElementById("callService");
+    document.getElementById(
+        "callService"
+    );
 
 
-function escapeHtml(value) {
+/* ==========================================
+   FECHA
+   ========================================== */
 
-    if (value === null || value === undefined) {
-        return "";
-    }
+function getTodayKey() {
 
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    var now =
+        new Date();
+
+    return (
+        now.getFullYear() +
+        "-" +
+        String(
+            now.getMonth() + 1
+        ).padStart(2, "0") +
+        "-" +
+        String(
+            now.getDate()
+        ).padStart(2, "0")
+    );
 }
 
 
-function rpcRequest(functionName, body, callback) {
+/* ==========================================
+   ESCAPAR HTML
+   ========================================== */
+
+function escapeHtml(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+
+        return "";
+
+    }
+
+    return String(value)
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+}
+
+
+/* ==========================================
+   REST SUPABASE COMPATIBLE CON TV ANTIGUA
+   ========================================== */
+
+function rpcRequest(
+    functionName,
+    body,
+    callback
+) {
 
     var xhr =
         new XMLHttpRequest();
@@ -561,49 +712,72 @@ function rpcRequest(functionName, body, callback) {
 
     xhr.setRequestHeader(
         "Authorization",
-        "Bearer " + SUPABASE_ANON_KEY
+        "Bearer " +
+        SUPABASE_ANON_KEY
     );
 
-    xhr.onreadystatechange = function() {
+    xhr.onreadystatechange =
+        function() {
 
-        if (xhr.readyState !== 4) {
-            return;
-        }
+            if (
+                xhr.readyState !== 4
+            ) {
 
-        if (
-            xhr.status >= 200 &&
-            xhr.status < 300
-        ) {
+                return;
 
-            var result = null;
-
-            try {
-                result =
-                    JSON.parse(xhr.responseText);
-            } catch (e) {
-                result = null;
             }
 
-            callback(null, result);
+            if (
+                xhr.status >= 200 &&
+                xhr.status < 300
+            ) {
 
-        } else {
+                var result =
+                    null;
+
+                try {
+
+                    result =
+                        JSON.parse(
+                            xhr.responseText
+                        );
+
+                } catch (e) {
+
+                    result =
+                        null;
+
+                }
+
+                callback(
+                    null,
+                    result
+                );
+
+            } else {
+
+                callback(
+                    xhr.status +
+                    " " +
+                    xhr.statusText,
+                    null
+                );
+
+            }
+
+        };
+
+
+    xhr.onerror =
+        function() {
 
             callback(
-                xhr.status +
-                " " +
-                xhr.statusText,
+                "Error de conexión",
                 null
             );
-        }
-    };
 
-    xhr.onerror = function() {
+        };
 
-        callback(
-            "Error de conexión",
-            null
-        );
-    };
 
     try {
 
@@ -614,12 +788,19 @@ function rpcRequest(functionName, body, callback) {
     } catch (e) {
 
         callback(
-            e.message || "Error enviando solicitud",
+            e.message ||
+            "Error enviando solicitud",
             null
         );
+
     }
+
 }
 
+
+/* ==========================================
+   SONIDO
+   ========================================== */
 
 function activateSound() {
 
@@ -629,7 +810,9 @@ function activateSound() {
             window.AudioContext ||
             window.webkitAudioContext;
 
-        if (AudioContextClass) {
+        if (
+            AudioContextClass
+        ) {
 
             audioContext =
                 new AudioContextClass();
@@ -637,10 +820,13 @@ function activateSound() {
             if (
                 audioContext.resume
             ) {
+
                 audioContext.resume();
+
             }
 
-            soundEnabled = true;
+            soundEnabled =
+                true;
 
             soundButton.innerHTML =
                 "🔊 Sonido activado";
@@ -650,22 +836,23 @@ function activateSound() {
 
             playBeep();
 
-            speakText(
-                "Sonido activado"
-            );
-
         } else {
 
-            soundEnabled = true;
+            soundEnabled =
+                true;
 
             soundButton.innerHTML =
                 "🔊 Sonido activado";
 
             soundButton.className =
                 "sound-button active";
+
         }
 
     } catch (e) {
+
+        soundEnabled =
+            true;
 
         soundButton.innerHTML =
             "🔊 Sonido activado";
@@ -673,10 +860,14 @@ function activateSound() {
         soundButton.className =
             "sound-button active";
 
-        soundEnabled = true;
     }
+
 }
 
+
+/* ==========================================
+   PITIDO
+   ========================================== */
 
 function playBeep() {
 
@@ -684,7 +875,9 @@ function playBeep() {
         !soundEnabled ||
         !audioContext
     ) {
+
         return;
+
     }
 
     try {
@@ -708,15 +901,19 @@ function playBeep() {
 
         gain.gain.exponentialRampToValueAtTime(
             0.35,
-            audioContext.currentTime + 0.03
+            audioContext.currentTime +
+            0.03
         );
 
         gain.gain.exponentialRampToValueAtTime(
             0.0001,
-            audioContext.currentTime + 0.35
+            audioContext.currentTime +
+            0.35
         );
 
-        oscillator.connect(gain);
+        oscillator.connect(
+            gain
+        );
 
         gain.connect(
             audioContext.destination
@@ -725,13 +922,19 @@ function playBeep() {
         oscillator.start();
 
         oscillator.stop(
-            audioContext.currentTime + 0.4
+            audioContext.currentTime +
+            0.4
         );
 
     } catch (e) {
     }
+
 }
 
+
+/* ==========================================
+   VOZ
+   ========================================== */
 
 function speakText(text) {
 
@@ -739,7 +942,9 @@ function speakText(text) {
         !soundEnabled ||
         !window.speechSynthesis
     ) {
+
         return;
+
     }
 
     try {
@@ -747,7 +952,9 @@ function speakText(text) {
         window.speechSynthesis.cancel();
 
         var speech =
-            new SpeechSynthesisUtterance(text);
+            new SpeechSynthesisUtterance(
+                text
+            );
 
         speech.lang =
             "es-CO";
@@ -767,37 +974,150 @@ function speakText(text) {
 
     } catch (e) {
     }
+
 }
 
+
+/* ==========================================
+   CLAVE DEL ÚLTIMO TURNO ANUNCIADO
+   ========================================== */
+
+function getAnnouncementKey(
+    barberId
+) {
+
+    return (
+        "turnobarber_last_call_" +
+        slug +
+        "_" +
+        currentDayKey +
+        "_" +
+        barberId
+    );
+
+}
+
+
+/* ==========================================
+   LEER ÚLTIMO TURNO ANUNCIADO
+   ========================================== */
+
+function getLastAnnounced(
+    barberId
+) {
+
+    try {
+
+        return localStorage.getItem(
+            getAnnouncementKey(
+                barberId
+            )
+        );
+
+    } catch (e) {
+
+        return null;
+
+    }
+
+}
+
+
+/* ==========================================
+   GUARDAR ÚLTIMO TURNO ANUNCIADO
+   ========================================== */
+
+function saveLastAnnounced(
+    barberId,
+    ticketId
+) {
+
+    try {
+
+        localStorage.setItem(
+            getAnnouncementKey(
+                barberId
+            ),
+            String(
+                ticketId
+            )
+        );
+
+    } catch (e) {
+    }
+
+}
+
+
+/* ==========================================
+   MOSTRAR LLAMADO
+   ========================================== */
 
 function showCallScreen(
     ticket,
     service,
-    barber
+    barber,
+    barberId,
+    ticketId
 ) {
 
     callBarber.innerHTML =
         "💈 " +
-        escapeHtml(barber);
+        escapeHtml(
+            barber
+        );
 
     callTicket.innerHTML =
-        escapeHtml(ticket);
+        escapeHtml(
+            ticket
+        );
 
     callService.innerHTML =
         escapeHtml(
-            service || "Barbería"
+            service ||
+            "Barbería"
         );
 
     callOverlay.className =
         "call-overlay show";
 
-    if (soundEnabled) {
+
+    /*
+        Guardamos inmediatamente el turno
+        para evitar que una actualización
+        de la página lo anuncie otra vez.
+    */
+
+    if (
+        barberId &&
+        ticketId
+    ) {
+
+        saveLastAnnounced(
+            barberId,
+            ticketId
+        );
+
+    }
+
+
+    /*
+        El sonido queda como estaba.
+        No dependemos de él para mostrar
+        la pantalla grande.
+    */
+
+    if (
+        soundEnabled
+    ) {
 
         playBeep();
 
         setTimeout(
             function() {
+
                 playBeep();
+
             },
             500
         );
@@ -807,28 +1127,39 @@ function showCallScreen(
 
                 speakText(
                     "Atención. Turno " +
-                    String(ticket).replace(
+                    String(
+                        ticket
+                    ).replace(
                         /-/g,
                         " "
                     ) +
                     ". Con " +
                     barber +
                     ". Servicio de " +
-                    (service || "barbería") +
+                    (
+                        service ||
+                        "barbería"
+                    ) +
                     ". Puede pasar."
                 );
 
             },
             900
         );
+
     }
 
-    if (overlayTimer) {
+
+    if (
+        overlayTimer
+    ) {
 
         clearTimeout(
             overlayTimer
         );
+
     }
+
 
     overlayTimer =
         setTimeout(
@@ -840,8 +1171,13 @@ function showCallScreen(
             },
             9000
         );
+
 }
 
+
+/* ==========================================
+   CARGAR BARBERÍA
+   ========================================== */
 
 function loadBusiness() {
 
@@ -851,11 +1187,17 @@ function loadBusiness() {
     rpcRequest(
         "get_business_by_qr",
         {
-            p_qr_slug: slug
+            p_qr_slug:
+                slug
         },
-        function(error, data) {
+        function(
+            error,
+            data
+        ) {
 
-            if (error) {
+            if (
+                error
+            ) {
 
                 console.log(
                     "Error negocio:",
@@ -866,7 +1208,9 @@ function loadBusiness() {
                     "Error de conexión";
 
                 return;
+
             }
+
 
             if (
                 !data ||
@@ -877,10 +1221,13 @@ function loadBusiness() {
                     "Barbería no encontrada";
 
                 return;
+
             }
+
 
             business =
                 data[0];
+
 
             businessName.innerHTML =
                 "💈 " +
@@ -888,28 +1235,44 @@ function loadBusiness() {
                     business.name
                 );
 
+
             businessCity.innerHTML =
                 escapeHtml(
-                    business.city || ""
+                    business.city ||
+                    ""
                 );
 
+
             loadQueues();
+
         }
     );
+
 }
 
 
-function render(rows) {
+/* ==========================================
+   RENDERIZAR
+   ========================================== */
+
+function render(
+    rows
+) {
 
     var count =
         rows.length;
 
-    if (count === 1) {
+
+    if (
+        count === 1
+    ) {
 
         barberGrid.className =
             "barber-grid one";
 
-    } else if (count === 3) {
+    } else if (
+        count === 3
+    ) {
 
         barberGrid.className =
             "barber-grid three";
@@ -918,10 +1281,13 @@ function render(rows) {
 
         barberGrid.className =
             "barber-grid";
+
     }
 
 
-    if (!count) {
+    if (
+        !count
+    ) {
 
         barberGrid.innerHTML =
             '<div class="barber-card">' +
@@ -931,10 +1297,13 @@ function render(rows) {
             '</div>';
 
         return;
+
     }
 
 
-    var html = "";
+    var html =
+        "";
+
 
     for (
         var i = 0;
@@ -945,39 +1314,57 @@ function render(rows) {
         var r =
             rows[i];
 
+
         var busy =
             !!r.current_ticket_id;
 
+
         var waiting =
             Number(
-                r.waiting_count || 0
+                r.waiting_count ||
+                0
             );
+
 
         html +=
             '<article class="barber-card ' +
-            (busy ? "busy" : "") +
+            (
+                busy
+                    ? "busy"
+                    : ""
+            ) +
             '">' +
+
 
             '<div class="barber-name">' +
 
             '<span class="dot ' +
-            (busy ? "" : "waiting") +
+            (
+                busy
+                    ? ""
+                    : "waiting"
+            ) +
             '"></span>' +
 
             '💈 ' +
+
             escapeHtml(
                 r.barber_name
             ) +
 
             '</div>' +
 
+
             '<div class="status">' +
+
             (
                 busy
-                ? "🟢 ATENDIENDO"
-                : "🟡 DISPONIBLE"
+                    ? "🟢 ATENDIENDO"
+                    : "🟡 DISPONIBLE"
             ) +
+
             '</div>' +
+
 
             '<div class="current-block">' +
 
@@ -992,16 +1379,20 @@ function render(rows) {
 
             html +=
                 '<div class="current-ticket">' +
+
                 escapeHtml(
                     r.current_ticket_code
                 ) +
+
                 '</div>' +
 
                 '<div class="service">' +
+
                 escapeHtml(
                     r.current_service_name ||
                     "Servicio"
                 ) +
+
                 '</div>';
 
         } else {
@@ -1010,6 +1401,7 @@ function render(rows) {
                 '<div class="empty">' +
                 'Sin cliente en atención' +
                 '</div>';
+
         }
 
 
@@ -1022,9 +1414,11 @@ function render(rows) {
 
             '<div class="label">' +
             'Siguiente con ' +
+
             escapeHtml(
                 r.barber_name
             ) +
+
             '</div>';
 
 
@@ -1034,16 +1428,20 @@ function render(rows) {
 
             html +=
                 '<div class="next-ticket">' +
+
                 escapeHtml(
                     r.next_ticket_code
                 ) +
+
                 '</div>' +
 
                 '<div class="next-service">' +
+
                 escapeHtml(
                     r.next_service_name ||
                     "Servicio"
                 ) +
+
                 '</div>';
 
         } else {
@@ -1052,6 +1450,7 @@ function render(rows) {
                 '<div class="empty">' +
                 'Sin clientes esperando' +
                 '</div>';
+
         }
 
 
@@ -1067,28 +1466,71 @@ function render(rows) {
             '</div>' +
 
             '</article>';
+
     }
 
 
     barberGrid.innerHTML =
         html;
+
 }
 
 
+/* ==========================================
+   CARGAR COLAS
+   ========================================== */
+
 function loadQueues() {
 
-    if (!business) {
+    if (
+        !business
+    ) {
+
         return;
+
     }
+
+
+    /*
+        Cada consulta recibe un número.
+        Solo procesamos la respuesta más reciente.
+    */
+
+    requestNumber++;
+
+    var thisRequest =
+        requestNumber;
+
 
     rpcRequest(
         "admin_barber_queues",
         {
-            p_business_id: business.id
+            p_business_id:
+                business.id
         },
-        function(error, data) {
+        function(
+            error,
+            data
+        ) {
 
-            if (error) {
+            /*
+                Si esta respuesta ya quedó vieja,
+                no hacemos absolutamente nada.
+            */
+
+            if (
+                thisRequest !==
+                requestNumber
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                error
+            ) {
 
                 console.log(
                     "Error colas:",
@@ -1099,46 +1541,132 @@ function loadQueues() {
                     "Error cargando colas";
 
                 return;
+
             }
+
 
             var rows =
-                data || [];
+                data ||
+                [];
 
 
-            if (!firstLoad) {
+            /*
+                Revisamos todos los barberos.
+            */
 
-                for (
-                    var i = 0;
-                    i < rows.length;
-                    i++
+            for (
+                var i = 0;
+                i < rows.length;
+                i++
+            ) {
+
+                var r =
+                    rows[i];
+
+
+                if (
+                    !r.current_ticket_id
                 ) {
 
-                    var r =
-                        rows[i];
+                    continue;
 
-                    var old =
-                        previousServing[
-                            r.barber_id
-                        ] || null;
-
-                    if (
-                        r.current_ticket_id &&
-                        r.current_ticket_id !== old
-                    ) {
-
-                        showCallScreen(
-                            r.current_ticket_code,
-                            r.current_service_name,
-                            r.barber_name
-                        );
-
-                        break;
-                    }
                 }
+
+
+                var currentId =
+                    String(
+                        r.current_ticket_id
+                    );
+
+
+                var previousId =
+                    previousServing[
+                        r.barber_id
+                    ];
+
+
+                /*
+                    Estado anterior de memoria.
+                */
+
+                var changedFromMemory =
+                    (
+                        !firstLoad &&
+                        currentId !==
+                        previousId
+                    );
+
+
+                /*
+                    Último turno anunciado
+                    guardado en la TV.
+                */
+
+                var lastAnnounced =
+                    getLastAnnounced(
+                        r.barber_id
+                    );
+
+
+                /*
+                    Si nunca se anunció este
+                    turno en este día, se puede
+                    anunciar.
+                */
+
+                var notAnnouncedYet =
+                    (
+                        lastAnnounced !==
+                        currentId
+                    );
+
+
+                /*
+                    Anunciamos si:
+
+                    1. El turno cambió mientras
+                       la TV estaba funcionando.
+
+                    O
+
+                    2. La TV se recargó y este
+                       turno todavía no había
+                       sido anunciado.
+                */
+
+                if (
+                    changedFromMemory ||
+                    notAnnouncedYet
+                ) {
+
+                    showCallScreen(
+                        r.current_ticket_code,
+                        r.current_service_name,
+                        r.barber_name,
+                        r.barber_id,
+                        r.current_ticket_id
+                    );
+
+                    /*
+                        Solo anunciamos un cambio
+                        por actualización.
+                    */
+
+                    break;
+
+                }
+
             }
 
 
-            previousServing = {};
+            /*
+                Guardamos el estado actual
+                para la próxima consulta.
+            */
+
+            previousServing =
+                {};
+
 
             for (
                 var j = 0;
@@ -1149,14 +1677,21 @@ function loadQueues() {
                 previousServing[
                     rows[j].barber_id
                 ] =
-                    rows[j].current_ticket_id ||
+                    rows[j].current_ticket_id
+                    ||
                     null;
+
             }
 
 
-            firstLoad = false;
+            firstLoad =
+                false;
 
-            render(rows);
+
+            render(
+                rows
+            );
+
 
             updateStatus.innerHTML =
                 "Actualizado · " +
@@ -1164,21 +1699,35 @@ function loadQueues() {
                     .toLocaleTimeString(
                         "es-CO"
                     );
+
         }
     );
+
 }
 
+
+/* ==========================================
+   INICIAR
+   ========================================== */
 
 function startApplication() {
 
     loadBusiness();
 
+
+    /*
+        Cada 5 segundos revisamos los turnos.
+    */
+
     setInterval(
         function() {
+
             loadQueues();
+
         },
         5000
     );
+
 }
 
 
