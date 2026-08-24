@@ -4,351 +4,371 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>TurnoBarber - Pantalla</title>
-<meta name="turnobarber-tv-version" content="4.0-tv-compatible">
+<meta name="turnobarber-tv-version" content="4.0-llamada-reforzada">
 
 <style>
 *{
-    box-sizing:border-box
+  box-sizing:border-box
 }
 
-html,
-body{
-    margin:0;
-    min-height:100%;
-    background:#111;
-    color:#fff;
-    font-family:Arial,Helvetica,sans-serif
+html,body{
+  margin:0;
+  min-height:100%;
+  background:#111;
+  color:#fff;
+  font-family:Arial,Helvetica,sans-serif
 }
 
 body{
-    min-height:100vh;
-    overflow:hidden
+  min-height:100vh;
+  overflow:hidden
 }
 
 .screen{
-    min-height:100vh;
-    padding:22px 30px 14px;
-    display:flex;
-    flex-direction:column
+  min-height:100vh;
+  padding:22px 30px 14px;
+  display:flex;
+  flex-direction:column
 }
 
 .header{
-    text-align:center;
-    margin-bottom:16px
+  text-align:center;
+  margin-bottom:16px
 }
 
 .header h1{
-    margin:0;
-    font-size:clamp(30px,4vw,56px);
-    line-height:1.05
+  margin:0;
+  font-size:clamp(30px,4vw,56px);
+  line-height:1.05
 }
 
 .header p{
-    margin:6px 0 0;
-    font-size:clamp(16px,1.7vw,24px);
-    opacity:.68
+  margin:6px 0 0;
+  font-size:clamp(16px,1.7vw,24px);
+  opacity:.68
 }
 
 .online{
-    display:inline-block;
-    margin-top:8px;
-    padding:5px 14px;
-    border-radius:30px;
-    background:#16803c;
-    font-size:13px;
-    font-weight:bold
+  display:inline-block;
+  margin-top:8px;
+  padding:5px 14px;
+  border-radius:30px;
+  background:#16803c;
+  font-size:13px;
+  font-weight:bold
 }
 
 .sound-button{
-    position:fixed;
-    top:14px;
-    right:16px;
-    z-index:50;
-    border:1px solid #555;
-    border-radius:28px;
-    padding:9px 15px;
-    background:#222;
-    color:#fff;
-    font-size:13px;
-    font-weight:bold;
-    cursor:pointer
+  position:fixed;
+  top:14px;
+  right:16px;
+  z-index:150;
+  border:1px solid #555;
+  border-radius:28px;
+  padding:9px 15px;
+  background:#222;
+  color:#fff;
+  font-size:13px;
+  font-weight:bold;
+  cursor:pointer
 }
 
 .sound-button.active{
-    background:#16803c
+  background:#16803c
 }
 
 .barber-grid{
-    flex:1;
-    display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:16px;
-    min-height:0
+  flex:1;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+  min-height:0
 }
 
 .barber-grid.one{
-    grid-template-columns:1fr
+  grid-template-columns:1fr
 }
 
 .barber-grid.three{
-    grid-template-columns:repeat(3,minmax(0,1fr))
+  grid-template-columns:repeat(3,minmax(0,1fr))
 }
 
 .barber-card{
-    background:#1d1d1d;
-    border:2px solid #444;
-    border-radius:20px;
-    padding:16px 18px;
-    display:flex;
-    flex-direction:column;
-    min-height:0
+  background:#1d1d1d;
+  border:2px solid #444;
+  border-radius:20px;
+  padding:16px 18px;
+  display:flex;
+  flex-direction:column;
+  min-height:0
 }
 
 .barber-card.busy{
-    border-color:#16803c
+  border-color:#16803c
 }
 
 .barber-name{
-    font-size:clamp(22px,2.3vw,32px);
-    font-weight:800;
-    margin-bottom:8px;
-    display:flex;
-    align-items:center;
-    gap:8px
+  font-size:clamp(22px,2.3vw,32px);
+  font-weight:800;
+  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  gap:8px
 }
 
 .dot{
-    width:13px;
-    height:13px;
-    border-radius:50%;
-    background:#45df8b;
-    flex:none
+  width:13px;
+  height:13px;
+  border-radius:50%;
+  background:#45df8b;
+  flex:none
 }
 
 .dot.waiting{
-    background:#f1bd45
+  background:#f1bd45
 }
 
 .status{
-    font-size:clamp(13px,1.25vw,17px);
-    opacity:.72;
-    margin-bottom:7px
+  font-size:clamp(13px,1.25vw,17px);
+  opacity:.72;
+  margin-bottom:7px
 }
 
 .current-block{
-    border-radius:15px;
-    background:#151515;
-    padding:12px 15px;
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    min-height:0
+  border-radius:15px;
+  background:#151515;
+  padding:12px 15px;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-height:0
 }
 
 .label{
-    font-size:clamp(11px,1.05vw,15px);
-    font-weight:700;
-    letter-spacing:.7px;
-    opacity:.68;
-    text-transform:uppercase
+  font-size:clamp(11px,1.05vw,15px);
+  font-weight:700;
+  letter-spacing:.7px;
+  opacity:.68;
+  text-transform:uppercase
 }
 
 .current-ticket{
-    font-size:clamp(52px,6.8vw,100px);
-    font-weight:900;
-    line-height:.95;
-    margin:7px 0
+  font-size:clamp(52px,6.8vw,100px);
+  font-weight:900;
+  line-height:.95;
+  margin:7px 0
 }
 
 .service{
-    font-size:clamp(17px,1.7vw,25px);
-    font-weight:700;
-    opacity:.9
+  font-size:clamp(17px,1.7vw,25px);
+  font-weight:700;
+  opacity:.9
 }
 
 .next-block{
-    margin-top:10px;
-    padding-top:10px;
-    border-top:1px solid #444;
-    display:grid;
-    grid-template-columns:1fr auto;
-    gap:10px;
-    align-items:center
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid #444;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  align-items:center
 }
 
 .next-info{
-    min-width:0
+  min-width:0
 }
 
 .next-ticket{
-    font-size:clamp(28px,3.5vw,52px);
-    font-weight:900;
-    line-height:1
+  font-size:clamp(28px,3.5vw,52px);
+  font-weight:900;
+  line-height:1
 }
 
 .next-service{
-    font-size:clamp(13px,1.25vw,19px);
-    opacity:.78;
-    margin-top:3px
+  font-size:clamp(13px,1.25vw,19px);
+  opacity:.78;
+  margin-top:3px
 }
 
 .waiting-count{
-    font-size:clamp(12px,1.1vw,16px);
-    opacity:.65;
-    text-align:right
+  font-size:clamp(12px,1.1vw,16px);
+  opacity:.65;
+  text-align:right
 }
 
 .empty{
-    opacity:.45;
-    font-size:clamp(16px,1.5vw,22px);
-    padding:10px 0
+  opacity:.45;
+  font-size:clamp(16px,1.5vw,22px);
+  padding:10px 0
 }
 
 .footer{
-    text-align:center;
-    padding-top:8px;
-    font-size:12px;
-    opacity:.45
+  text-align:center;
+  padding-top:8px;
+  font-size:12px;
+  opacity:.45
 }
 
+/* =========================================================
+   PANTALLA GRANDE DE LLAMADA
+   ========================================================= */
+
 .call-overlay{
-    position:fixed;
-    inset:0;
-    z-index:100;
-    background:rgba(0,0,0,.94);
-    display:none;
-    align-items:center;
-    justify-content:center;
-    flex-direction:column;
-    text-align:center;
-    padding:25px
+  position:fixed;
+  inset:0;
+  z-index:200;
+  background:rgba(0,0,0,.97);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  text-align:center;
+  padding:25px
 }
 
 .call-overlay.show{
-    display:flex;
-    animation:callIn .3s ease-out
+  display:flex;
+  animation:callIn .35s ease-out
 }
 
 @keyframes callIn{
-    from{
-        opacity:0;
-        transform:scale(1.02)
-    }
+  from{
+    opacity:0;
+    transform:scale(.96)
+  }
 
-    to{
-        opacity:1;
-        transform:scale(1)
-    }
+  to{
+    opacity:1;
+    transform:scale(1)
+  }
 }
 
 .call-title{
-    font-size:clamp(27px,4vw,58px);
-    font-weight:800
+  font-size:clamp(27px,4vw,58px);
+  font-weight:800;
+  margin-bottom:10px
 }
 
 .call-barber{
-    font-size:clamp(23px,3vw,42px);
-    font-weight:700;
-    opacity:.9
+  font-size:clamp(23px,3vw,42px);
+  font-weight:700;
+  opacity:.9
 }
 
 .call-ticket{
-    font-size:clamp(90px,15vw,220px);
-    font-weight:900;
-    line-height:.9;
-    margin:12px 0
+  font-size:clamp(90px,15vw,220px);
+  font-weight:900;
+  line-height:.9;
+  margin:12px 0
 }
 
 .call-service{
-    font-size:clamp(23px,3vw,44px);
-    font-weight:700
+  font-size:clamp(23px,3vw,44px);
+  font-weight:700
 }
 
 .call-message{
-    margin-top:18px;
-    font-size:clamp(21px,3vw,40px);
-    font-weight:800
+  margin-top:18px;
+  font-size:clamp(21px,3vw,40px);
+  font-weight:800
 }
 
 .call-submessage{
-    margin-top:7px;
-    opacity:.65;
-    font-size:clamp(14px,1.5vw,21px)
+  margin-top:7px;
+  opacity:.65;
+  font-size:clamp(14px,1.5vw,21px)
 }
 
 .pulse{
-    animation:pulse .8s infinite alternate
+  animation:pulse .8s infinite alternate
 }
 
 @keyframes pulse{
-    from{
-        transform:scale(1)
-    }
+  from{
+    transform:scale(1)
+  }
 
-    to{
-        transform:scale(1.04)
-    }
+  to{
+    transform:scale(1.06)
+  }
+}
+
+/* Animación adicional para hacer evidente la llamada */
+
+.call-overlay.show .call-title{
+  animation:attentionPulse 1s infinite alternate
+}
+
+@keyframes attentionPulse{
+  from{
+    opacity:.75
+  }
+
+  to{
+    opacity:1
+  }
 }
 
 @media(max-height:700px){
 
-    .screen{
-        padding-top:12px
-    }
+  .screen{
+    padding-top:12px
+  }
 
-    .header{
-        margin-bottom:8px
-    }
+  .header{
+    margin-bottom:8px
+  }
 
-    .header p{
-        margin-top:2px
-    }
+  .header p{
+    margin-top:2px
+  }
 
-    .online{
-        margin-top:4px;
-        padding:4px 11px
-    }
+  .online{
+    margin-top:4px;
+    padding:4px 11px
+  }
 
-    .barber-grid{
-        gap:10px
-    }
+  .barber-grid{
+    gap:10px
+  }
 
-    .barber-card{
-        padding:11px 13px
-    }
+  .barber-card{
+    padding:11px 13px
+  }
 
-    .current-ticket{
-        font-size:clamp(45px,6vw,78px)
-    }
+  .current-ticket{
+    font-size:clamp(45px,6vw,78px)
+  }
 }
 
 @media(max-width:800px){
 
-    body{
-        overflow:auto
-    }
+  body{
+    overflow:auto
+  }
 
-    .screen{
-        padding:14px
-    }
+  .screen{
+    padding:14px
+  }
 
-    .sound-button{
-        top:9px;
-        right:9px;
-        font-size:12px;
-        padding:7px 11px
-    }
+  .sound-button{
+    top:9px;
+    right:9px;
+    font-size:12px;
+    padding:7px 11px
+  }
 
-    .barber-grid,
-    .barber-grid.one,
-    .barber-grid.three{
-        grid-template-columns:1fr
-    }
+  .barber-grid,
+  .barber-grid.one,
+  .barber-grid.three{
+    grid-template-columns:1fr
+  }
 
-    .barber-card{
-        min-height:290px
-    }
+  .barber-card{
+    min-height:290px
+  }
 }
 </style>
 </head>
@@ -356,866 +376,949 @@ body{
 <body>
 
 <button
-    id="soundButton"
-    class="sound-button"
-    onclick="activateSound()"
+  id="soundButton"
+  class="sound-button"
+  onclick="activateSound()"
 >
-    🔇 Activar sonido
+  🔇 Activar sonido
 </button>
 
 <main class="screen">
 
-    <header class="header">
+  <header class="header">
 
-        <h1 id="businessName">
-            💈 TurnoBarber
-        </h1>
+    <h1 id="businessName">
+      💈 TurnoBarber
+    </h1>
 
-        <p id="businessCity">
-            Cargando barbería...
-        </p>
+    <p id="businessCity">
+      Cargando barbería...
+    </p>
 
-        <span class="online">
-            ONLINE
-        </span>
+    <span class="online">
+      ONLINE
+    </span>
 
-    </header>
+  </header>
 
-    <section
-        id="barberGrid"
-        class="barber-grid"
-    >
+  <section
+    id="barberGrid"
+    class="barber-grid"
+  >
 
-        <div class="barber-card">
+    <div class="barber-card">
 
-            <div class="empty">
-                Cargando barberos...
-            </div>
+      <div class="empty">
+        Cargando barberos...
+      </div>
 
-        </div>
+    </div>
 
-    </section>
+  </section>
 
-    <footer class="footer">
+  <footer class="footer">
 
-        <span id="updateStatus">
-            Conectando...
-        </span>
+    <span id="updateStatus">
+      Conectando...
+    </span>
 
-    </footer>
+  </footer>
 
 </main>
 
+
+<!-- =======================================================
+     PANTALLA DE LLAMADA
+     ======================================================= -->
+
 <div
-    id="callOverlay"
-    class="call-overlay"
+  id="callOverlay"
+  class="call-overlay"
 >
 
-    <div class="call-title">
-        📢 ATENCIÓN — ES TU TURNO
-    </div>
+  <div class="call-title">
+    📢 ATENCIÓN — ES TU TURNO
+  </div>
 
-    <div
-        id="callBarber"
-        class="call-barber"
-    >
-        Con tu barbero
-    </div>
+  <div
+    id="callBarber"
+    class="call-barber"
+  >
+    Con tu barbero
+  </div>
 
-    <div
-        id="callTicket"
-        class="call-ticket pulse"
-    >
-        A-000
-    </div>
+  <div
+    id="callTicket"
+    class="call-ticket pulse"
+  >
+    A-000
+  </div>
 
-    <div
-        id="callService"
-        class="call-service"
-    >
-        Servicio
-    </div>
+  <div
+    id="callService"
+    class="call-service"
+  >
+    Servicio
+  </div>
 
-    <div class="call-message">
-        🚶 PUEDE PASAR
-    </div>
+  <div class="call-message">
+    🚶 PUEDE PASAR
+  </div>
 
-    <div class="call-submessage">
-        Gracias por esperar
-    </div>
+  <div class="call-submessage">
+    Gracias por esperar
+  </div>
 
 </div>
 
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="supabase.js"></script>
+
 <script>
 
-var SUPABASE_URL =
-    "https://dkgkejulxkgvjrppsmly.supabase.co";
+const slug =
+  new URLSearchParams(location.search).get("b")
+  || "barberia-el-jefe";
 
-var SUPABASE_ANON_KEY =
-    "sb_publishable_7mxRDvndqfxuf6rCbi8CpA_VWKgK9e2";
 
-var slug =
-    new URLSearchParams(
-        window.location.search
-    ).get("b") ||
-    "barberia-el-jefe";
+let business = null;
 
-var business = null;
 
-var previousServing =
-    new Map();
+/*
+  GUARDAMOS EL TURNO ACTUAL POR BARBERO.
 
-var firstLoad = true;
+  Ahora guardamos el CÓDIGO del turno y no solamente
+  el ID de Supabase.
 
-var audioContext = null;
+  Ejemplo:
 
-var soundEnabled = false;
+  Juan → A-004
 
-var overlayTimer = null;
+  después:
 
-var businessName =
-    document.getElementById(
-        "businessName"
-    );
+  Juan → A-006
 
-var businessCity =
-    document.getElementById(
-        "businessCity"
-    );
+  Eso permite detectar claramente el cambio.
+*/
 
-var barberGrid =
-    document.getElementById(
-        "barberGrid"
-    );
+let previousServing = new Map();
 
-var updateStatus =
-    document.getElementById(
-        "updateStatus"
-    );
 
-var soundButton =
-    document.getElementById(
-        "soundButton"
-    );
+let firstLoad = true;
 
-var callOverlay =
-    document.getElementById(
-        "callOverlay"
-    );
 
-var callBarber =
-    document.getElementById(
-        "callBarber"
-    );
+/*
+  Evita que el mismo turno sea anunciado varias veces.
+*/
 
-var callTicket =
-    document.getElementById(
-        "callTicket"
-    );
+let lastAnnounced = new Map();
 
-var callService =
-    document.getElementById(
-        "callService"
-    );
 
+let audioContext = null;
+
+let soundEnabled = false;
+
+let overlayTimer = null;
+
+
+/*
+  Elementos de la pantalla
+*/
+
+const businessName =
+  document.getElementById("businessName");
+
+const businessCity =
+  document.getElementById("businessCity");
+
+const barberGrid =
+  document.getElementById("barberGrid");
+
+const updateStatus =
+  document.getElementById("updateStatus");
+
+const soundButton =
+  document.getElementById("soundButton");
+
+const callOverlay =
+  document.getElementById("callOverlay");
+
+const callBarber =
+  document.getElementById("callBarber");
+
+const callTicket =
+  document.getElementById("callTicket");
+
+const callService =
+  document.getElementById("callService");
+
+
+/* =========================================================
+   ACTIVAR SONIDO
+   ========================================================= */
 
 function activateSound(){
 
-    try{
+  try{
 
-        audioContext =
-            new (
-                window.AudioContext ||
-                window.webkitAudioContext
-            )();
+    const AudioContext =
+      window.AudioContext ||
+      window.webkitAudioContext;
 
-        if(
-            audioContext.resume
-        ){
+    if(!AudioContext){
 
-            audioContext.resume();
+      soundButton.textContent =
+        "❌ Sonido no disponible";
 
-        }
-
-        soundEnabled = true;
-
-        soundButton.textContent =
-            "🔊 Sonido activado";
-
-        soundButton.classList.add(
-            "active"
-        );
-
-        speakText(
-            "Sonido activado"
-        );
-
-        playBeep();
-
-    }catch(e){
-
-        soundButton.textContent =
-            "❌ Sonido no disponible";
-
+      return;
     }
 
+    if(!audioContext){
+
+      audioContext =
+        new AudioContext();
+    }
+
+    audioContext.resume();
+
+    soundEnabled = true;
+
+    soundButton.textContent =
+      "🔊 Sonido activado";
+
+    soundButton.classList.add("active");
+
+    playBeep();
+
+    setTimeout(() => {
+
+      speakText(
+        "Sonido activado"
+      );
+
+    },300);
+
+  }catch(error){
+
+    console.error(
+      "Error activando sonido:",
+      error
+    );
+
+    soundButton.textContent =
+      "❌ Sonido no disponible";
+  }
 }
 
+
+/* =========================================================
+   TEXTO A VOZ
+   ========================================================= */
 
 function speakText(text){
 
-    if(
-        !soundEnabled
-    ){
+  if(!soundEnabled){
 
-        return;
+    return;
+  }
 
-    }
+  if(!("speechSynthesis" in window)){
 
-    if(
-        !("speechSynthesis" in window)
-    ){
+    return;
+  }
 
-        return;
-
-    }
+  try{
 
     window.speechSynthesis.cancel();
 
-    var speech =
-        new SpeechSynthesisUtterance(
-            text
-        );
+    const speech =
+      new SpeechSynthesisUtterance(text);
 
-    speech.lang =
-        "es-CO";
+    speech.lang = "es-CO";
 
-    speech.rate =
-        0.85;
+    speech.rate = .82;
 
-    speech.pitch =
-        1;
+    speech.pitch = 1;
 
-    speech.volume =
-        1;
+    speech.volume = 1;
 
     window.speechSynthesis.speak(
-        speech
+      speech
     );
 
+  }catch(error){
+
+    console.error(
+      "Error de voz:",
+      error
+    );
+  }
 }
 
+
+/* =========================================================
+   BEEP
+   ========================================================= */
 
 function playBeep(){
 
-    if(
-        !soundEnabled ||
-        !audioContext
-    ){
+  if(!soundEnabled){
 
-        return;
+    return;
+  }
 
+  if(!audioContext){
+
+    return;
+  }
+
+  try{
+
+    if(audioContext.state === "suspended"){
+
+      audioContext.resume();
     }
 
-    try{
+    const oscillator =
+      audioContext.createOscillator();
 
-        var oscillator =
-            audioContext.createOscillator();
+    const gain =
+      audioContext.createGain();
 
-        var gain =
-            audioContext.createGain();
+    oscillator.type = "sine";
 
-        oscillator.type =
-            "sine";
+    oscillator.frequency.value = 880;
 
-        oscillator.frequency.value =
-            880;
-
-        gain.gain.setValueAtTime(
-            0.0001,
-            audioContext.currentTime
-        );
-
-        gain.gain.exponentialRampToValueAtTime(
-            0.35,
-            audioContext.currentTime + 0.03
-        );
-
-        gain.gain.exponentialRampToValueAtTime(
-            0.0001,
-            audioContext.currentTime + 0.35
-        );
-
-        oscillator.connect(gain);
-
-        gain.connect(
-            audioContext.destination
-        );
-
-        oscillator.start();
-
-        oscillator.stop(
-            audioContext.currentTime + 0.4
-        );
-
-    }catch(e){
-
-        console.log(
-            "No se pudo reproducir sonido",
-            e
-        );
-
-    }
-
-}
-
-
-function showCallScreen(
-    ticket,
-    service,
-    barber
-){
-
-    callBarber.textContent =
-        "💈 " + barber;
-
-    callTicket.textContent =
-        ticket;
-
-    callService.textContent =
-        service ||
-        "Barbería";
-
-    callOverlay.classList.add(
-        "show"
+    gain.gain.setValueAtTime(
+      .0001,
+      audioContext.currentTime
     );
 
-    if(
-        soundEnabled
-    ){
+    gain.gain.exponentialRampToValueAtTime(
+      .35,
+      audioContext.currentTime + .03
+    );
 
-        playBeep();
+    gain.gain.exponentialRampToValueAtTime(
+      .0001,
+      audioContext.currentTime + .35
+    );
 
-        setTimeout(
-            function(){
+    oscillator.connect(gain);
 
-                playBeep();
+    gain.connect(
+      audioContext.destination
+    );
 
-            },
-            500
-        );
+    oscillator.start();
 
-        setTimeout(
-            function(){
+    oscillator.stop(
+      audioContext.currentTime + .4
+    );
 
-                speakText(
-                    "Atención. Turno " +
-                    String(ticket)
-                        .replace(/-/g," ") +
-                    ". Con " +
-                    barber +
-                    ". Servicio de " +
-                    (
-                        service ||
-                        "barbería"
-                    ) +
-                    ". Puede pasar."
-                );
+  }catch(error){
 
-            },
-            900
-        );
+    console.error(
+      "Error reproduciendo beep:",
+      error
+    );
+  }
+}
 
-    }
 
-    if(
-        overlayTimer
-    ){
+/* =========================================================
+   MOSTRAR LLAMADA
+   ========================================================= */
 
-        clearTimeout(
-            overlayTimer
-        );
+function showCallScreen(
+  ticket,
+  service,
+  barber
+){
 
-    }
+  if(!ticket){
 
-    overlayTimer =
-        setTimeout(
-            function(){
+    return;
+  }
 
-                callOverlay.classList.remove(
-                    "show"
-                );
 
-            },
-            9000
-        );
+  callBarber.textContent =
+    `💈 ${barber || "Barbero"}`;
+
+
+  callTicket.textContent =
+    ticket;
+
+
+  callService.textContent =
+    service || "Barbería";
+
+
+  /*
+    Mostrar inmediatamente
+  */
+
+  callOverlay.classList.add(
+    "show"
+  );
+
+
+  /*
+    Reiniciar temporizador anterior
+  */
+
+  if(overlayTimer){
+
+    clearTimeout(
+      overlayTimer
+    );
+  }
+
+
+  /*
+    Sonido
+  */
+
+  if(soundEnabled){
+
+    /*
+      Primer aviso
+    */
+
+    playBeep();
+
+
+    /*
+      Segundo aviso
+    */
+
+    setTimeout(() => {
+
+      playBeep();
+
+    },500);
+
+
+    /*
+      Voz
+    */
+
+    setTimeout(() => {
+
+      const ticketVoice =
+        String(ticket)
+          .replace(/-/g," ");
+
+      speakText(
+        `Atención. Turno ${ticketVoice}. Con ${barber || "su barbero"}. Servicio de ${service || "barbería"}. Puede pasar.`
+      );
+
+    },900);
+
+  }
+
+
+  /*
+    Mantener la pantalla grande
+    durante 12 segundos.
+  */
+
+  overlayTimer =
+    setTimeout(() => {
+
+      callOverlay.classList.remove(
+        "show"
+      );
+
+    },12000);
 
 }
 
+
+/* =========================================================
+   ESCAPAR HTML
+   ========================================================= */
 
 function esc(value){
 
-    if(
-        value === null ||
-        typeof value === "undefined"
-    ){
-
-        return "";
-
-    }
-
-    return String(value)
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
+  return String(
+    value ?? ""
+  )
+  .replace(/&/g,"&amp;")
+  .replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;")
+  .replace(/'/g,"&#039;");
 }
 
 
-function rpc(
-    functionName,
-    parameters
-){
+/* =========================================================
+   CARGAR BARBERÍA
+   ========================================================= */
 
-    var url =
-        SUPABASE_URL +
-        "/rest/v1/rpc/" +
-        functionName;
+async function loadBusiness(){
 
-    return fetch(
-        url,
-        {
-            method:"POST",
+  try{
 
-            headers:{
-                "Content-Type":
-                    "application/json",
-
-                "apikey":
-                    SUPABASE_ANON_KEY,
-
-                "Authorization":
-                    "Bearer " +
-                    SUPABASE_ANON_KEY
-            },
-
-            body:
-                JSON.stringify(
-                    parameters || {}
-                )
-        }
-    ).then(
-        function(response){
-
-            if(
-                !response.ok
-            ){
-
-                return response
-                    .text()
-                    .then(
-                        function(text){
-
-                            throw new Error(
-                                "RPC " +
-                                functionName +
-                                " HTTP " +
-                                response.status +
-                                ": " +
-                                text
-                            );
-
-                        }
-                    );
-
-            }
-
-            return response.json();
-
-        }
-    );
-
-}
-
-
-function loadBusiness(){
-
-    rpc(
+    const {
+      data,
+      error
+    } =
+      await client.rpc(
         "get_business_by_qr",
         {
-            p_qr_slug:slug
+          p_qr_slug: slug
         }
-    )
-    .then(
-        function(data){
+      );
 
-            if(
-                !data ||
-                !data.length
-            ){
 
-                updateStatus.textContent =
-                    "Barbería no encontrada";
+    if(error){
 
-                return;
+      console.error(
+        error
+      );
 
-            }
+      updateStatus.textContent =
+        "Error de conexión";
 
-            business =
-                data[0];
+      return;
+    }
 
-            businessName.textContent =
-                "💈 " +
-                business.name;
 
-            businessCity.textContent =
-                business.city ||
-                "";
+    if(!data?.length){
 
-            loadQueues();
+      updateStatus.textContent =
+        "Barbería no encontrada";
 
-        }
-    )
-    .catch(
-        function(error){
+      return;
+    }
 
-            console.error(
-                "Error cargando barbería:",
-                error
-            );
 
-            updateStatus.textContent =
-                "Error de conexión";
+    business =
+      data[0];
 
-        }
+
+    businessName.textContent =
+      "💈 " + business.name;
+
+
+    businessCity.textContent =
+      business.city || "";
+
+
+    await loadQueues();
+
+  }catch(error){
+
+    console.error(
+      "Error cargando barbería:",
+      error
     );
 
+    updateStatus.textContent =
+      "Error de conexión";
+  }
 }
 
+
+/* =========================================================
+   DIBUJAR BARBEROS
+   ========================================================= */
 
 function render(rows){
 
-    var className =
-        "barber-grid";
-
-    if(
-        rows.length === 1
-    ){
-
-        className +=
-            " one";
-
-    }else if(
-        rows.length === 3
-    ){
-
-        className +=
-            " three";
-
-    }
-
-    barberGrid.className =
-        className;
-
-    if(
-        !rows.length
-    ){
-
-        barberGrid.innerHTML =
-            '<div class="barber-card">' +
-                '<div class="empty">' +
-                    'No hay barberos activos.' +
-                '</div>' +
-            '</div>';
-
-        return;
-
-    }
-
-    var html = "";
-
-    rows.forEach(
-        function(r){
-
-            var busy =
-                !!r.current_ticket_id;
-
-            var waiting =
-                Number(
-                    r.waiting_count || 0
-                );
-
-            html +=
-                '<article class="barber-card ' +
-                (
-                    busy
-                        ? "busy"
-                        : ""
-                ) +
-                '">' +
-
-                '<div class="barber-name">' +
-
-                    '<span class="dot ' +
-                    (
-                        busy
-                            ? ""
-                            : "waiting"
-                    ) +
-                    '"></span>' +
-
-                    '💈 ' +
-                    esc(
-                        r.barber_name
-                    ) +
-
-                '</div>' +
-
-                '<div class="status">' +
-                    (
-                        busy
-                            ? "🟢 ATENDIENDO"
-                            : "🟡 DISPONIBLE"
-                    ) +
-                '</div>' +
-
-                '<div class="current-block">' +
-
-                    '<div class="label">' +
-                        'Ahora atendiendo' +
-                    '</div>' +
-
-                    (
-                        r.current_ticket_code
-                            ?
-                            '<div class="current-ticket">' +
-                                esc(
-                                    r.current_ticket_code
-                                ) +
-                            '</div>' +
-
-                            '<div class="service">' +
-                                esc(
-                                    r.current_service_name ||
-                                    "Servicio"
-                                ) +
-                            '</div>'
-
-                            :
-
-                            '<div class="empty">' +
-                                'Sin cliente en atención' +
-                            '</div>'
-                    ) +
-
-                '</div>' +
-
-                '<div class="next-block">' +
-
-                    '<div class="next-info">' +
-
-                        '<div class="label">' +
-                            'Siguiente con ' +
-                            esc(
-                                r.barber_name
-                            ) +
-                        '</div>' +
-
-                        (
-                            r.next_ticket_code
-                                ?
-
-                                '<div class="next-ticket">' +
-                                    esc(
-                                        r.next_ticket_code
-                                    ) +
-                                '</div>' +
-
-                                '<div class="next-service">' +
-                                    esc(
-                                        r.next_service_name ||
-                                        "Servicio"
-                                    ) +
-                                '</div>'
-
-                                :
-
-                                '<div class="empty">' +
-                                    'Sin clientes esperando' +
-                                '</div>'
-                        ) +
-
-                    '</div>' +
-
-                    '<div class="waiting-count">' +
-                        '👥 ' +
-                        waiting +
-                        ' esperando' +
-                    '</div>' +
-
-                '</div>' +
-
-                '</article>';
-
-        }
+  barberGrid.className =
+    "barber-grid " +
+    (
+      rows.length === 1
+        ? "one"
+        : rows.length === 3
+          ? "three"
+          : ""
     );
 
-    barberGrid.innerHTML =
-        html;
 
+  if(!rows.length){
+
+    barberGrid.innerHTML = `
+      <div class="barber-card">
+        <div class="empty">
+          No hay barberos activos.
+        </div>
+      </div>
+    `;
+
+    return;
+  }
+
+
+  barberGrid.innerHTML =
+    rows.map(r => {
+
+      const busy =
+        !!r.current_ticket_id;
+
+      const waiting =
+        Number(
+          r.waiting_count || 0
+        );
+
+
+      return `
+
+        <article
+          class="barber-card ${busy ? "busy" : ""}"
+        >
+
+          <div class="barber-name">
+
+            <span
+              class="dot ${
+                busy ? "" : "waiting"
+              }"
+            ></span>
+
+            💈 ${esc(
+              r.barber_name
+            )}
+
+          </div>
+
+
+          <div class="status">
+
+            ${
+              busy
+                ? "🟢 ATENDIENDO"
+                : "🟡 DISPONIBLE"
+            }
+
+          </div>
+
+
+          <div class="current-block">
+
+            <div class="label">
+              Ahora atendiendo
+            </div>
+
+
+            ${
+              r.current_ticket_code
+
+                ? `
+
+                  <div class="current-ticket">
+                    ${esc(
+                      r.current_ticket_code
+                    )}
+                  </div>
+
+                  <div class="service">
+                    ${esc(
+                      r.current_service_name
+                      || "Servicio"
+                    )}
+                  </div>
+
+                `
+
+                : `
+
+                  <div class="empty">
+                    Sin cliente en atención
+                  </div>
+
+                `
+            }
+
+          </div>
+
+
+          <div class="next-block">
+
+            <div class="next-info">
+
+              <div class="label">
+                Siguiente con ${
+                  esc(r.barber_name)
+                }
+              </div>
+
+
+              ${
+                r.next_ticket_code
+
+                  ? `
+
+                    <div class="next-ticket">
+                      ${esc(
+                        r.next_ticket_code
+                      )}
+                    </div>
+
+                    <div class="next-service">
+                      ${esc(
+                        r.next_service_name
+                        || "Servicio"
+                      )}
+                    </div>
+
+                  `
+
+                  : `
+
+                    <div class="empty">
+                      Sin clientes esperando
+                    </div>
+
+                  `
+              }
+
+            </div>
+
+
+            <div class="waiting-count">
+
+              👥 ${waiting}
+              esperando
+
+            </div>
+
+          </div>
+
+        </article>
+
+      `;
+
+    }).join("");
 }
 
 
-function loadQueues(){
+/* =========================================================
+   CARGAR COLAS
+   ========================================================= */
 
-    if(
-        !business
-    ){
+async function loadQueues(){
 
-        return;
+  if(!business){
 
-    }
+    return;
+  }
 
-    rpc(
+
+  try{
+
+    const {
+      data,
+      error
+    } =
+      await client.rpc(
         "admin_barber_queues",
         {
-            p_business_id:
-                business.id
+          p_business_id:
+            business.id
         }
-    )
-    .then(
-        function(data){
+      );
 
-            var rows =
-                data || [];
 
-            if(
-                !firstLoad
-            ){
+    if(error){
 
-                for(
-                    var i = 0;
-                    i < rows.length;
-                    i++
-                ){
+      console.error(
+        "Error admin_barber_queues:",
+        error
+      );
 
-                    var r =
-                        rows[i];
+      updateStatus.textContent =
+        "Error cargando colas";
 
-                    var old =
-                        previousServing.get(
-                            r.barber_id
-                        );
+      return;
+    }
 
-                    if(
-                        r.current_ticket_id &&
-                        r.current_ticket_id !== old
-                    ){
 
-                        showCallScreen(
-                            r.current_ticket_code,
-                            r.current_service_name,
-                            r.barber_name
-                        );
+    const rows =
+      data || [];
 
-                        break;
 
-                    }
+    /*
+      ======================================================
+      DETECCIÓN DE NUEVA LLAMADA
+      ======================================================
 
-                }
+      Antes comparábamos solamente el ID.
 
-            }
+      Ahora comparamos:
 
-            previousServing =
-                new Map();
+      - ID
+      - código del turno
 
-            rows.forEach(
-                function(r){
+      El código es la referencia principal para detectar:
 
-                    previousServing.set(
-                        r.barber_id,
-                        r.current_ticket_id ||
-                        null
-                    );
+      A-004 → A-006
+      A-005 → A-007
+      ======================================================
+    */
 
-                }
+    if(!firstLoad){
+
+      for(const row of rows){
+
+        const barberId =
+          String(
+            row.barber_id
+          );
+
+
+        const newTicket =
+          row.current_ticket_code
+          ? String(
+              row.current_ticket_code
+            )
+          : null;
+
+
+        const oldTicket =
+          previousServing.get(
+            barberId
+          ) || null;
+
+
+        const alreadyAnnounced =
+          lastAnnounced.get(
+            barberId
+          ) || null;
+
+
+        /*
+          Si cambió el turno actual,
+          es una nueva llamada.
+        */
+
+        if(
+          newTicket &&
+          newTicket !== oldTicket &&
+          newTicket !== alreadyAnnounced
+        ){
+
+          /*
+            Guardamos inmediatamente
+            para no repetir el anuncio.
+          */
+
+          lastAnnounced.set(
+            barberId,
+            newTicket
+          );
+
+
+          /*
+            Mostrar llamada.
+          */
+
+          showCallScreen(
+            newTicket,
+            row.current_service_name,
+            row.barber_name
+          );
+
+
+          /*
+            Solo anunciamos una llamada
+            por actualización.
+          */
+
+          break;
+        }
+      }
+
+    }
+
+
+    /*
+      Guardamos el estado actual
+      para la siguiente consulta.
+    */
+
+    previousServing =
+      new Map(
+        rows.map(row => {
+
+          const barberId =
+            String(
+              row.barber_id
             );
 
-            firstLoad =
-                false;
 
-            render(
-                rows
-            );
-
-            updateStatus.textContent =
-                "Actualizado · " +
-                new Date().toLocaleTimeString(
-                    "es-CO"
-                );
-
-        }
-    )
-    .catch(
-        function(error){
-
-            console.error(
-                "Error cargando colas:",
-                error
-            );
-
-            updateStatus.textContent =
-                "Error cargando colas";
-
-        }
-    );
-
-}
+          const ticket =
+            row.current_ticket_code
+            ? String(
+                row.current_ticket_code
+              )
+            : null;
 
 
-function start(){
+          return [
+            barberId,
+            ticket
+          ];
+
+        })
+      );
+
+
+    /*
+      Después de una primera carga,
+      ya estamos listos para detectar
+      nuevos llamados.
+    */
+
+    firstLoad = false;
+
+
+    /*
+      Actualizar pantalla normal.
+    */
+
+    render(rows);
+
 
     updateStatus.textContent =
-        "Conectando...";
+      "Actualizado · " +
+      new Date()
+        .toLocaleTimeString(
+          "es-CO"
+        );
 
-    loadBusiness();
+  }catch(error){
 
-    setInterval(
-        function(){
-
-            if(
-                business
-            ){
-
-                loadQueues();
-
-            }
-
-        },
-        5000
+    console.error(
+      "Error cargando colas:",
+      error
     );
 
+    updateStatus.textContent =
+      "Error cargando colas";
+  }
 }
 
 
-start();
+/* =========================================================
+   ACTUALIZACIÓN AUTOMÁTICA
+   ========================================================= */
+
+setInterval(
+  loadQueues,
+  3000
+);
+
+
+/* =========================================================
+   INICIO
+   ========================================================= */
+
+loadBusiness();
 
 </script>
 
