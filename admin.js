@@ -20,6 +20,10 @@ let myBarbers = [];
 
 let barberQueues = [];
 
+let barberServiceEditorOpen = false;
+
+let barberServiceEditorBarberId = null;
+
 
 // ==========================================
 // VERIFICAR SESIÓN
@@ -511,6 +515,10 @@ async function loadPanel() {
     await loadServices();
     await loadBarbers();
 
+    if (barberServiceEditorOpen) {
+        return;
+    }
+
     renderPanel();
 
 }
@@ -1000,6 +1008,15 @@ function renderBarbers() {
                                                     )"
                                                 >
                                                     ✏️ Editar
+                                                </button>
+
+                                                <button
+                                                    class="btn primary"
+                                                    onclick="showBarberServicesForm(
+                                                        '${barber.id}'
+                                                    )"
+                                                >
+                                                    ⚙️ Servicios
                                                 </button>
 
                                             </div>
@@ -1494,6 +1511,402 @@ async function toggleBarber(
 
 
     await loadBarbers();
+
+    renderPanel();
+
+}
+
+
+// ==========================================
+// ADMINISTRAR SERVICIOS DEL BARBERO
+// ==========================================
+
+async function showBarberServicesForm(barberId) {
+
+    const barber =
+        myBarbers.find(
+            b => b.id === barberId
+        );
+
+
+    if (!barber) {
+
+        alert(
+            "No se encontró el barbero."
+        );
+
+        return;
+
+    }
+
+
+    const container =
+        document.getElementById(
+            "barberFormContainer"
+        );
+
+
+    if (!container) {
+
+        return;
+
+    }
+
+
+    barberServiceEditorOpen = true;
+
+    barberServiceEditorBarberId = barberId;
+
+
+    container.innerHTML = `
+
+        <div class="card" style="border: 2px solid rgba(0, 150, 136, 0.25);">
+
+            <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+
+                <div>
+
+                    <h3 style="margin-top:0;">
+                        ⚙️ Servicios de ${escapeHtml(barber.name)}
+                    </h3>
+
+                    <p style="margin-bottom:0;">
+                        Selecciona los servicios que este barbero puede realizar.
+                    </p>
+
+                </div>
+
+                <span class="badge">
+                    ${barber.active ? "🟢 Barbero activo" : "🔴 Barbero inactivo"}
+                </span>
+
+            </div>
+
+            <div
+                id="barberServicesEditorContent"
+                style="margin-top:20px;"
+            >
+                <div class="empty">
+                    <p>⏳ Cargando servicios...</p>
+                </div>
+            </div>
+
+        </div>
+
+    `;
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await client.rpc(
+                "admin_barber_services",
+                {
+                    p_barber_id:
+                        barberId
+                }
+            );
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        const services = data || [];
+
+        const editor =
+            document.getElementById(
+                "barberServicesEditorContent"
+            );
+
+
+        if (!editor) {
+            return;
+        }
+
+
+        if (services.length === 0) {
+
+            editor.innerHTML = `
+
+                <div class="empty">
+                    <p>
+                        No tienes servicios creados todavía.
+                    </p>
+                    <p>
+                        Primero crea servicios en <strong>Mis servicios</strong>.
+                    </p>
+                    <button
+                        class="btn"
+                        onclick="closeBarberServicesForm()"
+                        style="margin-top:8px;"
+                    >
+                        ← Volver
+                    </button>
+                </div>
+
+            `;
+
+            return;
+        }
+
+
+        editor.innerHTML = `
+
+            <div style="display:flex; flex-direction:column; gap:10px;">
+
+                ${services.map(service => `
+
+                    <label
+                        style="
+                            display:flex;
+                            align-items:center;
+                            justify-content:space-between;
+                            gap:12px;
+                            padding:14px;
+                            border:1px solid rgba(127,127,127,0.25);
+                            border-radius:12px;
+                            cursor:${service.active ? "pointer" : "default"};
+                            opacity:${service.active ? "1" : "0.65"};
+                        "
+                    >
+
+                        <span style="display:flex; align-items:center; gap:12px; min-width:0;">
+
+                            <input
+                                type="checkbox"
+                                data-barber-service-id="${service.id}"
+                                ${service.assigned ? "checked" : ""}
+                                ${service.active ? "" : "disabled"}
+                                style="width:20px; height:20px; flex:0 0 auto;"
+                            >
+
+                            <span style="min-width:0;">
+
+                                <strong style="display:block;">
+                                    ${escapeHtml(service.name)}
+                                </strong>
+
+                                <small>
+                                    $${Number(service.price || 0).toLocaleString("es-CO")} · ${Number(service.duration_minutes || 0)} min
+                                </small>
+
+                            </span>
+
+                        </span>
+
+                        <span class="badge">
+                            ${service.active ? (service.assigned ? "Asignado" : "No asignado") : "Servicio inactivo"}
+                        </span>
+
+                    </label>
+
+                `).join("")}
+
+            </div>
+
+            <p
+                id="barberServicesFormMessage"
+                style="margin:15px 0 0;"
+            ></p>
+
+            <div
+                style="
+                    display:flex;
+                    gap:8px;
+                    flex-wrap:wrap;
+                    margin-top:15px;
+                "
+            >
+
+                <button
+                    class="btn primary"
+                    onclick="saveBarberServices('${barberId}')"
+                >
+                    💾 Guardar cambios
+                </button>
+
+                <button
+                    class="btn"
+                    onclick="closeBarberServicesForm()"
+                >
+                    Cancelar
+                </button>
+
+            </div>
+
+        `;
+
+    } catch (error) {
+
+        console.error(
+            "ERROR CARGANDO SERVICIOS DEL BARBERO:",
+            error
+        );
+
+        const editor =
+            document.getElementById(
+                "barberServicesEditorContent"
+            );
+
+        if (editor) {
+
+            editor.innerHTML = `
+
+                <div class="empty">
+                    <p>❌ ${escapeHtml(error.message)}</p>
+                    <button
+                        class="btn"
+                        onclick="closeBarberServicesForm()"
+                        style="margin-top:8px;"
+                    >
+                        ← Volver
+                    </button>
+                </div>
+
+            `;
+
+        }
+
+    }
+
+}
+
+
+// ==========================================
+// GUARDAR SERVICIOS DEL BARBERO
+// ==========================================
+
+async function saveBarberServices(barberId) {
+
+    if (
+        !barberServiceEditorOpen ||
+        barberServiceEditorBarberId !== barberId
+    ) {
+        return;
+    }
+
+
+    const message =
+        document.getElementById(
+            "barberServicesFormMessage"
+        );
+
+
+    const checkboxes =
+        Array.from(
+            document.querySelectorAll(
+                "input[data-barber-service-id]"
+            )
+        );
+
+
+    if (!checkboxes.length) {
+
+        if (message) {
+            message.textContent =
+                "⚠️ No hay servicios para guardar.";
+        }
+
+        return;
+    }
+
+
+    const buttons =
+        document.querySelectorAll(
+            "#barberServicesEditorContent button"
+        );
+
+
+    buttons.forEach(
+        button => button.disabled = true
+    );
+
+
+    if (message) {
+        message.textContent =
+            "⏳ Guardando servicios...";
+    }
+
+
+    try {
+
+        const results =
+            await Promise.all(
+                checkboxes.map(checkbox =>
+                    client.rpc(
+                        "admin_set_barber_service",
+                        {
+                            p_barber_id:
+                                barberId,
+
+                            p_service_id:
+                                checkbox.dataset.barberServiceId,
+
+                            p_assigned:
+                                checkbox.checked
+                        }
+                    )
+                )
+            );
+
+
+        const failed =
+            results.find(
+                result => result.error || result.data !== true
+            );
+
+
+        if (failed) {
+
+            throw (
+                failed.error ||
+                new Error(
+                    "No se pudo guardar uno de los servicios."
+                )
+            );
+
+        }
+
+
+        barberServiceEditorOpen = false;
+        barberServiceEditorBarberId = null;
+
+        await loadPanel();
+
+    } catch (error) {
+
+        console.error(
+            "ERROR GUARDANDO SERVICIOS DEL BARBERO:",
+            error
+        );
+
+        if (message) {
+            message.textContent =
+                "❌ " + error.message;
+        }
+
+        buttons.forEach(
+            button => button.disabled = false
+        );
+
+    }
+
+}
+
+
+// ==========================================
+// CERRAR SERVICIOS DEL BARBERO
+// ==========================================
+
+function closeBarberServicesForm() {
+
+    barberServiceEditorOpen = false;
+    barberServiceEditorBarberId = null;
 
     renderPanel();
 
@@ -2698,6 +3111,13 @@ setInterval(
     async function() {
 
         if (!business) {
+
+            return;
+
+        }
+
+
+        if (barberServiceEditorOpen) {
 
             return;
 
