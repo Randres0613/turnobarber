@@ -417,9 +417,26 @@
     </main>
 
 
+    <!-- ======================================================
+         PANTALLA DE TRABAJO DEL BARBERO
+    ======================================================= -->
+
+    <main
+        id="barberDashboard"
+        style="
+            display: none;
+            max-width: 760px;
+            margin: 25px auto;
+            padding: 0 15px 30px;
+        "
+    ></main>
+
+
     <!-- SUPABASE -->
 
     <script src="supabase.js"></script>
+
+    <script src="barbero.js"></script>
 
 
     <script>
@@ -787,7 +804,7 @@
                     function() {
 
                         window.location.href =
-                            "barbero.html";
+                            "barbero.html?mode=dashboard";
 
                     },
                     700
