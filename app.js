@@ -1,4 +1,3 @@
-
 const app = document.getElementById("app");
 const statusEl = document.getElementById("status");
 
@@ -60,6 +59,7 @@ let businessTimezone = "UTC";
 // ==========================================
 
 function getBusinessDate() {
+
     return new Intl.DateTimeFormat(
         "en-CA",
         {
@@ -90,63 +90,102 @@ async function loadBusinessTimezone() {
         );
 
     if (error) {
+
         console.warn(
             "No se pudo obtener la zona horaria de la barbería. Se usará UTC.",
             error
         );
+
         businessTimezone = "UTC";
+
         return;
     }
 
     if (typeof data === "string" && data) {
+
         businessTimezone = data;
+
         return;
     }
 
     if (Array.isArray(data) && data.length > 0) {
+
         businessTimezone =
             data[0]?.timezone ||
             data[0] ||
             "UTC";
+
         return;
     }
 
     if (data && typeof data === "object") {
+
         businessTimezone =
             data.timezone ||
             "UTC";
+
         return;
     }
 
     businessTimezone = "UTC";
+
 }
 
 
 // ==========================================
-// CARGAR BARBEROS ACTIVOS
+// CARGAR BARBEROS SEGÚN EL SERVICIO
+// ==========================================
+//
+// IMPORTANTE:
+//
+// Ahora NO cargamos todos los barberos activos.
+//
+// Recibimos el servicio seleccionado y consultamos:
+//
+// public_get_barbers_for_service
+//
+// De esta manera solamente aparecen los barberos
+// que tienen ese servicio asignado en barber_services.
 // ==========================================
 
-async function loadBarbers() {
+async function loadBarbers(serviceId) {
+
+    if (!business || !serviceId) {
+
+        barbers = [];
+
+        return false;
+
+    }
+
 
     const { data, error } =
         await client.rpc(
-            "public_get_barbers",
+            "public_get_barbers_for_service",
             {
-                p_business_id: business.id
+                p_business_id: business.id,
+                p_service_id: serviceId
             }
         );
 
+
     if (error) {
+
         console.error(
-            "Error cargando barberos:",
+            "Error cargando barberos para el servicio:",
             error
         );
+
         barbers = [];
+
         return false;
     }
 
+
     barbers = data || [];
+
     return true;
+
 }
 
 
@@ -156,7 +195,9 @@ async function loadBarbers() {
 
 async function loadBusiness() {
 
-    statusEl.textContent = "Conectando...";
+    statusEl.textContent =
+        "Conectando...";
+
 
     const { data, error } =
         await client.rpc(
@@ -166,22 +207,29 @@ async function loadBusiness() {
             }
         );
 
+
     if (error) {
 
         console.error(error);
 
-        statusEl.textContent = "Error";
+        statusEl.textContent =
+            "Error";
+
 
         app.innerHTML = `
+
             <div class="card hero">
 
-                <h2>⚠️ Error de conexión</h2>
+                <h2>
+                    ⚠️ Error de conexión
+                </h2>
 
                 <p>
                     ${error.message}
                 </p>
 
             </div>
+
         `;
 
         return false;
@@ -190,9 +238,12 @@ async function loadBusiness() {
 
     if (!data || data.length === 0) {
 
-        statusEl.textContent = "No encontrada";
+        statusEl.textContent =
+            "No encontrada";
+
 
         app.innerHTML = `
+
             <div class="card hero">
 
                 <h2>
@@ -208,17 +259,22 @@ async function loadBusiness() {
                 </strong>
 
             </div>
+
         `;
 
         return false;
     }
 
 
-    business = data[0];
+    business =
+        data[0];
+
 
     await loadServices();
 
+
     return true;
+
 }
 
 
@@ -249,9 +305,12 @@ async function loadServices() {
 
         console.error(error);
 
-        statusEl.textContent = "Error";
+        statusEl.textContent =
+            "Error";
+
 
         app.innerHTML = `
+
             <div class="card hero">
 
                 <h2>
@@ -263,15 +322,19 @@ async function loadServices() {
                 </p>
 
             </div>
+
         `;
 
         return;
     }
 
 
-    services = data || [];
+    services =
+        data || [];
 
-    statusEl.textContent = "Conectado";
+
+    statusEl.textContent =
+        "Conectado";
 
 }
 
@@ -306,6 +369,7 @@ function renderCustomer() {
             <h2>
                 Elige tu servicio
             </h2>
+
 
             ${
                 services.length === 0
@@ -390,32 +454,57 @@ async function takeTurn(serviceId) {
 
 
     if (!service) {
-        alert("No se encontró el servicio.");
+
+        alert(
+            "No se encontró el servicio."
+        );
+
         return;
+
     }
 
 
-    const loaded = await loadBarbers();
+    // ======================================================
+    // IMPORTANTE:
+    // CARGAR SOLAMENTE LOS BARBEROS DE ESTE SERVICIO
+    // ======================================================
+
+    const loaded =
+        await loadBarbers(service.id);
 
 
     if (!loaded) {
+
         app.innerHTML = `
+
             <div class="card hero">
-                <h2>⚠️ No pudimos cargar los barberos</h2>
-                <p>Intenta nuevamente.</p>
+
+                <h2>
+                    ⚠️ No pudimos cargar los barberos
+                </h2>
+
+                <p>
+                    Intenta nuevamente.
+                </p>
+
                 <button
                     class="btn"
                     onclick="renderCustomer()"
                 >
                     Volver
                 </button>
+
             </div>
+
         `;
+
         return;
+
     }
 
 
     renderBarberSelection(service);
+
 }
 
 
@@ -451,51 +540,79 @@ function renderBarberSelection(service) {
             </h2>
 
             <p>
-                Servicio: <strong>${service.name}</strong>
+                Servicio:
+                <strong>
+                    ${service.name}
+                </strong>
             </p>
 
             <p class="muted">
-                ${service.duration_minutes} min · ${money(service.price)}
+                ${service.duration_minutes}
+                min
+                ·
+                ${money(service.price)}
             </p>
+
 
             ${
                 barbers.length === 0
-                ? `
-                    <div class="status-box">
-                        <h3>⚠️ No hay barberos disponibles</h3>
-                        <p>En este momento no hay barberos activos.</p>
-                    </div>
+
+                ?
+
                 `
-                : `
-                    <div class="grid">
-                        ${
-                            barbers
-                                .map(barber => `
-                                    <div class="service">
-                                        <h3>
-                                            💈 ${barber.name}
-                                        </h3>
+                <div class="status-box">
 
-                                        <p>
-                                            🟢 Disponible
-                                        </p>
+                    <h3>
+                        ⚠️ No hay barberos disponibles
+                    </h3>
 
-                                        <button
-                                            class="btn"
-                                            onclick="takeTurnWithBarber(
-                                                '${service.id}',
-                                                '${barber.id}'
-                                            )"
-                                        >
-                                            Elegir ${barber.name}
-                                        </button>
-                                    </div>
-                                `)
-                                .join("")
-                        }
-                    </div>
+                    <p>
+                        En este momento no hay barberos
+                        asignados a este servicio.
+                    </p>
+
+                </div>
+                `
+
+                :
+
+                `
+                <div class="grid">
+
+                    ${
+                        barbers
+                            .map(barber => `
+
+                                <div class="service">
+
+                                    <h3>
+                                        💈 ${barber.name}
+                                    </h3>
+
+                                    <p>
+                                        🟢 Disponible
+                                    </p>
+
+                                    <button
+                                        class="btn"
+                                        onclick="takeTurnWithBarber(
+                                            '${service.id}',
+                                            '${barber.id}'
+                                        )"
+                                    >
+                                        Elegir ${barber.name}
+                                    </button>
+
+                                </div>
+
+                            `)
+                            .join("")
+                    }
+
+                </div>
                 `
             }
+
 
             <button
                 class="btn"
@@ -506,7 +623,9 @@ function renderBarberSelection(service) {
             </button>
 
         </div>
+
     `;
+
 }
 
 
@@ -524,6 +643,7 @@ async function takeTurnWithBarber(
             s => s.id === serviceId
         );
 
+
     const barber =
         barbers.find(
             b => b.id === barberId
@@ -531,8 +651,13 @@ async function takeTurnWithBarber(
 
 
     if (!service || !barber) {
-        alert("No se encontró el servicio o el barbero.");
+
+        alert(
+            "No se encontró el servicio o el barbero."
+        );
+
         return;
+
     }
 
 
@@ -561,9 +686,14 @@ async function takeTurnWithBarber(
         await client.rpc(
             "public_take_ticket",
             {
-                p_business_id: business.id,
-                p_service_id: service.id,
-                p_barber_id: barber.id
+                p_business_id:
+                    business.id,
+
+                p_service_id:
+                    service.id,
+
+                p_barber_id:
+                    barber.id
             }
         );
 
@@ -594,7 +724,9 @@ async function takeTurnWithBarber(
             </div>
 
         `;
+
         return;
+
     }
 
 
@@ -620,17 +752,27 @@ async function takeTurnWithBarber(
         `;
 
         return;
+
     }
 
 
     currentTicket = {
+
         ...data[0],
-        barber_id: barber.id,
-        barber_name: barber.name
+
+        barber_id:
+            barber.id,
+
+        barber_name:
+            barber.name
+
     };
 
+
     saveTicket();
+
     showTicket();
+
 }
 
 
@@ -647,18 +789,32 @@ async function takeTurnWithBarber(
 
 function saveTicket() {
 
-    if (!currentTicket || !currentTicket.id) {
+    if (
+        !currentTicket ||
+        !currentTicket.id
+    ) {
+
         return;
+
     }
 
 
     localStorage.setItem(
         "turnobarber_ticket",
         JSON.stringify({
-            ticket_id: currentTicket.id,
-            business_id: business.id,
-            business_slug: slug,
-            ticket_date: getBusinessDate()
+
+            ticket_id:
+                currentTicket.id,
+
+            business_id:
+                business.id,
+
+            business_slug:
+                slug,
+
+            ticket_date:
+                getBusinessDate()
+
         })
     );
 
@@ -678,7 +834,9 @@ function getSavedTicket() {
 
 
     if (!saved) {
+
         return null;
+
     }
 
 
@@ -693,11 +851,14 @@ function getSavedTicket() {
             error
         );
 
+
         localStorage.removeItem(
             "turnobarber_ticket"
         );
 
+
         return null;
+
     }
 
 }
@@ -723,7 +884,9 @@ function clearSavedTicket() {
 function showTicket() {
 
     if (!currentTicket) {
+
         return;
+
     }
 
 
@@ -809,8 +972,13 @@ function showTicket() {
 
 async function checkTicketStatus() {
 
-    if (!currentTicket || !currentTicket.id) {
+    if (
+        !currentTicket ||
+        !currentTicket.id
+    ) {
+
         return;
+
     }
 
 
@@ -818,7 +986,8 @@ async function checkTicketStatus() {
         await client.rpc(
             "public_ticket_status",
             {
-                p_ticket_id: currentTicket.id
+                p_ticket_id:
+                    currentTicket.id
             }
         );
 
@@ -831,21 +1000,30 @@ async function checkTicketStatus() {
         );
 
         return;
+
     }
 
 
-    if (!data || data.length === 0) {
+    if (
+        !data ||
+        data.length === 0
+    ) {
 
         return;
+
     }
 
 
-    const ticket = data[0];
+    const ticket =
+        data[0];
 
 
     currentTicket = {
+
         ...currentTicket,
+
         ...ticket
+
     };
 
 
@@ -854,387 +1032,4 @@ async function checkTicketStatus() {
 }
 
 
-// ==========================================
-// ACTUALIZAR ESTADO VISUAL
-// ==========================================
-
-function renderTicketStatus(ticket) {
-
-    const details =
-        document.getElementById(
-            "ticketDetails"
-        );
-
-
-    const badge =
-        document.getElementById(
-            "ticketBadge"
-        );
-
-
-    if (!details) {
-        return;
-    }
-
-
-    // ======================================
-    // ESPERANDO
-    // ======================================
-
-    if (ticket.status === "waiting") {
-
-        if (badge) {
-
-            badge.textContent =
-                "🟡 ESPERANDO";
-
-        }
-
-
-        details.innerHTML = `
-
-            <div class="status-box">
-
-                <h3>
-                    🟡 Estás en espera
-                </h3>
-
-                <p>
-                    Hay
-                    <strong>
-                        ${ticket.people_ahead}
-                    </strong>
-                    personas antes que tú.
-                </p>
-
-                <p>
-                    ${
-                        Number(ticket.people_ahead || 0) === 0
-                        ? "🟢 Eres el próximo, espera el llamado"
-                        : Number(ticket.estimated_minutes || 0) > 0
-                            ? `⏱️ Tiempo estimado: <strong>${ticket.estimated_minutes} min</strong>`
-                            : "🟢 Próximo turno"
-                    }
-                </p>
-
-            </div>
-
-        `;
-
-        return;
-    }
-
-
-    // ======================================
-    // LLAMADO / EN ATENCIÓN
-    // ======================================
-
-    if (
-        ticket.status === "called" ||
-        ticket.status === "serving"
-    ) {
-
-        if (badge) {
-
-            badge.textContent =
-                "🟢 ¡ES TU TURNO!";
-
-        }
-
-
-        details.innerHTML = `
-
-            <div class="status-box">
-
-                <h2>
-                    🟢 ¡ES TU TURNO!
-                </h2>
-
-                <p>
-                    Pasa a la barbería.
-                </p>
-
-            </div>
-
-        `;
-
-        return;
-    }
-
-
-    // ======================================
-    // FINALIZADO
-    // ======================================
-
-    if (ticket.status === "done") {
-
-        if (badge) {
-
-            badge.textContent =
-                "✅ FINALIZADO";
-
-        }
-
-
-        details.innerHTML = `
-
-            <div class="status-box">
-
-                <h2>
-                    ✅ Turno finalizado
-                </h2>
-
-                <p>
-                    Gracias por visitarnos.
-                </p>
-
-            </div>
-
-        `;
-
-
-        clearSavedTicket();
-
-        return;
-    }
-
-
-    // ======================================
-    // NO SE PRESENTÓ
-    // ======================================
-
-    if (ticket.status === "no_show") {
-
-        if (badge) {
-
-            badge.textContent =
-                "🚫 NO PRESENTADO";
-
-        }
-
-
-        details.innerHTML = `
-
-            <div class="status-box">
-
-                <h2>
-                    🚫 Turno marcado como
-                    no presentado
-                </h2>
-
-                <p>
-                    Este turno ya no está activo.
-                </p>
-
-            </div>
-
-        `;
-
-
-        clearSavedTicket();
-
-        return;
-    }
-
-
-    // ======================================
-    // CANCELADO
-    // ======================================
-
-    if (ticket.status === "cancelled") {
-
-        if (badge) {
-
-            badge.textContent =
-                "❌ CANCELADO";
-
-        }
-
-
-        details.innerHTML = `
-
-            <div class="status-box">
-
-                <h2>
-                    ❌ Turno cancelado
-                </h2>
-
-                <p>
-                    Este turno ya no está activo.
-                </p>
-
-            </div>
-
-        `;
-
-
-        clearSavedTicket();
-
-        return;
-    }
-
-}
-
-
-// ==========================================
-// RECUPERAR TURNO AL ABRIR LA PÁGINA
-// ==========================================
-//
-// Si el turno guardado pertenece a otro día,
-// se elimina solamente del navegador.
-//
-// El registro de Supabase NO se elimina.
-// ==========================================
-
-async function restoreSavedTicket() {
-
-    const savedTicket =
-        getSavedTicket();
-
-
-    if (!savedTicket) {
-
-        renderCustomer();
-
-        return;
-    }
-
-
-    if (
-        savedTicket.business_slug !== slug
-    ) {
-
-        clearSavedTicket();
-
-        renderCustomer();
-
-        return;
-    }
-
-
-    // ======================================
-    // COMPROBAR JORNADA
-    // ======================================
-
-    const today =
-        getBusinessDate();
-
-
-    // Si el turno no tiene fecha guardada,
-    // es un turno anterior a esta actualización.
-    //
-    // Lo eliminamos del navegador para evitar
-    // que un turno viejo siga bloqueando al cliente.
-
-    if (
-        !savedTicket.ticket_date ||
-        savedTicket.ticket_date !== today
-    ) {
-
-        clearSavedTicket();
-
-        renderCustomer();
-
-        return;
-    }
-
-
-    currentTicket = {
-        id: savedTicket.ticket_id
-    };
-
-
-    const { data, error } =
-        await client.rpc(
-            "public_ticket_status",
-            {
-                p_ticket_id:
-                    savedTicket.ticket_id
-            }
-        );
-
-
-    if (error) {
-
-        console.error(
-            "Error recuperando turno:",
-            error
-        );
-
-        clearSavedTicket();
-
-        renderCustomer();
-
-        return;
-    }
-
-
-    if (!data || data.length === 0) {
-
-        clearSavedTicket();
-
-        renderCustomer();
-
-        return;
-    }
-
-
-    const ticket = data[0];
-
-
-    currentTicket = {
-        id: savedTicket.ticket_id,
-        ...ticket
-    };
-
-
-    if (
-        ticket.status === "done" ||
-        ticket.status === "cancelled" ||
-        ticket.status === "no_show"
-    ) {
-
-        clearSavedTicket();
-
-        renderCustomer();
-
-        return;
-    }
-
-
-    showTicket();
-
-}
-
-
-// ==========================================
-// ACTUALIZACIÓN AUTOMÁTICA
-// ==========================================
-
-setInterval(
-    checkTicketStatus,
-    5000
-);
-
-
-// ==========================================
-// INICIAR APLICACIÓN
-// ==========================================
-
-async function startApp() {
-
-    const loaded =
-        await loadBusiness();
-
-
-    if (!loaded) {
-        return;
-    }
-
-await loadBusinessTimezone();
-    await restoreSavedTicket();
-
-}
-
-
-startApp();
+// =================================
