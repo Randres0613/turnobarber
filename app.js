@@ -5,13 +5,6 @@ const statusEl = document.getElementById("status");
 // ==========================================
 // DETECTAR CONFIRMACIÓN DE CORREO
 // ==========================================
-//
-// Supabase puede devolver la confirmación mediante
-// el hash (#) o mediante parámetros en la URL.
-//
-// Si detectamos que acaba de confirmar una cuenta,
-// enviamos al usuario directamente al inicio de sesión.
-// ==========================================
 
 const hashParams = new URLSearchParams(
     window.location.hash.replace(/^#/, "")
@@ -27,9 +20,7 @@ const isSignupConfirmation =
     queryParams.has("code");
 
 if (isSignupConfirmation) {
-
     window.location.replace("login.html");
-
 }
 
 
@@ -51,12 +42,6 @@ let businessTimezone = "UTC";
 // ==========================================
 // FECHA ACTUAL DE LA BARBERÍA
 // ==========================================
-//
-// La jornada se calcula usando la zona horaria
-// configurada para cada barbería.
-// Así TurnoBarber puede funcionar en Colombia,
-// México, Chile, Argentina, España, etc.
-// ==========================================
 
 function getBusinessDate() {
 
@@ -68,66 +53,79 @@ function getBusinessDate() {
             month: "2-digit",
             day: "2-digit"
         }
-    ).format(
-        new Date()
-    );
+    ).format(new Date());
 
 }
 
 
 // ==========================================
-// CARGAR ZONA HORARIA DE LA BARBERÍA
+// CARGAR ZONA HORARIA
 // ==========================================
 
 async function loadBusinessTimezone() {
 
-    const { data, error } =
-        await client.rpc(
-            "get_business_timezone",
-            {
-                p_business_id: business.id
-            }
-        );
+    if (!business || !business.id) {
+        businessTimezone = "UTC";
+        return;
+    }
 
-    if (error) {
+    try {
+
+        const { data, error } =
+            await client.rpc(
+                "get_business_timezone",
+                {
+                    p_business_id: business.id
+                }
+            );
+
+        if (error) {
+
+            console.warn(
+                "No se pudo obtener la zona horaria. Se usará UTC.",
+                error
+            );
+
+            businessTimezone = "UTC";
+            return;
+        }
+
+        if (typeof data === "string" && data) {
+
+            businessTimezone = data;
+            return;
+        }
+
+        if (Array.isArray(data) && data.length > 0) {
+
+            businessTimezone =
+                data[0]?.timezone ||
+                data[0] ||
+                "UTC";
+
+            return;
+        }
+
+        if (data && typeof data === "object") {
+
+            businessTimezone =
+                data.timezone ||
+                "UTC";
+
+            return;
+        }
+
+        businessTimezone = "UTC";
+
+    } catch (error) {
 
         console.warn(
-            "No se pudo obtener la zona horaria de la barbería. Se usará UTC.",
+            "Error obteniendo zona horaria. Se usará UTC.",
             error
         );
 
         businessTimezone = "UTC";
-
-        return;
     }
-
-    if (typeof data === "string" && data) {
-
-        businessTimezone = data;
-
-        return;
-    }
-
-    if (Array.isArray(data) && data.length > 0) {
-
-        businessTimezone =
-            data[0]?.timezone ||
-            data[0] ||
-            "UTC";
-
-        return;
-    }
-
-    if (data && typeof data === "object") {
-
-        businessTimezone =
-            data.timezone ||
-            "UTC";
-
-        return;
-    }
-
-    businessTimezone = "UTC";
 
 }
 
@@ -137,15 +135,13 @@ async function loadBusinessTimezone() {
 // ==========================================
 //
 // IMPORTANTE:
+// Solamente se muestran los barberos que:
+// 1. pertenecen a la barbería
+// 2. están activos
+// 3. tienen asignado el servicio seleccionado
 //
-// Ahora NO cargamos todos los barberos activos.
-//
-// Recibimos el servicio seleccionado y consultamos:
-//
-// public_get_barbers_for_service
-//
-// De esta manera solamente aparecen los barberos
-// que tienen ese servicio asignado en barber_services.
+// Esto permite que la configuración sea diferente
+// para cada barbería y también para futuras barberías.
 // ==========================================
 
 async function loadBarbers(serviceId) {
@@ -155,24 +151,39 @@ async function loadBarbers(serviceId) {
         barbers = [];
 
         return false;
-
     }
 
+    try {
 
-    const { data, error } =
-        await client.rpc(
-            "public_get_barbers_for_service",
-            {
-                p_business_id: business.id,
-                p_service_id: serviceId
-            }
-        );
+        const { data, error } =
+            await client.rpc(
+                "public_get_barbers_for_service",
+                {
+                    p_business_id: business.id,
+                    p_service_id: serviceId
+                }
+            );
 
+        if (error) {
 
-    if (error) {
+            console.error(
+                "Error cargando barberos para el servicio:",
+                error
+            );
+
+            barbers = [];
+
+            return false;
+        }
+
+        barbers = data || [];
+
+        return true;
+
+    } catch (error) {
 
         console.error(
-            "Error cargando barberos para el servicio:",
+            "Error inesperado cargando barberos:",
             error
         );
 
@@ -180,11 +191,6 @@ async function loadBarbers(serviceId) {
 
         return false;
     }
-
-
-    barbers = data || [];
-
-    return true;
 
 }
 
@@ -198,82 +204,106 @@ async function loadBusiness() {
     statusEl.textContent =
         "Conectando...";
 
+    try {
 
-    const { data, error } =
-        await client.rpc(
-            "get_business_by_qr",
-            {
-                p_qr_slug: slug
-            }
+        const { data, error } =
+            await client.rpc(
+                "get_business_by_qr",
+                {
+                    p_qr_slug: slug
+                }
+            );
+
+        if (error) {
+
+            console.error(error);
+
+            statusEl.textContent =
+                "Error";
+
+            app.innerHTML = `
+                <div class="card hero">
+
+                    <h2>
+                        ⚠️ Error de conexión
+                    </h2>
+
+                    <p>
+                        ${error.message}
+                    </p>
+
+                </div>
+            `;
+
+            return false;
+        }
+
+        if (!data || data.length === 0) {
+
+            statusEl.textContent =
+                "No encontrada";
+
+            app.innerHTML = `
+                <div class="card hero">
+
+                    <h2>
+                        💈 Barbería no encontrada
+                    </h2>
+
+                    <p>
+                        No encontramos la barbería:
+                    </p>
+
+                    <strong>
+                        ${slug}
+                    </strong>
+
+                </div>
+            `;
+
+            return false;
+        }
+
+        business =
+            data[0];
+
+        await loadServices();
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Error inesperado cargando barbería:",
+            error
         );
-
-
-    if (error) {
-
-        console.error(error);
 
         statusEl.textContent =
             "Error";
 
-
         app.innerHTML = `
-
             <div class="card hero">
 
                 <h2>
-                    ⚠️ Error de conexión
+                    ⚠️ Error cargando barbería
                 </h2>
 
                 <p>
-                    ${error.message}
+                    ${error.message || error}
                 </p>
 
-            </div>
+                <button
+                    class="btn"
+                    onclick="location.reload()"
+                >
+                    🔄 Intentar nuevamente
+                </button>
 
+            </div>
         `;
 
         return false;
     }
-
-
-    if (!data || data.length === 0) {
-
-        statusEl.textContent =
-            "No encontrada";
-
-
-        app.innerHTML = `
-
-            <div class="card hero">
-
-                <h2>
-                    💈 Barbería no encontrada
-                </h2>
-
-                <p>
-                    No encontramos la barbería:
-                </p>
-
-                <strong>
-                    ${slug}
-                </strong>
-
-            </div>
-
-        `;
-
-        return false;
-    }
-
-
-    business =
-        data[0];
-
-
-    await loadServices();
-
-
-    return true;
 
 }
 
@@ -284,33 +314,74 @@ async function loadBusiness() {
 
 async function loadServices() {
 
-    const { data, error } =
-        await client
-            .from("services")
-            .select(
-                "id,business_id,name,price,duration_minutes,active"
-            )
-            .eq(
-                "business_id",
-                business.id
-            )
-            .eq(
-                "active",
-                true
-            )
-            .order("name");
+    try {
 
+        const { data, error } =
+            await client
+                .from("services")
+                .select(
+                    "id,business_id,name,price,duration_minutes,active"
+                )
+                .eq(
+                    "business_id",
+                    business.id
+                )
+                .eq(
+                    "active",
+                    true
+                )
+                .order("name");
 
-    if (error) {
+        if (error) {
 
-        console.error(error);
+            console.error(error);
+
+            statusEl.textContent =
+                "Error";
+
+            app.innerHTML = `
+                <div class="card hero">
+
+                    <h2>
+                        ⚠️ Error cargando servicios
+                    </h2>
+
+                    <p>
+                        ${error.message}
+                    </p>
+
+                    <button
+                        class="btn"
+                        onclick="location.reload()"
+                    >
+                        🔄 Intentar nuevamente
+                    </button>
+
+                </div>
+            `;
+
+            return false;
+        }
+
+        services =
+            data || [];
+
+        statusEl.textContent =
+            "Conectado";
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Error inesperado cargando servicios:",
+            error
+        );
 
         statusEl.textContent =
             "Error";
 
-
         app.innerHTML = `
-
             <div class="card hero">
 
                 <h2>
@@ -318,23 +389,21 @@ async function loadServices() {
                 </h2>
 
                 <p>
-                    ${error.message}
+                    ${error.message || error}
                 </p>
 
-            </div>
+                <button
+                    class="btn"
+                    onclick="location.reload()"
+                >
+                    🔄 Intentar nuevamente
+                </button>
 
+            </div>
         `;
 
-        return;
+        return false;
     }
-
-
-    services =
-        data || [];
-
-
-    statusEl.textContent =
-        "Conectado";
 
 }
 
@@ -363,13 +432,11 @@ function renderCustomer() {
 
         </div>
 
-
         <div class="card">
 
             <h2>
                 Elige tu servicio
             </h2>
-
 
             ${
                 services.length === 0
@@ -377,54 +444,52 @@ function renderCustomer() {
                 ?
 
                 `
-                <p class="muted">
-                    No hay servicios disponibles.
-                </p>
+                    <p class="muted">
+                        No hay servicios disponibles.
+                    </p>
                 `
 
                 :
 
                 `
-                <div class="grid">
+                    <div class="grid">
 
-                    ${
-                        services
-                            .map(service => `
+                        ${
+                            services
+                                .map(service => `
 
-                                <div class="service">
+                                    <div class="service">
 
-                                    <h3>
-                                        ${service.name}
-                                    </h3>
+                                        <h3>
+                                            ${service.name}
+                                        </h3>
 
-                                    <p>
-                                        ${service.duration_minutes}
-                                        min
-                                        ·
-                                        ${money(service.price)}
-                                    </p>
+                                        <p>
+                                            ${service.duration_minutes}
+                                            min
+                                            ·
+                                            ${money(service.price)}
+                                        </p>
 
-                                    <button
-                                        class="btn"
-                                        onclick="takeTurn('${service.id}')"
-                                    >
-                                        Tomar turno
-                                    </button>
+                                        <button
+                                            class="btn"
+                                            onclick="takeTurn('${service.id}')"
+                                        >
+                                            Tomar turno
+                                        </button>
 
-                                </div>
+                                    </div>
 
-                            `)
-                            .join("")
-                    }
+                                `)
+                                .join("")
+                        }
 
-                </div>
+                    </div>
                 `
             }
 
         </div>
-
     `;
-
 }
 
 
@@ -452,7 +517,6 @@ async function takeTurn(serviceId) {
             s => s.id === serviceId
         );
 
-
     if (!service) {
 
         alert(
@@ -460,23 +524,14 @@ async function takeTurn(serviceId) {
         );
 
         return;
-
     }
-
-
-    // ======================================================
-    // IMPORTANTE:
-    // CARGAR SOLAMENTE LOS BARBEROS DE ESTE SERVICIO
-    // ======================================================
 
     const loaded =
         await loadBarbers(service.id);
 
-
     if (!loaded) {
 
         app.innerHTML = `
-
             <div class="card hero">
 
                 <h2>
@@ -495,16 +550,12 @@ async function takeTurn(serviceId) {
                 </button>
 
             </div>
-
         `;
 
         return;
-
     }
 
-
     renderBarberSelection(service);
-
 }
 
 
@@ -532,7 +583,6 @@ function renderBarberSelection(service) {
 
         </div>
 
-
         <div class="card">
 
             <h2>
@@ -553,66 +603,64 @@ function renderBarberSelection(service) {
                 ${money(service.price)}
             </p>
 
-
             ${
                 barbers.length === 0
 
                 ?
 
                 `
-                <div class="status-box">
+                    <div class="status-box">
 
-                    <h3>
-                        ⚠️ No hay barberos disponibles
-                    </h3>
+                        <h3>
+                            ⚠️ No hay barberos disponibles
+                        </h3>
 
-                    <p>
-                        En este momento no hay barberos
-                        asignados a este servicio.
-                    </p>
+                        <p>
+                            En este momento no hay
+                            barberos asignados a este servicio.
+                        </p>
 
-                </div>
+                    </div>
                 `
 
                 :
 
                 `
-                <div class="grid">
+                    <div class="grid">
 
-                    ${
-                        barbers
-                            .map(barber => `
+                        ${
+                            barbers
+                                .map(barber => `
 
-                                <div class="service">
+                                    <div class="service">
 
-                                    <h3>
-                                        💈 ${barber.name}
-                                    </h3>
+                                        <h3>
+                                            💈 ${barber.name}
+                                        </h3>
 
-                                    <p>
-                                        🟢 Disponible
-                                    </p>
+                                        <p>
+                                            🟢 Disponible
+                                        </p>
 
-                                    <button
-                                        class="btn"
-                                        onclick="takeTurnWithBarber(
-                                            '${service.id}',
-                                            '${barber.id}'
-                                        )"
-                                    >
-                                        Elegir ${barber.name}
-                                    </button>
+                                        <button
+                                            class="btn"
+                                            onclick="takeTurnWithBarber(
+                                                '${service.id}',
+                                                '${barber.id}'
+                                            )"
+                                        >
+                                            Elegir ${barber.name}
+                                        </button>
 
-                                </div>
+                                    </div>
 
-                            `)
-                            .join("")
-                    }
+                                `)
+                                .join("")
+                        }
 
-                </div>
+                    </div>
                 `
             }
-
 
             <button
                 class="btn"
@@ -623,9 +671,7 @@ function renderBarberSelection(service) {
             </button>
 
         </div>
-
     `;
-
 }
 
 
@@ -643,12 +689,10 @@ async function takeTurnWithBarber(
             s => s.id === serviceId
         );
 
-
     const barber =
         barbers.find(
             b => b.id === barberId
         );
-
 
     if (!service || !barber) {
 
@@ -657,9 +701,7 @@ async function takeTurnWithBarber(
         );
 
         return;
-
     }
-
 
     app.innerHTML = `
 
@@ -670,7 +712,9 @@ async function takeTurnWithBarber(
             </h2>
 
             <p>
-                ${barber.name} · ${service.name}
+                ${barber.name}
+                ·
+                ${service.name}
             </p>
 
             <p>
@@ -678,40 +722,110 @@ async function takeTurnWithBarber(
             </p>
 
         </div>
-
     `;
 
+    try {
 
-    const { data, error } =
-        await client.rpc(
-            "public_take_ticket",
-            {
-                p_business_id:
-                    business.id,
+        const { data, error } =
+            await client.rpc(
+                "public_take_ticket",
+                {
+                    p_business_id:
+                        business.id,
 
-                p_service_id:
-                    service.id,
+                    p_service_id:
+                        service.id,
 
-                p_barber_id:
-                    barber.id
-            }
+                    p_barber_id:
+                        barber.id
+                }
+            );
+
+        if (error) {
+
+            console.error(error);
+
+            app.innerHTML = `
+
+                <div class="card hero">
+
+                    <h2>
+                        ⚠️ No pudimos tomar tu turno
+                    </h2>
+
+                    <p>
+                        ${error.message}
+                    </p>
+
+                    <button
+                        class="btn"
+                        onclick="renderCustomer()"
+                    >
+                        Volver
+                    </button>
+
+                </div>
+            `;
+
+            return;
+        }
+
+        if (!data || data.length === 0) {
+
+            app.innerHTML = `
+
+                <div class="card hero">
+
+                    <h2>
+                        ⚠️ No se creó el turno
+                    </h2>
+
+                    <button
+                        class="btn"
+                        onclick="renderCustomer()"
+                    >
+                        Volver
+                    </button>
+
+                </div>
+            `;
+
+            return;
+        }
+
+        currentTicket = {
+
+            ...data[0],
+
+            barber_id:
+                barber.id,
+
+            barber_name:
+                barber.name
+
+        };
+
+        saveTicket();
+
+        showTicket();
+
+    } catch (error) {
+
+        console.error(
+            "Error inesperado creando turno:",
+            error
         );
-
-
-    if (error) {
-
-        console.error(error);
 
         app.innerHTML = `
 
             <div class="card hero">
 
                 <h2>
-                    ⚠️ No pudimos tomar tu turno
+                    ⚠️ Error creando el turno
                 </h2>
 
                 <p>
-                    ${error.message}
+                    ${error.message || error}
                 </p>
 
                 <button
@@ -722,69 +836,14 @@ async function takeTurnWithBarber(
                 </button>
 
             </div>
-
         `;
-
-        return;
-
     }
-
-
-    if (!data || data.length === 0) {
-
-        app.innerHTML = `
-
-            <div class="card hero">
-
-                <h2>
-                    ⚠️ No se creó el turno
-                </h2>
-
-                <button
-                    class="btn"
-                    onclick="renderCustomer()"
-                >
-                    Volver
-                </button>
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
-
-    currentTicket = {
-
-        ...data[0],
-
-        barber_id:
-            barber.id,
-
-        barber_name:
-            barber.name
-
-    };
-
-
-    saveTicket();
-
-    showTicket();
 
 }
 
 
 // ==========================================
 // GUARDAR TURNO
-// ==========================================
-//
-// Además del ID del turno, guardamos la fecha
-// de la jornada en la zona horaria de la barbería.
-//
-// Esto permite saber si el turno pertenece
-// al día actual o a una jornada anterior.
 // ==========================================
 
 function saveTicket() {
@@ -795,9 +854,7 @@ function saveTicket() {
     ) {
 
         return;
-
     }
-
 
     localStorage.setItem(
         "turnobarber_ticket",
@@ -817,7 +874,6 @@ function saveTicket() {
 
         })
     );
-
 }
 
 
@@ -832,13 +888,10 @@ function getSavedTicket() {
             "turnobarber_ticket"
         );
 
-
     if (!saved) {
 
         return null;
-
     }
-
 
     try {
 
@@ -851,14 +904,11 @@ function getSavedTicket() {
             error
         );
 
-
         localStorage.removeItem(
             "turnobarber_ticket"
         );
 
-
         return null;
-
     }
 
 }
@@ -886,9 +936,7 @@ function showTicket() {
     if (!currentTicket) {
 
         return;
-
     }
-
 
     app.innerHTML = `
 
@@ -903,7 +951,6 @@ function showTicket() {
             </p>
 
         </div>
-
 
         <div id="ticketStatus">
 
@@ -928,7 +975,6 @@ function showTicket() {
                     🟡 ESPERANDO
                 </span>
 
-
                 <div id="ticketDetails">
 
                     <p>
@@ -938,7 +984,6 @@ function showTicket() {
                 </div>
 
             </div>
-
 
             <div class="card">
 
@@ -957,12 +1002,9 @@ function showTicket() {
             </div>
 
         </div>
-
     `;
 
-
     checkTicketStatus();
-
 }
 
 
@@ -978,58 +1020,512 @@ async function checkTicketStatus() {
     ) {
 
         return;
-
     }
 
+    try {
 
-    const { data, error } =
-        await client.rpc(
-            "public_ticket_status",
-            {
-                p_ticket_id:
-                    currentTicket.id
-            }
-        );
+        const { data, error } =
+            await client.rpc(
+                "public_ticket_status",
+                {
+                    p_ticket_id:
+                        currentTicket.id
+                }
+            );
 
+        if (error) {
 
-    if (error) {
+            console.error(
+                "Error consultando turno:",
+                error
+            );
+
+            return;
+        }
+
+        if (
+            !data ||
+            data.length === 0
+        ) {
+
+            return;
+        }
+
+        const ticket =
+            data[0];
+
+        currentTicket = {
+
+            ...currentTicket,
+
+            ...ticket
+
+        };
+
+        renderTicketStatus(ticket);
+
+    } catch (error) {
 
         console.error(
-            "Error consultando turno:",
+            "Error inesperado consultando turno:",
             error
         );
-
-        return;
-
     }
-
-
-    if (
-        !data ||
-        data.length === 0
-    ) {
-
-        return;
-
-    }
-
-
-    const ticket =
-        data[0];
-
-
-    currentTicket = {
-
-        ...currentTicket,
-
-        ...ticket
-
-    };
-
-
-    renderTicketStatus(ticket);
 
 }
 
 
-// =================================
+// ==========================================
+// ACTUALIZAR ESTADO VISUAL
+// ==========================================
+
+function renderTicketStatus(ticket) {
+
+    const details =
+        document.getElementById(
+            "ticketDetails"
+        );
+
+    const badge =
+        document.getElementById(
+            "ticketBadge"
+        );
+
+    if (!details) {
+
+        return;
+    }
+
+
+    // ======================================
+    // ESPERANDO
+    // ======================================
+
+    if (
+        ticket.status === "waiting"
+    ) {
+
+        if (badge) {
+
+            badge.textContent =
+                "🟡 ESPERANDO";
+        }
+
+        details.innerHTML = `
+
+            <div class="status-box">
+
+                <h3>
+                    🟡 Estás en espera
+                </h3>
+
+                <p>
+                    Hay
+                    <strong>
+                        ${ticket.people_ahead}
+                    </strong>
+                    personas antes que tú.
+                </p>
+
+                <p>
+
+                    ${
+                        Number(
+                            ticket.people_ahead || 0
+                        ) === 0
+
+                        ?
+
+                        "🟢 Eres el próximo, espera el llamado"
+
+                        :
+
+                        Number(
+                            ticket.estimated_minutes || 0
+                        ) > 0
+
+                        ?
+
+                        `
+                            ⏱️ Tiempo estimado:
+                            <strong>
+                                ${ticket.estimated_minutes} min
+                            </strong>
+                        `
+
+                        :
+
+                        "🟢 Próximo turno"
+                    }
+
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // ======================================
+    // LLAMADO / EN ATENCIÓN
+    // ======================================
+
+    if (
+        ticket.status === "called" ||
+        ticket.status === "serving"
+    ) {
+
+        if (badge) {
+
+            badge.textContent =
+                "🟢 ¡ES TU TURNO!";
+        }
+
+        details.innerHTML = `
+
+            <div class="status-box">
+
+                <h2>
+                    🟢 ¡ES TU TURNO!
+                </h2>
+
+                <p>
+                    Pasa a la barbería.
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // ======================================
+    // FINALIZADO
+    // ======================================
+
+    if (
+        ticket.status === "done"
+    ) {
+
+        if (badge) {
+
+            badge.textContent =
+                "✅ FINALIZADO";
+        }
+
+        details.innerHTML = `
+
+            <div class="status-box">
+
+                <h2>
+                    ✅ Turno finalizado
+                </h2>
+
+                <p>
+                    Gracias por visitarnos.
+                </p>
+
+            </div>
+        `;
+
+        clearSavedTicket();
+
+        return;
+    }
+
+
+    // ======================================
+    // NO SE PRESENTÓ
+    // ======================================
+
+    if (
+        ticket.status === "no_show"
+    ) {
+
+        if (badge) {
+
+            badge.textContent =
+                "🚫 NO PRESENTADO";
+        }
+
+        details.innerHTML = `
+
+            <div class="status-box">
+
+                <h2>
+                    🚫 Turno marcado como
+                    no presentado
+                </h2>
+
+                <p>
+                    Este turno ya no está activo.
+                </p>
+
+            </div>
+        `;
+
+        clearSavedTicket();
+
+        return;
+    }
+
+
+    // ======================================
+    // CANCELADO
+    // ======================================
+
+    if (
+        ticket.status === "cancelled"
+    ) {
+
+        if (badge) {
+
+            badge.textContent =
+                "❌ CANCELADO";
+        }
+
+        details.innerHTML = `
+
+            <div class="status-box">
+
+                <h2>
+                    ❌ Turno cancelado
+                </h2>
+
+                <p>
+                    Este turno ya no está activo.
+                </p>
+
+            </div>
+        `;
+
+        clearSavedTicket();
+
+        return;
+    }
+
+}
+
+
+// ==========================================
+// RECUPERAR TURNO AL ABRIR LA PÁGINA
+// ==========================================
+
+async function restoreSavedTicket() {
+
+    const savedTicket =
+        getSavedTicket();
+
+    if (!savedTicket) {
+
+        renderCustomer();
+
+        return;
+    }
+
+
+    if (
+        savedTicket.business_slug !== slug
+    ) {
+
+        clearSavedTicket();
+
+        renderCustomer();
+
+        return;
+    }
+
+
+    // ======================================
+    // COMPROBAR JORNADA
+    // ======================================
+
+    const today =
+        getBusinessDate();
+
+
+    if (
+        !savedTicket.ticket_date ||
+        savedTicket.ticket_date !== today
+    ) {
+
+        clearSavedTicket();
+
+        renderCustomer();
+
+        return;
+    }
+
+
+    currentTicket = {
+
+        id:
+            savedTicket.ticket_id
+
+    };
+
+
+    try {
+
+        const { data, error } =
+            await client.rpc(
+                "public_ticket_status",
+                {
+                    p_ticket_id:
+                        savedTicket.ticket_id
+                }
+            );
+
+
+        if (error) {
+
+            console.error(
+                "Error recuperando turno:",
+                error
+            );
+
+            clearSavedTicket();
+
+            renderCustomer();
+
+            return;
+        }
+
+
+        if (
+            !data ||
+            data.length === 0
+        ) {
+
+            clearSavedTicket();
+
+            renderCustomer();
+
+            return;
+        }
+
+
+        const ticket =
+            data[0];
+
+
+        currentTicket = {
+
+            id:
+                savedTicket.ticket_id,
+
+            ...ticket
+
+        };
+
+
+        if (
+            ticket.status === "done" ||
+            ticket.status === "cancelled" ||
+            ticket.status === "no_show"
+        ) {
+
+            clearSavedTicket();
+
+            renderCustomer();
+
+            return;
+        }
+
+
+        showTicket();
+
+    } catch (error) {
+
+        console.error(
+            "Error inesperado recuperando turno:",
+            error
+        );
+
+        clearSavedTicket();
+
+        renderCustomer();
+    }
+
+}
+
+
+// ==========================================
+// ACTUALIZACIÓN AUTOMÁTICA
+// ==========================================
+
+setInterval(
+    checkTicketStatus,
+    5000
+);
+
+
+// ==========================================
+// INICIAR APLICACIÓN
+// ==========================================
+
+async function startApp() {
+
+    try {
+
+        const loaded =
+            await loadBusiness();
+
+        if (!loaded) {
+
+            return;
+        }
+
+
+        // IMPORTANTE:
+        // Primero obtenemos la zona horaria
+        // de la barbería y después recuperamos
+        // el turno guardado.
+
+        await loadBusinessTimezone();
+
+        await restoreSavedTicket();
+
+    } catch (error) {
+
+        console.error(
+            "Error iniciando TurnoBarber:",
+            error
+        );
+
+        statusEl.textContent =
+            "Error";
+
+        app.innerHTML = `
+
+            <div class="card hero">
+
+                <h2>
+                    ⚠️ No pudimos iniciar TurnoBarber
+                </h2>
+
+                <p>
+                    ${error.message || error}
+                </p>
+
+                <button
+                    class="btn"
+                    onclick="location.reload()"
+                >
+                    🔄 Intentar nuevamente
+                </button>
+
+            </div>
+        `;
+    }
+
+}
+
+
+// ==========================================
+// EJECUTAR APLICACIÓN
+// ==========================================
+
+startApp();
