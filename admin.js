@@ -1019,6 +1019,15 @@ function renderBarbers() {
                                                     ⚙️ Servicios
                                                 </button>
 
+                                                <button
+                                                    class="btn"
+                                                    onclick="createBarberInvitation(
+                                                        '${barber.id}'
+                                                    )"
+                                                >
+                                                    🔐 Dar acceso
+                                                </button>
+
                                             </div>
 
                                         </div>
@@ -1037,6 +1046,524 @@ function renderBarbers() {
         </section>
 
     `;
+
+}
+
+
+// ==========================================
+// ACCESO DEL BARBERO
+// ==========================================
+
+async function createBarberInvitation(barberId) {
+
+    if (!business || !barberId) {
+        return;
+    }
+
+    const barber =
+        myBarbers.find(
+            b => b.id === barberId
+        );
+
+    if (!barber) {
+
+        alert(
+            "No se encontró el barbero."
+        );
+
+        return;
+    }
+
+    const confirmed =
+        confirm(
+            `¿Generar un nuevo acceso para ${barber.name}?`
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await client.rpc(
+                "create_barber_invitation",
+                {
+                    p_barber_id:
+                        barberId
+                }
+            );
+
+        if (error) {
+            throw error;
+        }
+
+        if (
+            !data ||
+            data.length === 0 ||
+            !data[0].token
+        ) {
+            throw new Error(
+                "No se pudo generar la invitación."
+            );
+        }
+
+        const token =
+            data[0].token;
+
+        const invitationUrl =
+            `${window.location.origin}/barbero.html?token=${encodeURIComponent(token)}`;
+
+        showBarberInvitationModal(
+            barber,
+            invitationUrl
+        );
+
+    } catch (error) {
+
+        console.error(
+            "ERROR GENERANDO ACCESO DEL BARBERO:",
+            error
+        );
+
+        alert(
+            "No se pudo generar el acceso: " +
+            error.message
+        );
+
+    }
+
+}
+
+
+function showBarberInvitationModal(
+    barber,
+    invitationUrl
+) {
+
+    const existing =
+        document.getElementById(
+            "barberInvitationModal"
+        );
+
+    if (existing) {
+        existing.remove();
+    }
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+    modal.id =
+        "barberInvitationModal";
+
+    modal.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.60);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 9999;
+        box-sizing: border-box;
+    `;
+
+    modal.innerHTML = `
+
+        <div
+            class="card"
+            style="
+                width: min(460px, 100%);
+                max-height: 90vh;
+                overflow-y: auto;
+                text-align: center;
+                position: relative;
+            "
+        >
+
+            <button
+                type="button"
+                onclick="closeBarberInvitationModal()"
+                style="
+                    position:absolute;
+                    top:10px;
+                    right:10px;
+                    border:0;
+                    background:transparent;
+                    font-size:22px;
+                    cursor:pointer;
+                "
+                aria-label="Cerrar"
+            >
+                ✕
+            </button>
+
+            <h2 style="margin-top:5px;">
+                🔐 Acceso del barbero
+            </h2>
+
+            <p>
+                Acceso preparado para
+                <strong>
+                    ${escapeHtml(barber.name)}
+                </strong>
+            </p>
+
+            <div
+                id="barberInvitationQr"
+                style="
+                    width: 250px;
+                    min-height: 250px;
+                    margin: 20px auto;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    border:1px dashed rgba(127,127,127,0.4);
+                    border-radius:12px;
+                    background:#fff;
+                "
+            >
+                <span>
+                    ⏳ Generando QR...
+                </span>
+            </div>
+
+            <p
+                style="
+                    font-size:13px;
+                    opacity:0.75;
+                    margin-bottom:15px;
+                "
+            >
+                El QR corresponde a una invitación
+                temporal y de un solo uso.
+            </p>
+
+            <input
+                id="barberInvitationUrl"
+                type="text"
+                readonly
+                value="${escapeHtml(invitationUrl)}"
+                style="
+                    width:100%;
+                    box-sizing:border-box;
+                    padding:11px;
+                    border-radius:8px;
+                    border:1px solid rgba(127,127,127,0.35);
+                    margin-bottom:10px;
+                    font-size:12px;
+                "
+            >
+
+            <div
+                style="
+                    display:flex;
+                    gap:8px;
+                    flex-wrap:wrap;
+                    justify-content:center;
+                "
+            >
+
+                <button
+                    class="btn primary"
+                    onclick="copyBarberInvitationLink()"
+                >
+                    📋 Copiar enlace
+                </button>
+
+                <button
+                    class="btn"
+                    onclick="shareBarberInvitationLink()"
+                >
+                    📤 Compartir
+                </button>
+
+                <button
+                    class="btn"
+                    onclick="closeBarberInvitationModal()"
+                >
+                    Cerrar
+                </button>
+
+            </div>
+
+            <p
+                id="barberInvitationMessage"
+                style="margin-top:12px;"
+            ></p>
+
+        </div>
+
+    `;
+
+    document.body.appendChild(
+        modal
+    );
+
+    loadQrLibrary()
+        .then(
+            function() {
+
+                const qrContainer =
+                    document.getElementById(
+                        "barberInvitationQr"
+                    );
+
+                if (!qrContainer) {
+                    return;
+                }
+
+                qrContainer.innerHTML = "";
+
+                new QRCode(
+                    qrContainer,
+                    {
+                        text: invitationUrl,
+                        width: 220,
+                        height: 220,
+                        correctLevel:
+                            QRCode.CorrectLevel.M
+                    }
+                );
+
+            }
+        )
+        .catch(
+            function(error) {
+
+                console.error(
+                    "ERROR CARGANDO GENERADOR QR:",
+                    error
+                );
+
+                const qrContainer =
+                    document.getElementById(
+                        "barberInvitationQr"
+                    );
+
+                if (qrContainer) {
+
+                    qrContainer.innerHTML = `
+                        <div style="padding:20px;">
+                            <strong>
+                                No se pudo cargar el QR.
+                            </strong>
+                            <p style="font-size:12px;">
+                                Puedes utilizar el enlace
+                                para compartir el acceso.
+                            </p>
+                        </div>
+                    `;
+
+                }
+
+            }
+        );
+
+}
+
+
+function loadQrLibrary() {
+
+    if (
+        typeof QRCode !==
+        "undefined"
+    ) {
+
+        return Promise.resolve();
+
+    }
+
+    return new Promise(
+        function(resolve, reject) {
+
+            const existingScript =
+                document.querySelector(
+                    'script[data-turnobarber-qr="true"]'
+                );
+
+            if (existingScript) {
+
+                existingScript.addEventListener(
+                    "load",
+                    function() {
+                        resolve();
+                    },
+                    { once: true }
+                );
+
+                existingScript.addEventListener(
+                    "error",
+                    function() {
+                        reject(
+                            new Error(
+                                "No se pudo cargar el generador QR."
+                            )
+                        );
+                    },
+                    { once: true }
+                );
+
+                return;
+            }
+
+            const script =
+                document.createElement(
+                    "script"
+                );
+
+            script.src =
+                "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+
+            script.async =
+                true;
+
+            script.dataset.turnobarberQr =
+                "true";
+
+            script.onload =
+                function() {
+                    resolve();
+                };
+
+            script.onerror =
+                function() {
+                    reject(
+                        new Error(
+                            "No se pudo cargar el generador QR."
+                        )
+                    );
+                };
+
+            document.head.appendChild(
+                script
+            );
+
+        }
+    );
+
+}
+
+
+async function copyBarberInvitationLink() {
+
+    const input =
+        document.getElementById(
+            "barberInvitationUrl"
+        );
+
+    const message =
+        document.getElementById(
+            "barberInvitationMessage"
+        );
+
+    if (!input) {
+        return;
+    }
+
+    try {
+
+        await navigator.clipboard.writeText(
+            input.value
+        );
+
+        if (message) {
+            message.textContent =
+                "✅ Enlace copiado.";
+        }
+
+    } catch (error) {
+
+        input.select();
+
+        document.execCommand(
+            "copy"
+        );
+
+        if (message) {
+            message.textContent =
+                "✅ Enlace copiado.";
+        }
+
+    }
+
+}
+
+
+async function shareBarberInvitationLink() {
+
+    const input =
+        document.getElementById(
+            "barberInvitationUrl"
+        );
+
+    const message =
+        document.getElementById(
+            "barberInvitationMessage"
+        );
+
+    if (!input) {
+        return;
+    }
+
+    if (
+        navigator.share
+    ) {
+
+        try {
+
+            await navigator.share(
+                {
+                    title:
+                        "Acceso TurnoBarber",
+                    text:
+                        "Acceso de barbero a TurnoBarber",
+                    url:
+                        input.value
+                }
+            );
+
+            return;
+
+        } catch (error) {
+
+            if (
+                error &&
+                error.name ===
+                    "AbortError"
+            ) {
+                return;
+            }
+
+        }
+
+    }
+
+    await copyBarberInvitationLink();
+
+    if (message) {
+        message.textContent =
+            "📋 El enlace fue copiado para compartirlo.";
+    }
+
+}
+
+
+function closeBarberInvitationModal() {
+
+    const modal =
+        document.getElementById(
+            "barberInvitationModal"
+        );
+
+    if (modal) {
+        modal.remove();
+    }
 
 }
 
