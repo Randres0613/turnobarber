@@ -27,27 +27,63 @@
 <body>
 
     <!-- ==========================================================
-         ACCESO DEL BARBERO
+         ACCESO AUTOMÁTICO DEL BARBERO
     =========================================================== -->
 
     <main
         id="barberApp"
         class="card hero"
-        style="max-width: 500px; margin: 35px auto;"
+        style="
+            max-width: 500px;
+            margin: 35px auto;
+            text-align: center;
+        "
     >
 
-        <h1>💈 TurnoBarber</h1>
+        <h1>
+            💈 TurnoBarber
+        </h1>
+
 
         <h2 id="pageTitle">
             🔐 Acceso del barbero
         </h2>
 
-        <div
-            id="loadingMessage"
-            style="margin-top: 15px;"
+
+        <!-- ======================================================
+             CARGANDO
+        ======================================================= -->
+
+        <section
+            id="loadingSection"
+            style="
+                margin-top: 25px;
+            "
         >
-            🔄 Verificando invitación...
-        </div>
+
+            <div
+                style="
+                    font-size: 52px;
+                    margin-bottom: 12px;
+                "
+            >
+                💈
+            </div>
+
+            <h2>
+                🔄 Preparando tu estación...
+            </h2>
+
+            <p
+                id="loadingMessage"
+                style="
+                    opacity: .70;
+                "
+            >
+                Verificando el acceso del barbero.
+            </p>
+
+        </section>
 
 
         <!-- ======================================================
@@ -69,305 +105,62 @@
 
                 <div
                     style="
-                        font-size: 42px;
-                        margin-bottom: 5px;
+                        font-size: 48px;
+                        margin-bottom: 8px;
                     "
                 >
                     💈
                 </div>
 
+
                 <h2
                     id="barberName"
-                    style="margin-bottom: 5px;"
+                    style="
+                        margin-bottom: 5px;
+                    "
                 >
                 </h2>
 
+
                 <p
                     id="businessName"
-                    style="margin-top: 0;"
+                    style="
+                        margin-top: 0;
+                        font-size: 18px;
+                    "
                 >
                 </p>
+
 
                 <p
                     style="
                         font-size: 14px;
-                        opacity: 0.75;
+                        opacity: .70;
+                        line-height: 1.5;
                     "
                 >
-                    Esta invitación te dará acceso
-                    únicamente al módulo de trabajo
-                    de tu barbería.
+                    Acceso exclusivo a tu estación
+                    de trabajo.
                 </p>
 
-            </div>
-
-
-            <!-- ==================================================
-                 USUARIO NO AUTENTICADO
-            =================================================== -->
-
-            <section
-                id="authSection"
-                style="margin-top: 20px;"
-            >
 
                 <div
-                    class="card"
-                    style="margin-bottom: 20px;"
-                >
-
-                    <h3>
-                        🔐 Ya tengo una cuenta
-                    </h3>
-
-                    <form id="barberLoginForm">
-
-                        <div
-                            style="
-                                margin-bottom: 15px;
-                            "
-                        >
-
-                            <label for="loginEmail">
-                                Correo electrónico
-                            </label>
-
-                            <input
-                                id="loginEmail"
-                                type="email"
-                                placeholder="Correo electrónico"
-                                autocomplete="email"
-                                required
-                                style="
-                                    width: 100%;
-                                    box-sizing: border-box;
-                                    padding: 10px;
-                                    margin-top: 5px;
-                                "
-                            >
-
-                        </div>
-
-
-                        <div
-                            style="
-                                margin-bottom: 15px;
-                            "
-                        >
-
-                            <label for="loginPassword">
-                                Contraseña
-                            </label>
-
-                            <input
-                                id="loginPassword"
-                                type="password"
-                                placeholder="Contraseña"
-                                autocomplete="current-password"
-                                required
-                                style="
-                                    width: 100%;
-                                    box-sizing: border-box;
-                                    padding: 10px;
-                                    margin-top: 5px;
-                                "
-                            >
-
-                        </div>
-
-
-                        <button
-                            id="loginButton"
-                            type="submit"
-                            class="btn primary big"
-                            style="width: 100%;"
-                        >
-                            🔐 Entrar como barbero
-                        </button>
-
-                    </form>
-
-                    <p
-                        id="loginMessage"
-                        style="margin-top: 12px;"
-                    ></p>
-
-                </div>
-
-
-                <div
-                    class="card"
+                    id="accessMessage"
                     style="
-                        text-align: center;
+                        margin-top: 20px;
+                        font-weight: 700;
                     "
                 >
-
-                    <h3>
-                        🆕 Es mi primera vez
-                    </h3>
-
-                    <p>
-                        Crea tu cuenta de barbero
-                        para activar este acceso.
-                    </p>
-
-                    <form id="barberRegisterForm">
-
-                        <div
-                            style="
-                                margin-bottom: 15px;
-                                text-align: left;
-                            "
-                        >
-
-                            <label for="registerEmail">
-                                Correo electrónico
-                            </label>
-
-                            <input
-                                id="registerEmail"
-                                type="email"
-                                placeholder="Correo electrónico"
-                                autocomplete="email"
-                                required
-                                style="
-                                    width: 100%;
-                                    box-sizing: border-box;
-                                    padding: 10px;
-                                    margin-top: 5px;
-                                "
-                            >
-
-                        </div>
-
-
-                        <div
-                            style="
-                                margin-bottom: 15px;
-                                text-align: left;
-                            "
-                        >
-
-                            <label for="registerPassword">
-                                Crear contraseña
-                            </label>
-
-                            <input
-                                id="registerPassword"
-                                type="password"
-                                placeholder="Mínimo 6 caracteres"
-                                autocomplete="new-password"
-                                minlength="6"
-                                required
-                                style="
-                                    width: 100%;
-                                    box-sizing: border-box;
-                                    padding: 10px;
-                                    margin-top: 5px;
-                                "
-                            >
-
-                        </div>
-
-
-                        <div
-                            style="
-                                margin-bottom: 15px;
-                                text-align: left;
-                            "
-                        >
-
-                            <label for="registerPasswordConfirm">
-                                Confirmar contraseña
-                            </label>
-
-                            <input
-                                id="registerPasswordConfirm"
-                                type="password"
-                                placeholder="Repite la contraseña"
-                                autocomplete="new-password"
-                                minlength="6"
-                                required
-                                style="
-                                    width: 100%;
-                                    box-sizing: border-box;
-                                    padding: 10px;
-                                    margin-top: 5px;
-                                "
-                            >
-
-                        </div>
-
-
-                        <button
-                            id="registerButton"
-                            type="submit"
-                            class="btn primary big"
-                            style="width: 100%;"
-                        >
-                            🆕 Crear acceso de barbero
-                        </button>
-
-                    </form>
-
-                    <p
-                        id="registerMessage"
-                        style="margin-top: 12px;"
-                    ></p>
-
+                    🔐 Verificando tu acceso...
                 </div>
 
-            </section>
-
-
-            <!-- ==================================================
-                 SESIÓN ENCONTRADA
-            =================================================== -->
-
-            <section
-                id="sessionSection"
-                style="display: none; margin-top: 20px;"
-            >
-
-                <div
-                    class="card"
-                    style="text-align: center;"
-                >
-
-                    <h3>
-                        👤 Cuenta encontrada
-                    </h3>
-
-                    <p id="sessionEmail"></p>
-
-                    <p>
-                        Vamos a vincular esta cuenta
-                        con el acceso de barbero.
-                    </p>
-
-                    <button
-                        id="acceptInvitationButton"
-                        type="button"
-                        class="btn primary big"
-                        style="width: 100%;"
-                    >
-                        ✅ Activar mi acceso
-                    </button>
-
-                    <p
-                        id="acceptMessage"
-                        style="margin-top: 12px;"
-                    ></p>
-
-                </div>
-
-            </section>
+            </div>
 
         </section>
 
 
         <!-- ======================================================
-             INVITACIÓN INVÁLIDA
+             ERROR
         ======================================================= -->
 
         <section
@@ -385,41 +178,63 @@
 
                 <div
                     style="
-                        font-size: 42px;
+                        font-size: 48px;
                         margin-bottom: 10px;
                     "
                 >
                     ⚠️
                 </div>
 
+
                 <h2>
-                    Invitación no disponible
+                    Acceso no disponible
                 </h2>
+
 
                 <p id="errorMessage">
                 </p>
 
-                <p
+
+                <button
+                    id="retryButton"
+                    type="button"
+                    class="btn primary big"
                     style="
-                        font-size: 13px;
-                        opacity: 0.75;
+                        width: 100%;
+                        margin-top: 15px;
                     "
                 >
-                    Solicita al administrador de tu
-                    barbería que genere una nueva
-                    invitación.
-                </p>
+                    🔄 Intentar nuevamente
+                </button>
 
             </div>
 
         </section>
 
+
+        <!-- ======================================================
+             INFORMACIÓN DE SEGURIDAD
+        ======================================================= -->
+
+        <p
+            id="securityMessage"
+            style="
+                display: none;
+                margin-top: 20px;
+                font-size: 12px;
+                opacity: .55;
+            "
+        >
+            Este dispositivo quedará vinculado
+            únicamente a la estación asignada.
+        </p>
+
     </main>
 
 
-    <!-- ======================================================
+    <!-- ==========================================================
          PANTALLA DE TRABAJO DEL BARBERO
-    ======================================================= -->
+    =========================================================== -->
 
     <main
         id="barberDashboard"
@@ -432,7 +247,9 @@
     ></main>
 
 
-    <!-- SUPABASE -->
+    <!-- ==========================================================
+         SUPABASE
+    =========================================================== -->
 
     <script src="supabase.js"></script>
 
@@ -451,94 +268,70 @@
 
         let currentSession = null;
 
+        let accessInProgress = false;
+
 
         // ======================================================
         // ELEMENTOS
         // ======================================================
+
+        const loadingSection =
+            document.getElementById(
+                "loadingSection"
+            );
+
 
         const loadingMessage =
             document.getElementById(
                 "loadingMessage"
             );
 
+
         const invitationSection =
             document.getElementById(
                 "invitationSection"
             );
+
 
         const errorSection =
             document.getElementById(
                 "errorSection"
             );
 
+
         const errorMessage =
             document.getElementById(
                 "errorMessage"
             );
+
 
         const barberName =
             document.getElementById(
                 "barberName"
             );
 
+
         const businessName =
             document.getElementById(
                 "businessName"
             );
 
-        const authSection =
+
+        const accessMessage =
             document.getElementById(
-                "authSection"
+                "accessMessage"
             );
 
-        const sessionSection =
+
+        const retryButton =
             document.getElementById(
-                "sessionSection"
+                "retryButton"
             );
 
-        const sessionEmail =
-            document.getElementById(
-                "sessionEmail"
-            );
 
-        const loginForm =
+        const securityMessage =
             document.getElementById(
-                "barberLoginForm"
-            );
-
-        const registerForm =
-            document.getElementById(
-                "barberRegisterForm"
-            );
-
-        const loginButton =
-            document.getElementById(
-                "loginButton"
-            );
-
-        const registerButton =
-            document.getElementById(
-                "registerButton"
-            );
-
-        const loginMessage =
-            document.getElementById(
-                "loginMessage"
-            );
-
-        const registerMessage =
-            document.getElementById(
-                "registerMessage"
-            );
-
-        const acceptInvitationButton =
-            document.getElementById(
-                "acceptInvitationButton"
-            );
-
-        const acceptMessage =
-            document.getElementById(
-                "acceptMessage"
+                "securityMessage"
             );
 
 
@@ -550,14 +343,25 @@
             message
         ) {
 
-            loadingMessage.style.display =
+            accessInProgress =
+                false;
+
+
+            loadingSection.style.display =
                 "none";
+
 
             invitationSection.style.display =
                 "none";
 
+
             errorSection.style.display =
                 "block";
+
+
+            securityMessage.style.display =
+                "none";
+
 
             errorMessage.textContent =
                 message;
@@ -571,17 +375,25 @@
 
         function showInvitation() {
 
-            loadingMessage.style.display =
+            loadingSection.style.display =
                 "none";
+
 
             errorSection.style.display =
                 "none";
 
+
             invitationSection.style.display =
                 "block";
 
+
+            securityMessage.style.display =
+                "block";
+
+
             barberName.textContent =
                 invitation.barber_name;
+
 
             businessName.textContent =
                 invitation.business_name;
@@ -590,43 +402,21 @@
 
 
         // ======================================================
-        // MOSTRAR SESIÓN
+        // MOSTRAR PROCESO DE ACCESO
         // ======================================================
 
-        function showSession(
-            session
+        function setAccessMessage(
+            message
         ) {
 
-            currentSession =
-                session;
+            if (
+                accessMessage
+            ) {
 
-            authSection.style.display =
-                "none";
+                accessMessage.textContent =
+                    message;
 
-            sessionSection.style.display =
-                "block";
-
-            sessionEmail.textContent =
-                session &&
-                session.user &&
-                session.user.email
-                    ? session.user.email
-                    : "";
-
-        }
-
-
-        // ======================================================
-        // MOSTRAR AUTENTICACIÓN
-        // ======================================================
-
-        function showAuth() {
-
-            authSection.style.display =
-                "block";
-
-            sessionSection.style.display =
-                "none";
+            }
 
         }
 
@@ -641,6 +431,7 @@
                 new URLSearchParams(
                     window.location.search
                 );
+
 
             return (
                 params.get("token") ||
@@ -658,6 +449,7 @@
 
             invitationToken =
                 getInvitationToken();
+
 
             if (!invitationToken) {
 
@@ -690,9 +482,11 @@
                     error
                 );
 
+
                 showError(
                     "No fue posible verificar la invitación."
                 );
+
 
                 return false;
 
@@ -708,6 +502,7 @@
                     "La invitación no existe, ya fue utilizada o expiró."
                 );
 
+
                 return false;
 
             }
@@ -716,9 +511,147 @@
             invitation =
                 data[0];
 
+
             showInvitation();
 
+
             return true;
+
+        }
+
+
+        // ======================================================
+        // OBTENER SESIÓN ACTUAL
+        // ======================================================
+
+        async function getCurrentSession() {
+
+            const {
+                data,
+                error
+            } =
+                await client.auth.getSession();
+
+
+            if (error) {
+                throw error;
+            }
+
+
+            return data?.session || null;
+
+        }
+
+
+        // ======================================================
+        // VERIFICAR SI LA SESIÓN ACTUAL YA ES
+        // EL BARBERO DE ESTA INVITACIÓN
+        // ======================================================
+
+        async function isCurrentBarber() {
+
+            try {
+
+                const {
+                    data,
+                    error
+                } =
+                    await client.rpc(
+                        "get_my_barber"
+                    );
+
+
+                if (error) {
+                    return false;
+                }
+
+
+                const barber =
+                    data?.[0] || null;
+
+
+                if (!barber) {
+                    return false;
+                }
+
+
+                if (
+                    barber.id !==
+                    invitation.barber_id
+                ) {
+
+                    return false;
+
+                }
+
+
+                if (
+                    barber.active ===
+                    false
+                ) {
+
+                    return false;
+
+                }
+
+
+                return true;
+
+            } catch (error) {
+
+                console.error(
+                    "ERROR VERIFICANDO BARBERO ACTUAL:",
+                    error
+                );
+
+
+                return false;
+
+            }
+
+        }
+
+
+        // ======================================================
+        // CREAR SESIÓN ANÓNIMA
+        // ======================================================
+
+        async function createAnonymousSession() {
+
+            setAccessMessage(
+                "🔐 Preparando acceso seguro..."
+            );
+
+
+            const {
+                data,
+                error
+            } =
+                await client.auth.signInAnonymously();
+
+
+            if (error) {
+                throw error;
+            }
+
+
+            if (
+                !data ||
+                !data.session
+            ) {
+
+                throw new Error(
+                    "No fue posible crear la sesión segura del barbero."
+                );
+
+            }
+
+
+            currentSession =
+                data.session;
+
+
+            return data.session;
 
         }
 
@@ -729,103 +662,262 @@
 
         async function acceptInvitation() {
 
-            if (!invitationToken) {
+            if (
+                !invitationToken ||
+                !invitation
+            ) {
 
-                return;
+                throw new Error(
+                    "La invitación no está disponible."
+                );
 
             }
 
 
-            acceptInvitationButton.disabled =
+            setAccessMessage(
+                "🔗 Vinculando tu estación..."
+            );
+
+
+            const {
+                data,
+                error
+            } =
+                await client.rpc(
+                    "accept_barber_invitation",
+                    {
+                        p_token:
+                            invitationToken
+                    }
+                );
+
+
+            if (error) {
+                throw error;
+            }
+
+
+            if (
+                !data ||
+                data.length === 0
+            ) {
+
+                throw new Error(
+                    "No se pudo activar el acceso del barbero."
+                );
+
+            }
+
+
+            const barber =
+                data[0];
+
+
+            if (
+                barber.barber_id !==
+                invitation.barber_id
+            ) {
+
+                throw new Error(
+                    "La invitación no corresponde a esta estación."
+                );
+
+            }
+
+
+            sessionStorage.setItem(
+                "turnobarber_barber_id",
+                barber.barber_id
+            );
+
+
+            return barber;
+
+        }
+
+
+        // ======================================================
+        // ENTRAR AL DASHBOARD
+        // ======================================================
+
+        function enterDashboard() {
+
+            setAccessMessage(
+                "✅ Acceso autorizado. Entrando..."
+            );
+
+
+            sessionStorage.setItem(
+                "turnobarber_barber_id",
+                invitation.barber_id
+            );
+
+
+            setTimeout(
+                function() {
+
+                    window.location.href =
+                        "barbero.html?mode=dashboard";
+
+                },
+                500
+            );
+
+        }
+
+
+        // ======================================================
+        // FLUJO PRINCIPAL DE ACCESO
+        // ======================================================
+
+        async function processBarberAccess() {
+
+            if (accessInProgress) {
+                return;
+            }
+
+
+            accessInProgress =
                 true;
-
-            acceptInvitationButton.textContent =
-                "🔄 Activando acceso...";
-
-            acceptMessage.textContent =
-                "";
 
 
             try {
 
-                const {
-                    data,
-                    error
-                } =
-                    await client.rpc(
-                        "accept_barber_invitation",
-                        {
-                            p_token:
-                                invitationToken
-                        }
-                    );
+                // ------------------------------------------------
+                // 1. Verificar invitación
+                // ------------------------------------------------
+
+                const valid =
+                    await loadInvitation();
 
 
-                if (error) {
-                    throw error;
+                if (!valid) {
+
+                    accessInProgress =
+                        false;
+
+                    return;
+
                 }
 
 
-                if (
-                    !data ||
-                    data.length === 0
-                ) {
+                // ------------------------------------------------
+                // 2. Revisar si ya existe una sesión
+                // ------------------------------------------------
+
+                setAccessMessage(
+                    "🔐 Verificando este dispositivo..."
+                );
+
+
+                let session =
+                    await getCurrentSession();
+
+
+                // ------------------------------------------------
+                // 3. Si ya existe una sesión,
+                //    comprobar si pertenece al barbero correcto
+                // ------------------------------------------------
+
+                if (session) {
+
+                    const alreadyLinked =
+                        await isCurrentBarber();
+
+
+                    if (
+                        alreadyLinked
+                    ) {
+
+                        currentSession =
+                            session;
+
+
+                        enterDashboard();
+
+
+                        return;
+
+                    }
+
+
+                    /*
+                     * Existe una sesión pero no pertenece
+                     * al barbero de esta invitación.
+                     *
+                     * NO cerramos automáticamente esa sesión,
+                     * porque podría ser la cuenta del administrador
+                     * o de otro usuario.
+                     */
 
                     throw new Error(
-                        "No se pudo activar el acceso."
+                        "Este dispositivo ya tiene otra sesión de TurnoBarber iniciada. Para activar esta estación utiliza el dispositivo del barbero."
                     );
 
                 }
 
 
-                const barber =
-                    data[0];
+                // ------------------------------------------------
+                // 4. Crear sesión anónima
+                // ------------------------------------------------
+
+                session =
+                    await createAnonymousSession();
 
 
-                acceptMessage.textContent =
-                    "✅ Acceso activado. Entrando a tu pantalla...";
+                // ------------------------------------------------
+                // 5. Vincular sesión con el barbero
+                // ------------------------------------------------
+
+                await acceptInvitation();
 
 
-                /*
-                 * Guardamos únicamente el identificador
-                 * necesario para continuar el flujo.
-                 *
-                 * La autorización real queda en Supabase:
-                 * user_id → barbers.id
-                 */
+                // ------------------------------------------------
+                // 6. Confirmar que el vínculo quedó activo
+                // ------------------------------------------------
 
-                sessionStorage.setItem(
-                    "turnobarber_barber_id",
-                    barber.barber_id
+                setAccessMessage(
+                    "🔎 Confirmando tu estación..."
                 );
 
 
-                setTimeout(
-                    function() {
+                const linked =
+                    await isCurrentBarber();
 
-                        window.location.href =
-                            "barbero.html?mode=dashboard";
 
-                    },
-                    700
-                );
+                if (!linked) {
+
+                    throw new Error(
+                        "El acceso fue creado, pero no se pudo confirmar la estación."
+                    );
+
+                }
+
+
+                // ------------------------------------------------
+                // 7. Entrar
+                // ------------------------------------------------
+
+                enterDashboard();
 
 
             } catch (error) {
 
                 console.error(
-                    "ERROR ACEPTANDO INVITACIÓN:",
+                    "ERROR ACCESO AUTOMÁTICO BARBERO:",
                     error
                 );
 
-                acceptMessage.textContent =
-                    "❌ " + error.message;
 
-                acceptInvitationButton.disabled =
+                showError(
+                    error?.message ||
+                    "No fue posible activar el acceso del barbero."
+                );
+
+            } finally {
+
+                accessInProgress =
                     false;
-
-                acceptInvitationButton.textContent =
-                    "✅ Activar mi acceso";
 
             }
 
@@ -833,259 +925,21 @@
 
 
         // ======================================================
-        // LOGIN DEL BARBERO
+        // REINTENTAR
         // ======================================================
 
-        loginForm.addEventListener(
-            "submit",
-            async function(event) {
-
-                event.preventDefault();
-
-
-                const email =
-                    document
-                        .getElementById(
-                            "loginEmail"
-                        )
-                        .value
-                        .trim();
-
-                const password =
-                    document
-                        .getElementById(
-                            "loginPassword"
-                        )
-                        .value;
-
-
-                loginButton.disabled =
-                    true;
-
-                loginButton.textContent =
-                    "🔄 Iniciando sesión...";
-
-                loginMessage.textContent =
-                    "";
-
-
-                try {
-
-                    const {
-                        data,
-                        error
-                    } =
-                        await client.auth.signInWithPassword(
-                            {
-                                email:
-                                    email,
-
-                                password:
-                                    password
-                            }
-                        );
-
-
-                    if (error) {
-                        throw error;
-                    }
-
-
-                    if (
-                        !data ||
-                        !data.session
-                    ) {
-
-                        throw new Error(
-                            "No se pudo iniciar la sesión."
-                        );
-
-                    }
-
-
-                    showSession(
-                        data.session
-                    );
-
-
-                } catch (error) {
-
-                    console.error(
-                        "ERROR LOGIN BARBERO:",
-                        error
-                    );
-
-                    loginMessage.textContent =
-                        "❌ " + error.message;
-
-                    loginButton.disabled =
-                        false;
-
-                    loginButton.textContent =
-                        "🔐 Entrar como barbero";
-
-                }
-
-            }
-        );
-
-
-        // ======================================================
-        // REGISTRO DEL BARBERO
-        // ======================================================
-
-        registerForm.addEventListener(
-            "submit",
-            async function(event) {
-
-                event.preventDefault();
-
-
-                const email =
-                    document
-                        .getElementById(
-                            "registerEmail"
-                        )
-                        .value
-                        .trim();
-
-                const password =
-                    document
-                        .getElementById(
-                            "registerPassword"
-                        )
-                        .value;
-
-                const confirmPassword =
-                    document
-                        .getElementById(
-                            "registerPasswordConfirm"
-                        )
-                        .value;
-
-
-                registerMessage.textContent =
-                    "";
-
-
-                if (
-                    password.length <
-                    6
-                ) {
-
-                    registerMessage.textContent =
-                        "❌ La contraseña debe tener mínimo 6 caracteres.";
-
-                    return;
-
-                }
-
-
-                if (
-                    password !==
-                    confirmPassword
-                ) {
-
-                    registerMessage.textContent =
-                        "❌ Las contraseñas no coinciden.";
-
-                    return;
-
-                }
-
-
-                registerButton.disabled =
-                    true;
-
-                registerButton.textContent =
-                    "🔄 Creando cuenta...";
-
-
-                try {
-
-                    const {
-                        data,
-                        error
-                    } =
-                        await client.auth.signUp(
-                            {
-                                email:
-                                    email,
-
-                                password:
-                                    password
-                            }
-                        );
-
-
-                    if (error) {
-                        throw error;
-                    }
-
-
-                    /*
-                     * Si Supabase exige confirmación
-                     * de correo, normalmente no habrá
-                     * sesión todavía.
-                     */
-
-                    if (
-                        !data.session
-                    ) {
-
-                        registerMessage.textContent =
-                            "📧 Cuenta creada. Confirma tu correo electrónico y vuelve a abrir el enlace del QR para activar tu acceso.";
-
-                        registerButton.disabled =
-                            false;
-
-                        registerButton.textContent =
-                            "🆕 Crear acceso de barbero";
-
-                        return;
-
-                    }
-
-
-                    showSession(
-                        data.session
-                    );
-
-
-                } catch (error) {
-
-                    console.error(
-                        "ERROR REGISTRANDO BARBERO:",
-                        error
-                    );
-
-                    registerMessage.textContent =
-                        "❌ " + error.message;
-
-                    registerButton.disabled =
-                        false;
-
-                    registerButton.textContent =
-                        "🆕 Crear acceso de barbero";
-
-                }
-
-            }
-        );
-
-
-        // ======================================================
-        // ACEPTAR
-        // ======================================================
-
-        acceptInvitationButton.addEventListener(
+        retryButton.addEventListener(
             "click",
-            acceptInvitation
+            function() {
+
+                window.location.reload();
+
+            }
         );
 
 
         // ======================================================
-        // AUTH STATE
+        // CONTROL DE SESIÓN
         // ======================================================
 
         client.auth.onAuthStateChange(
@@ -1101,13 +955,22 @@
 
 
                 if (
-                    session &&
-                    invitation
+                    event ===
+                    "SIGNED_OUT"
                 ) {
 
-                    showSession(
-                        session
-                    );
+                    currentSession =
+                        null;
+
+                }
+
+
+                if (
+                    session
+                ) {
+
+                    currentSession =
+                        session;
 
                 }
 
@@ -1121,69 +984,40 @@
 
         async function initBarberAccess() {
 
-            try {
-
-                const valid =
-                    await loadInvitation();
-
-                if (!valid) {
-                    return;
-                }
-
-
-                const {
-                    data,
-                    error
-                } =
-                    await client.auth.getSession();
-
-
-                if (error) {
-
-                    console.error(
-                        "ERROR OBTENIENDO SESIÓN:",
-                        error
-                    );
-
-                    showAuth();
-
-                    return;
-
-                }
-
-
-                if (
-                    data &&
-                    data.session
-                ) {
-
-                    showSession(
-                        data.session
-                    );
-
-                } else {
-
-                    showAuth();
-
-                }
-
-            } catch (error) {
-
-                console.error(
-                    "ERROR INICIALIZANDO ACCESO DEL BARBERO:",
-                    error
+            const params =
+                new URLSearchParams(
+                    window.location.search
                 );
 
-                showError(
-                    "No fue posible iniciar el acceso del barbero."
-                );
+
+            /*
+             * Si ya estamos entrando al dashboard,
+             * barbero.js se encarga del resto.
+             */
+
+            if (
+                params.get("mode") ===
+                "dashboard"
+            ) {
+
+                return;
 
             }
+
+
+            await processBarberAccess();
 
         }
 
 
-        initBarberAccess();
+        // ======================================================
+        // ARRANQUE
+        // ======================================================
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            initBarberAccess
+        );
 
     </script>
 
