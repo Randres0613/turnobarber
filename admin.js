@@ -1115,7 +1115,10 @@ async function createBarberInvitation(barberId) {
             data[0].token;
 
         const invitationUrl =
-            `${window.location.origin}/barbero.html?token=${encodeURIComponent(token)}`;
+            new URL(
+                `barbero.html?token=${encodeURIComponent(token)}`,
+                window.location.href
+            ).href;
 
         showBarberInvitationModal(
             barber,
