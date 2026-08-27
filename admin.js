@@ -720,14 +720,9 @@ async function loadBarbers() {
 
 function renderPanel() {
 
-    const totalWaiting =
-        barberQueues.reduce(
-            (sum, barber) =>
-                sum + Number(barber.waiting_count || 0),
-            0
-        );
-
     adminApp.innerHTML = `
+
+        ${renderPublicQr()}
 
         ${renderBarberQueues()}
 
@@ -744,6 +739,641 @@ function renderPanel() {
         </button>
 
     `;
+
+}
+
+
+// ==========================================
+// QR PÚBLICO DE LA BARBERÍA
+// ==========================================
+
+function renderPublicQr() {
+
+    if (
+        !business ||
+        !business.qr_slug
+    ) {
+
+        return `
+
+            <section class="card">
+
+                <h2>
+                    📱 QR PÚBLICO
+                </h2>
+
+                <div class="empty">
+
+                    <p>
+                        ⚠️ Esta barbería todavía no tiene
+                        un identificador público disponible.
+                    </p>
+
+                </div>
+
+            </section>
+
+        `;
+
+    }
+
+
+    const publicUrl =
+        new URL(
+            `index.html?b=${encodeURIComponent(
+                business.qr_slug
+            )}`,
+            window.location.href
+        ).href;
+
+
+    return `
+
+        <section class="card">
+
+            <div class="queue-header">
+
+                <h2>
+                    📱 QR PÚBLICO
+                </h2>
+
+                <span class="badge">
+                    CLIENTES
+                </span>
+
+            </div>
+
+
+            <p style="margin-top:0;">
+
+                Este es el acceso público de
+                <strong>
+                    ${escapeHtml(business.name)}
+                </strong>.
+
+            </p>
+
+
+            <p class="muted">
+
+                Tus clientes pueden escanear este QR
+                para entrar directamente a la página
+                pública y tomar su turno.
+
+            </p>
+
+
+            <div
+                style="
+                    display:flex;
+                    justify-content:center;
+                    margin:20px 0;
+                "
+            >
+
+                <div
+                    id="publicBusinessQr"
+                    style="
+                        width:250px;
+                        min-height:250px;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        background:#fff;
+                        border:1px solid rgba(127,127,127,0.25);
+                        border-radius:14px;
+                        padding:15px;
+                        box-sizing:border-box;
+                    "
+                >
+
+                    <span>
+                        ⏳ Generando QR...
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <input
+                id="publicBusinessUrl"
+                type="text"
+                readonly
+                value="${escapeHtml(publicUrl)}"
+                style="
+                    width:100%;
+                    box-sizing:border-box;
+                    padding:11px;
+                    border-radius:8px;
+                    border:1px solid rgba(127,127,127,0.35);
+                    margin-bottom:10px;
+                    font-size:12px;
+                "
+            >
+
+
+            <div
+                style="
+                    display:flex;
+                    gap:8px;
+                    flex-wrap:wrap;
+                    justify-content:center;
+                "
+            >
+
+                <button
+                    class="btn primary"
+                    onclick="copyPublicBusinessLink()"
+                >
+                    📋 Copiar enlace
+                </button>
+
+
+                <button
+                    class="btn"
+                    onclick="sharePublicBusinessLink()"
+                >
+                    📤 Compartir
+                </button>
+
+
+                <button
+                    class="btn"
+                    onclick="downloadPublicQr()"
+                >
+                    ⬇️ Guardar QR
+                </button>
+
+            </div>
+
+
+            <p
+                id="publicBusinessQrMessage"
+                style="
+                    margin-top:12px;
+                    text-align:center;
+                "
+            ></p>
+
+
+            <p
+                class="muted"
+                style="
+                    font-size:12px;
+                    text-align:center;
+                    margin-bottom:0;
+                "
+            >
+                Este QR es permanente y corresponde
+                a la página pública de tu barbería.
+
+            </p>
+
+        </section>
+
+    `;
+
+}
+
+
+// ==========================================
+// GENERAR QR PÚBLICO
+// ==========================================
+
+async function generatePublicQr() {
+
+    const container =
+        document.getElementById(
+            "publicBusinessQr"
+        );
+
+
+    if (
+        !container ||
+        !business ||
+        !business.qr_slug
+    ) {
+
+        return;
+
+    }
+
+
+    const publicUrl =
+        new URL(
+            `index.html?b=${encodeURIComponent(
+                business.qr_slug
+            )}`,
+            window.location.href
+        ).href;
+
+
+    try {
+
+        await loadQrLibrary();
+
+
+        if (
+            typeof QRCode ===
+            "undefined"
+        ) {
+
+            throw new Error(
+                "El generador QR no está disponible."
+            );
+
+        }
+
+
+        container.innerHTML =
+            "";
+
+
+        new QRCode(
+            container,
+            {
+                text:
+                    publicUrl,
+
+                width:
+                    220,
+
+                height:
+                    220,
+
+                correctLevel:
+                    QRCode.CorrectLevel.M
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "ERROR GENERANDO QR PÚBLICO:",
+            error
+        );
+
+
+        container.innerHTML = `
+
+            <div style="padding:20px; text-align:center;">
+
+                <strong>
+                    ⚠️ No se pudo generar el QR.
+                </strong>
+
+                <p style="font-size:12px;">
+                    Puedes utilizar el enlace
+                    para compartir la página pública.
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+// ==========================================
+// CARGAR LIBRERÍA QR
+// ==========================================
+
+function loadQrLibrary() {
+
+    if (
+        typeof QRCode !==
+        "undefined"
+    ) {
+
+        return Promise.resolve();
+
+    }
+
+
+    return new Promise(
+        function(resolve, reject) {
+
+            const existingScript =
+                document.querySelector(
+                    'script[data-turnobarber-qr="true"]'
+                );
+
+
+            if (existingScript) {
+
+                existingScript.addEventListener(
+                    "load",
+                    function() {
+                        resolve();
+                    },
+                    { once: true }
+                );
+
+
+                existingScript.addEventListener(
+                    "error",
+                    function() {
+
+                        reject(
+                            new Error(
+                                "No se pudo cargar el generador QR."
+                            )
+                        );
+
+                    },
+                    { once: true }
+                );
+
+
+                return;
+
+            }
+
+
+            const script =
+                document.createElement(
+                    "script"
+                );
+
+
+            script.src =
+                "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+
+
+            script.async =
+                true;
+
+
+            script.dataset.turnobarberQr =
+                "true";
+
+
+            script.onload =
+                function() {
+                    resolve();
+                };
+
+
+            script.onerror =
+                function() {
+
+                    reject(
+                        new Error(
+                            "No se pudo cargar el generador QR."
+                        )
+                    );
+
+                };
+
+
+            document.head.appendChild(
+                script
+            );
+
+        }
+    );
+
+}
+
+
+// ==========================================
+// COPIAR ENLACE PÚBLICO
+// ==========================================
+
+async function copyPublicBusinessLink() {
+
+    const input =
+        document.getElementById(
+            "publicBusinessUrl"
+        );
+
+
+    const message =
+        document.getElementById(
+            "publicBusinessQrMessage"
+        );
+
+
+    if (!input) {
+        return;
+    }
+
+
+    try {
+
+        await navigator.clipboard.writeText(
+            input.value
+        );
+
+
+        if (message) {
+
+            message.textContent =
+                "✅ Enlace público copiado.";
+
+        }
+
+
+    } catch (error) {
+
+        input.select();
+
+
+        document.execCommand(
+            "copy"
+        );
+
+
+        if (message) {
+
+            message.textContent =
+                "✅ Enlace público copiado.";
+
+        }
+
+    }
+
+}
+
+
+// ==========================================
+// COMPARTIR ENLACE PÚBLICO
+// ==========================================
+
+async function sharePublicBusinessLink() {
+
+    const input =
+        document.getElementById(
+            "publicBusinessUrl"
+        );
+
+
+    const message =
+        document.getElementById(
+            "publicBusinessQrMessage"
+        );
+
+
+    if (!input) {
+        return;
+    }
+
+
+    if (
+        navigator.share
+    ) {
+
+        try {
+
+            await navigator.share(
+                {
+                    title:
+                        `TurnoBarber - ${business.name}`,
+
+                    text:
+                        `Toma tu turno en ${business.name}`,
+
+                    url:
+                        input.value
+                }
+            );
+
+
+            return;
+
+        } catch (error) {
+
+            if (
+                error &&
+                error.name ===
+                    "AbortError"
+            ) {
+
+                return;
+
+            }
+
+        }
+
+    }
+
+
+    await copyPublicBusinessLink();
+
+
+    if (message) {
+
+        message.textContent =
+            "📋 El enlace fue copiado para compartirlo.";
+
+    }
+
+}
+
+
+// ==========================================
+// GUARDAR QR PÚBLICO
+// ==========================================
+
+function downloadPublicQr() {
+
+    const qrContainer =
+        document.getElementById(
+            "publicBusinessQr"
+        );
+
+
+    const message =
+        document.getElementById(
+            "publicBusinessQrMessage"
+        );
+
+
+    if (!qrContainer) {
+        return;
+    }
+
+
+    const canvas =
+        qrContainer.querySelector(
+            "canvas"
+        );
+
+
+    const image =
+        qrContainer.querySelector(
+            "img"
+        );
+
+
+    let dataUrl =
+        null;
+
+
+    if (canvas) {
+
+        dataUrl =
+            canvas.toDataURL(
+                "image/png"
+            );
+
+    } else if (image) {
+
+        dataUrl =
+            image.src;
+
+    }
+
+
+    if (!dataUrl) {
+
+        if (message) {
+
+            message.textContent =
+                "⚠️ El QR todavía no está listo.";
+
+        }
+
+        return;
+
+    }
+
+
+    const link =
+        document.createElement(
+            "a"
+        );
+
+
+    link.href =
+        dataUrl;
+
+
+    link.download =
+        `turnobarber-${business.qr_slug || "qr"}.png`;
+
+
+    document.body.appendChild(
+        link
+    );
+
+
+    link.click();
+
+
+    link.remove();
+
+
+    if (message) {
+
+        message.textContent =
+            "✅ QR preparado para guardar.";
+
+    }
 
 }
 
@@ -1367,88 +1997,6 @@ function showBarberInvitationModal(
 
             }
         );
-
-}
-
-
-function loadQrLibrary() {
-
-    if (
-        typeof QRCode !==
-        "undefined"
-    ) {
-
-        return Promise.resolve();
-
-    }
-
-    return new Promise(
-        function(resolve, reject) {
-
-            const existingScript =
-                document.querySelector(
-                    'script[data-turnobarber-qr="true"]'
-                );
-
-            if (existingScript) {
-
-                existingScript.addEventListener(
-                    "load",
-                    function() {
-                        resolve();
-                    },
-                    { once: true }
-                );
-
-                existingScript.addEventListener(
-                    "error",
-                    function() {
-                        reject(
-                            new Error(
-                                "No se pudo cargar el generador QR."
-                            )
-                        );
-                    },
-                    { once: true }
-                );
-
-                return;
-            }
-
-            const script =
-                document.createElement(
-                    "script"
-                );
-
-            script.src =
-                "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
-
-            script.async =
-                true;
-
-            script.dataset.turnobarberQr =
-                "true";
-
-            script.onload =
-                function() {
-                    resolve();
-                };
-
-            script.onerror =
-                function() {
-                    reject(
-                        new Error(
-                            "No se pudo cargar el generador QR."
-                        )
-                    );
-                };
-
-            document.head.appendChild(
-                script
-            );
-
-        }
-    );
 
 }
 
@@ -3341,6 +3889,7 @@ async function callNext(barberId) {
                 {
                     p_business_id:
                         business.id,
+
                     p_barber_id:
                         barberId
                 }
@@ -3680,7 +4229,28 @@ async function startAdmin() {
 
     await loadBusiness();
 
+
 }
 
 
 startAdmin();
+
+
+// ==========================================
+// GENERAR QR DESPUÉS DE PINTAR EL PANEL
+// ==========================================
+//
+// Se ejecuta después de que renderPanel()
+// haya creado el contenedor del QR.
+// ==========================================
+
+const originalRenderPanel =
+    renderPanel;
+
+renderPanel = function() {
+
+    originalRenderPanel();
+
+    generatePublicQr();
+
+};
