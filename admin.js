@@ -1503,14 +1503,12 @@ function renderBarbers() {
                     👨‍💼 MIS BARBEROS
                 </h2>
 
-
                 <span class="badge">
                     ${myBarbers.length}
                     barberos
                 </span>
 
             </div>
-
 
             <button
                 class="btn primary"
@@ -1519,164 +1517,100 @@ function renderBarbers() {
                 ➕ Nuevo barbero
             </button>
 
-
             <div
                 id="barberFormContainer"
                 style="margin-top: 20px;"
             ></div>
 
-
             <div style="margin-top: 20px;">
 
                 ${
                     myBarbers.length === 0
-
-                    ?
-
-                    `
+                    ? `
                     <div class="empty">
-
                         <p>
                             Todavía no tienes barberos.
                         </p>
-
-
                         <p>
                             Crea el primero para comenzar
                             a organizar tu equipo.
                         </p>
-
                     </div>
                     `
-
-                    :
-
-                    `
-                    <div class="queue">
-
+                    : `
+                    <div
+                        class="queue"
+                        style="display:flex; flex-direction:column; gap:10px;"
+                    >
                         ${
-                            myBarbers
-                                .map(
-                                    barber => `
+                            myBarbers.map(barber => {
+                                const detailsId = `barberDetails-${barber.id}`;
+                                return `
+                                    <div
+                                        class="queue-item"
+                                        style="margin-bottom:0; display:block; padding:0; overflow:hidden;"
+                                    >
+                                        <div
+                                            onclick="toggleAdminAccordion('${detailsId}')"
+                                            style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px; cursor:pointer; user-select:none;"
+                                            role="button"
+                                            tabindex="0"
+                                            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAdminAccordion('${detailsId}');}"
+                                        >
+                                            <div style="min-width:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                                <strong>
+                                                    👤 ${escapeHtml(barber.name)}
+                                                </strong>
+                                                <span class="badge">
+                                                    ${barber.active ? "🟢 Activo" : "🔴 Inactivo"}
+                                                </span>
+                                            </div>
+                                            <span
+                                                id="${detailsId}-arrow"
+                                                style="font-size:20px; flex:0 0 auto; transition:transform .2s ease;"
+                                            >▾</span>
+                                        </div>
 
                                         <div
-                                            class="queue-item"
-                                            style="
-                                                margin-bottom: 10px;
-                                            "
+                                            id="${detailsId}"
+                                            style="display:none; padding:0 16px 16px; border-top:1px solid rgba(127,127,127,0.18);"
                                         >
-
-                                            <div>
-
-                                                <strong>
-                                                    👤
-                                                    ${escapeHtml(
-                                                        barber.name
-                                                    )}
-                                                </strong>
-
-
-                                                <span>
-
-                                                    ${
-                                                        barber.active
-                                                            ? "🟢 Activo"
-                                                            : "🔴 Inactivo"
-                                                    }
-
-                                                </span>
-
-                                            </div>
-
-
-                                            <div
-                                                style="
-                                                    display: flex;
-                                                    gap: 6px;
-                                                    flex-wrap: wrap;
-                                                    justify-content: flex-end;
-                                                "
-                                            >
-
-                                                ${
-                                                    barber.active
-
-                                                    ?
-
-                                                    `
-                                                    <button
-                                                        class="btn success"
-                                                        onclick="toggleBarber(
-                                                            '${barber.id}',
-                                                            false
-                                                        )"
-                                                    >
+                                            <div style="display:flex; flex-direction:column; gap:8px; padding-top:14px;">
+                                                ${barber.active
+                                                    ? `
+                                                    <button class="btn success" onclick="event.stopPropagation(); toggleBarber('${barber.id}', false)">
                                                         🟢 Activo
                                                     </button>
                                                     `
-
-                                                    :
-
-                                                    `
-                                                    <button
-                                                        class="btn danger"
-                                                        onclick="toggleBarber(
-                                                            '${barber.id}',
-                                                            true
-                                                        )"
-                                                    >
+                                                    : `
+                                                    <button class="btn danger" onclick="event.stopPropagation(); toggleBarber('${barber.id}', true)">
                                                         🔴 Inactivo
                                                     </button>
-                                                    `
-                                                }
+                                                    `}
 
-
-                                                <button
-                                                    class="btn"
-                                                    onclick="showEditBarberForm(
-                                                        '${barber.id}'
-                                                    )"
-                                                >
+                                                <button class="btn" onclick="event.stopPropagation(); showEditBarberForm('${barber.id}')">
                                                     ✏️ Editar
                                                 </button>
 
-                                                <button
-                                                    class="btn primary"
-                                                    onclick="showBarberServicesForm(
-                                                        '${barber.id}'
-                                                    )"
-                                                >
+                                                <button class="btn primary" onclick="event.stopPropagation(); showBarberServicesForm('${barber.id}')">
                                                     ⚙️ Servicios
                                                 </button>
 
-                                                <button
-                                                    class="btn"
-                                                    onclick="createBarberInvitation(
-                                                        '${barber.id}'
-                                                    )"
-                                                >
+                                                <button class="btn" onclick="event.stopPropagation(); createBarberInvitation('${barber.id}')">
                                                     🔐 Dar acceso
                                                 </button>
-
                                             </div>
-
                                         </div>
-
-                                    `
-                                )
-                                .join("")
+                                    </div>
+                                `;
+                            }).join("")
                         }
-
                     </div>
                     `
                 }
-
             </div>
-
         </section>
-
     `;
-
 }
 
 
@@ -2992,6 +2926,31 @@ function closeBarberServicesForm() {
 
 
 // ==========================================
+// ACORDEONES DEL PANEL ADMIN
+// ==========================================
+
+function toggleAdminAccordion(detailsId) {
+
+    const details = document.getElementById(detailsId);
+
+    const arrow = document.getElementById(`${detailsId}-arrow`);
+
+    if (!details) {
+        return;
+    }
+
+    const isOpen = details.style.display !== "none";
+
+    details.style.display = isOpen ? "none" : "block";
+
+    if (arrow) {
+        arrow.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+    }
+
+}
+
+
+// ==========================================
 // RENDERIZAR SERVICIOS
 // ==========================================
 
@@ -3002,171 +2961,91 @@ function renderServices() {
         <section class="card">
 
             <div class="queue-header">
-
-                <h2>
-                    ⚙️ MIS SERVICIOS
-                </h2>
-
-
-                <span class="badge">
-                    ${myServices.length}
-                    servicios
-                </span>
-
+                <h2>⚙️ MIS SERVICIOS</h2>
+                <span class="badge">${myServices.length} servicios</span>
             </div>
 
-
-            <button
-                class="btn primary"
-                onclick="showCreateServiceForm()"
-            >
+            <button class="btn primary" onclick="showCreateServiceForm()">
                 ➕ Nuevo servicio
             </button>
 
-
-            <div
-                id="serviceFormContainer"
-                style="margin-top: 20px;"
-            ></div>
-
+            <div id="serviceFormContainer" style="margin-top: 20px;"></div>
 
             <div style="margin-top: 20px;">
-
                 ${
                     myServices.length === 0
-
-                    ?
-
-                    `
+                    ? `
                     <div class="empty">
-
-                        <p>
-                            Todavía no tienes servicios.
-                        </p>
-
-
-                        <p>
-                            Crea el primero para que tus
-                            clientes puedan tomar turnos.
-                        </p>
-
+                        <p>Todavía no tienes servicios.</p>
+                        <p>Crea el primero para que tus clientes puedan tomar turnos.</p>
                     </div>
                     `
-
-                    :
-
-                    `
-                    <div class="queue">
-
+                    : `
+                    <div class="queue" style="display:flex; flex-direction:column; gap:10px;">
                         ${
-                            myServices
-                                .map(
-                                    service => `
+                            myServices.map(service => {
+                                const detailsId = `serviceDetails-${service.id}`;
+                                return `
+                                    <div
+                                        class="queue-item"
+                                        style="margin-bottom:0; display:block; padding:0; overflow:hidden;"
+                                    >
+                                        <div
+                                            onclick="toggleAdminAccordion('${detailsId}')"
+                                            style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px; cursor:pointer; user-select:none;"
+                                            role="button"
+                                            tabindex="0"
+                                            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAdminAccordion('${detailsId}');}"
+                                        >
+                                            <div style="min-width:0; display:flex; flex-direction:column; gap:5px;">
+                                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                                    <strong>${escapeHtml(service.name)}</strong>
+                                                    <span class="badge">
+                                                        ${service.active ? "🟢 Activo" : "🔴 Inactivo"}
+                                                    </span>
+                                                </div>
+                                                <span class="muted">
+                                                    $${Number(service.price || 0).toLocaleString("es-CO")} · ${service.duration_minutes} min
+                                                </span>
+                                            </div>
+                                            <span
+                                                id="${detailsId}-arrow"
+                                                style="font-size:20px; flex:0 0 auto; transition:transform .2s ease;"
+                                            >▾</span>
+                                        </div>
 
                                         <div
-                                            class="queue-item"
-                                            style="
-                                                margin-bottom: 10px;
-                                            "
+                                            id="${detailsId}"
+                                            style="display:none; padding:0 16px 16px; border-top:1px solid rgba(127,127,127,0.18);"
                                         >
-
-                                            <div>
-
-                                                <strong>
-                                                    ${escapeHtml(
-                                                        service.name
-                                                    )}
-                                                </strong>
-
-
-                                                <span>
-
-                                                    $${Number(
-                                                        service.price || 0
-                                                    ).toLocaleString(
-                                                        "es-CO"
-                                                    )}
-
-                                                    ·
-
-                                                    ${service.duration_minutes}
-                                                    min
-
-                                                </span>
-
-                                            </div>
-
-
-                                            <div
-                                                style="
-                                                    display: flex;
-                                                    gap: 6px;
-                                                    flex-wrap: wrap;
-                                                    justify-content: flex-end;
-                                                "
-                                            >
-
-                                                ${
-                                                    service.active
-
-                                                    ?
-
-                                                    `
-                                                    <button
-                                                        class="btn success"
-                                                        onclick="toggleService(
-                                                            '${service.id}',
-                                                            false
-                                                        )"
-                                                    >
+                                            <div style="display:flex; flex-direction:column; gap:8px; padding-top:14px;">
+                                                ${service.active
+                                                    ? `
+                                                    <button class="btn success" onclick="event.stopPropagation(); toggleService('${service.id}', false)">
                                                         🟢 Activo
                                                     </button>
                                                     `
-
-                                                    :
-
-                                                    `
-                                                    <button
-                                                        class="btn danger"
-                                                        onclick="toggleService(
-                                                            '${service.id}',
-                                                            true
-                                                        )"
-                                                    >
+                                                    : `
+                                                    <button class="btn danger" onclick="event.stopPropagation(); toggleService('${service.id}', true)">
                                                         🔴 Inactivo
                                                     </button>
-                                                    `
-                                                }
+                                                    `}
 
-
-                                                <button
-                                                    class="btn"
-                                                    onclick="showEditServiceForm(
-                                                        '${service.id}'
-                                                    )"
-                                                >
+                                                <button class="btn" onclick="event.stopPropagation(); showEditServiceForm('${service.id}')">
                                                     ✏️ Editar
                                                 </button>
-
                                             </div>
-
                                         </div>
-
-                                    `
-                                )
-                                .join("")
+                                    </div>
+                                `;
+                            }).join("")
                         }
-
                     </div>
                     `
                 }
-
             </div>
-
         </section>
-
     `;
-
 }
 
 
