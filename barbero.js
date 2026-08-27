@@ -1,19 +1,40 @@
-/* TURNOBARBER - MI PANTALLA DE BARBERO
-   Diseño 2.0: interfaz de trabajo rápida y visual.
-   La lógica de Supabase y los RPC existentes se mantienen.
-*/
+/* ==========================================================
+   TURNOBARBER - MI PANTALLA DE BARBERO
+
+   Control de acceso:
+   - Solo permite trabajar a un barbero activo.
+   - Verifica periódicamente que el acceso siga activo.
+   - Si el administrador desactiva al barbero,
+     la estación se bloquea automáticamente.
+   - La lógica de Supabase y los RPC existentes se mantienen.
+========================================================== */
+
 
 let barberProfile = null;
 let barberQueue = [];
 let currentBarberTicket = null;
+
 let loadingDashboard = false;
 let runningAction = false;
 let refreshTimer = null;
+
+let accessBlocked = false;
+
+
+/* ==========================================================
+   ELEMENTO PRINCIPAL
+========================================================== */
+
 
 const dashboard =
     document.getElementById(
         "barberDashboard"
     );
+
+
+/* ==========================================================
+   UTILIDADES
+========================================================== */
 
 
 function escapeHtml(value) {
@@ -75,6 +96,11 @@ function isServing(value) {
 }
 
 
+/* ==========================================================
+   SESIÓN
+========================================================== */
+
+
 async function getSession() {
 
     const {
@@ -83,13 +109,20 @@ async function getSession() {
     } =
         await client.auth.getSession();
 
+
     if (error) {
         throw error;
     }
 
+
     return data?.session || null;
 
 }
+
+
+/* ==========================================================
+   PERFIL DEL BARBERO
+========================================================== */
 
 
 async function loadProfile() {
@@ -102,13 +135,87 @@ async function loadProfile() {
             "get_my_barber"
         );
 
+
     if (error) {
         throw error;
     }
 
+
     return data?.[0] || null;
 
 }
+
+
+/* ==========================================================
+   VERIFICAR ACCESO
+
+   IMPORTANTE:
+   get_my_barber() solamente devuelve un barbero
+   cuando está activo.
+
+   Por eso, si el administrador lo desactiva,
+   esta función deja de encontrarlo.
+========================================================== */
+
+
+async function verifyBarberAccess() {
+
+    const profile =
+        await loadProfile();
+
+
+    if (!profile) {
+
+        accessBlocked =
+            true;
+
+        barberProfile =
+            null;
+
+        stopAutoRefresh();
+
+        renderAccessBlocked();
+
+        return false;
+
+    }
+
+
+    if (
+        profile.active ===
+        false
+    ) {
+
+        accessBlocked =
+            true;
+
+        barberProfile =
+            null;
+
+        stopAutoRefresh();
+
+        renderAccessBlocked();
+
+        return false;
+
+    }
+
+
+    accessBlocked =
+        false;
+
+    barberProfile =
+        profile;
+
+
+    return true;
+
+}
+
+
+/* ==========================================================
+   COLA
+========================================================== */
 
 
 async function loadQueue() {
@@ -121,12 +228,15 @@ async function loadQueue() {
             "barber_my_queue"
         );
 
+
     if (error) {
         throw error;
     }
 
+
     barberQueue =
         data || [];
+
 
     currentBarberTicket =
         barberQueue.find(
@@ -137,6 +247,11 @@ async function loadQueue() {
         ) || null;
 
 }
+
+
+/* ==========================================================
+   TURNOS EN ESPERA
+========================================================== */
 
 
 function waitingTickets() {
@@ -151,33 +266,148 @@ function waitingTickets() {
 }
 
 
+/* ==========================================================
+   PANTALLA DE ACCESO BLOQUEADO
+========================================================== */
+
+
+function renderAccessBlocked() {
+
+    if (!dashboard) {
+        return;
+    }
+
+
+    dashboard.innerHTML = `
+
+        <section
+            class="card hero"
+            style="
+                text-align:center;
+                padding:35px 20px;
+                max-width:600px;
+                margin:30px auto;
+            "
+        >
+
+            <div
+                style="
+                    font-size:58px;
+                    margin-bottom:10px;
+                "
+            >
+                🔒
+            </div>
+
+
+            <h2
+                style="
+                    margin-bottom:10px;
+                "
+            >
+                Acceso bloqueado
+            </h2>
+
+
+            <p
+                style="
+                    font-size:17px;
+                    line-height:1.5;
+                "
+            >
+                Tu acceso como barbero está
+                actualmente inactivo.
+            </p>
+
+
+            <p
+                style="
+                    opacity:.7;
+                    line-height:1.5;
+                "
+            >
+                El administrador de la barbería
+                desactivó este acceso o tu cuenta
+                ya no está vinculada a un barbero activo.
+            </p>
+
+
+            <button
+                class="btn primary"
+                type="button"
+                onclick="location.reload()"
+                style="
+                    width:100%;
+                    max-width:400px;
+                    margin-top:15px;
+                    min-height:50px;
+                "
+            >
+                🔄 Verificar nuevamente
+            </button>
+
+
+            <button
+                class="btn"
+                type="button"
+                onclick="barberLogout()"
+                style="
+                    width:100%;
+                    max-width:400px;
+                    margin-top:10px;
+                    min-height:48px;
+                "
+            >
+                🚪 Cerrar sesión
+            </button>
+
+
+        </section>
+
+    `;
+
+}
+
+
+/* ==========================================================
+   DASHBOARD
+========================================================== */
+
+
 function renderDashboard(
     message = ""
 ) {
 
     if (
         !dashboard ||
-        !barberProfile
+        !barberProfile ||
+        accessBlocked
     ) {
         return;
     }
 
+
     const waiting =
         waitingTickets();
+
 
     const next =
         waiting[0] || null;
 
+
     const current =
         currentBarberTicket;
 
+
     const waitingCount =
         waiting.length;
+
 
     const queueLabel =
         waitingCount === 1
             ? "cliente esperando"
             : "clientes esperando";
+
 
     const statusTitle =
         current
@@ -186,17 +416,18 @@ function renderDashboard(
                 ? "LISTO PARA ATENDER"
                 : "DISPONIBLE";
 
+
     const statusIcon =
         current
             ? "🔵"
-            : next
-                ? "🟢"
-                : "🟢";
+            : "🟢";
+
 
     const statusClass =
         current
             ? "tb-status-serving"
             : "tb-status-ready";
+
 
     const nextAction =
         current
@@ -209,297 +440,345 @@ function renderDashboard(
     dashboard.innerHTML = `
 
         <style>
+
             .tb-dashboard {
-                display: flex;
-                flex-direction: column;
-                gap: 14px;
-                font-family: inherit;
+                display:flex;
+                flex-direction:column;
+                gap:14px;
+                font-family:inherit;
             }
+
 
             .tb-top {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 12px;
-                flex-wrap: wrap;
-                padding: 16px 18px;
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:12px;
+                flex-wrap:wrap;
+                padding:16px 18px;
             }
+
 
             .tb-brand {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                min-width: 0;
+                display:flex;
+                align-items:center;
+                gap:12px;
+                min-width:0;
             }
+
 
             .tb-brand-icon {
-                width: 48px;
-                height: 48px;
-                border-radius: 14px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 27px;
-                background: rgba(127,127,127,.12);
-                flex: 0 0 auto;
+                width:48px;
+                height:48px;
+                border-radius:14px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                font-size:27px;
+                background:rgba(127,127,127,.12);
+                flex:0 0 auto;
             }
+
 
             .tb-brand h1 {
-                margin: 0;
-                font-size: 21px;
-                line-height: 1.1;
+                margin:0;
+                font-size:21px;
+                line-height:1.1;
             }
+
 
             .tb-brand p {
-                margin: 5px 0 0;
-                opacity: .68;
-                font-size: 14px;
+                margin:5px 0 0;
+                opacity:.68;
+                font-size:14px;
             }
+
 
             .tb-status {
-                display: inline-flex;
-                align-items: center;
-                gap: 7px;
-                border-radius: 999px;
-                padding: 8px 12px;
-                font-size: 12px;
-                font-weight: 800;
-                letter-spacing: .04em;
-                white-space: nowrap;
-                background: rgba(34,197,94,.12);
+                display:inline-flex;
+                align-items:center;
+                gap:7px;
+                border-radius:999px;
+                padding:8px 12px;
+                font-size:12px;
+                font-weight:800;
+                letter-spacing:.04em;
+                white-space:nowrap;
+                background:rgba(34,197,94,.12);
             }
+
 
             .tb-status-serving {
-                background: rgba(59,130,246,.14);
+                background:rgba(59,130,246,.14);
             }
+
 
             .tb-main-card {
-                padding: 22px 18px 20px;
-                text-align: center;
-                overflow: hidden;
+                padding:22px 18px 20px;
+                text-align:center;
+                overflow:hidden;
             }
+
 
             .tb-section-label {
-                margin: 0;
-                font-size: 12px;
-                font-weight: 800;
-                letter-spacing: .09em;
-                opacity: .62;
+                margin:0;
+                font-size:12px;
+                font-weight:800;
+                letter-spacing:.09em;
+                opacity:.62;
             }
+
 
             .tb-current-code {
-                font-size: clamp(70px, 18vw, 112px);
-                line-height: .95;
-                font-weight: 900;
-                letter-spacing: -.04em;
-                margin: 13px 0 7px;
+                font-size:clamp(70px,18vw,112px);
+                line-height:.95;
+                font-weight:900;
+                letter-spacing:-.04em;
+                margin:13px 0 7px;
             }
+
 
             .tb-service {
-                font-size: 20px;
-                font-weight: 750;
-                margin: 0 0 18px;
+                font-size:20px;
+                font-weight:750;
+                margin:0 0 18px;
             }
+
 
             .tb-empty-icon {
-                font-size: 58px;
-                line-height: 1;
-                margin: 6px 0 10px;
+                font-size:58px;
+                line-height:1;
+                margin:6px 0 10px;
             }
+
 
             .tb-empty-title {
-                margin: 0;
-                font-size: 22px;
+                margin:0;
+                font-size:22px;
             }
+
 
             .tb-empty-text {
-                margin: 7px auto 0;
-                max-width: 440px;
-                opacity: .68;
+                margin:7px auto 0;
+                max-width:440px;
+                opacity:.68;
             }
+
 
             .tb-stats {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0,1fr));
-                gap: 10px;
-                margin-top: 15px;
+                display:grid;
+                grid-template-columns:
+                    repeat(2,minmax(0,1fr));
+                gap:10px;
+                margin-top:15px;
             }
+
 
             .tb-stat {
-                border-radius: 14px;
-                padding: 13px 10px;
-                background: rgba(127,127,127,.09);
+                border-radius:14px;
+                padding:13px 10px;
+                background:rgba(127,127,127,.09);
             }
+
 
             .tb-stat-number {
-                display: block;
-                font-size: 26px;
-                font-weight: 900;
-                line-height: 1;
+                display:block;
+                font-size:26px;
+                font-weight:900;
+                line-height:1;
             }
+
 
             .tb-stat-label {
-                display: block;
-                margin-top: 5px;
-                font-size: 11px;
-                opacity: .65;
-                font-weight: 700;
+                display:block;
+                margin-top:5px;
+                font-size:11px;
+                opacity:.65;
+                font-weight:700;
             }
+
 
             .tb-actions {
-                display: flex;
-                flex-direction: column;
-                gap: 9px;
-                max-width: 520px;
-                margin: 0 auto;
+                display:flex;
+                flex-direction:column;
+                gap:9px;
+                max-width:520px;
+                margin:0 auto;
             }
+
 
             .tb-action-main {
-                min-height: 58px;
-                font-size: 18px !important;
-                font-weight: 850 !important;
+                min-height:58px;
+                font-size:18px !important;
+                font-weight:850 !important;
             }
+
 
             .tb-action-secondary {
-                min-height: 48px;
+                min-height:48px;
             }
+
 
             .tb-next {
-                padding: 16px 18px;
+                padding:16px 18px;
             }
+
 
             .tb-next-head {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 10px;
-                margin-bottom: 12px;
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:10px;
+                margin-bottom:12px;
             }
+
 
             .tb-next-title {
-                margin: 0;
-                font-size: 17px;
+                margin:0;
+                font-size:17px;
             }
+
 
             .tb-next-ticket {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-                padding: 15px;
-                border-radius: 14px;
-                background: rgba(127,127,127,.09);
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                gap:12px;
+                padding:15px;
+                border-radius:14px;
+                background:rgba(127,127,127,.09);
             }
+
 
             .tb-next-code {
-                font-size: 29px;
-                font-weight: 900;
-                line-height: 1;
+                font-size:29px;
+                font-weight:900;
+                line-height:1;
             }
+
 
             .tb-next-service {
-                margin-top: 5px;
-                font-size: 13px;
-                opacity: .68;
+                margin-top:5px;
+                font-size:13px;
+                opacity:.68;
             }
+
 
             .tb-queue-list {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
+                display:flex;
+                flex-direction:column;
+                gap:8px;
             }
+
 
             .tb-queue-item {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-                padding: 12px 13px;
-                border-radius: 12px;
-                background: rgba(127,127,127,.075);
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                gap:12px;
+                padding:12px 13px;
+                border-radius:12px;
+                background:rgba(127,127,127,.075);
             }
+
 
             .tb-queue-position {
-                width: 30px;
-                height: 30px;
-                border-radius: 9px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 850;
-                background: rgba(127,127,127,.13);
-                flex: 0 0 auto;
+                width:30px;
+                height:30px;
+                border-radius:9px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                font-weight:850;
+                background:rgba(127,127,127,.13);
+                flex:0 0 auto;
             }
+
 
             .tb-queue-info {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                min-width: 0;
-                flex: 1;
+                display:flex;
+                align-items:center;
+                gap:10px;
+                min-width:0;
+                flex:1;
             }
+
 
             .tb-queue-code {
-                font-weight: 850;
+                font-weight:850;
             }
+
 
             .tb-queue-service {
-                margin-top: 3px;
-                font-size: 12px;
-                opacity: .65;
+                margin-top:3px;
+                font-size:12px;
+                opacity:.65;
             }
+
 
             .tb-next-badge {
-                border-radius: 999px;
-                padding: 6px 9px;
-                font-size: 11px;
-                font-weight: 800;
-                background: rgba(34,197,94,.12);
-                white-space: nowrap;
+                border-radius:999px;
+                padding:6px 9px;
+                font-size:11px;
+                font-weight:800;
+                background:rgba(34,197,94,.12);
+                white-space:nowrap;
             }
+
 
             .tb-message {
-                text-align: center;
-                min-height: 18px;
-                margin: 0;
+                text-align:center;
+                min-height:18px;
+                margin:0;
             }
+
 
             .tb-footer {
-                text-align: center;
-                font-size: 11px;
-                opacity: .45;
-                padding: 3px 0 0;
+                text-align:center;
+                font-size:11px;
+                opacity:.45;
+                padding:3px 0 0;
             }
 
-            @media (max-width: 480px) {
+
+            @media (max-width:480px) {
+
                 .tb-top {
-                    padding: 14px;
+                    padding:14px;
                 }
+
 
                 .tb-brand h1 {
-                    font-size: 18px;
+                    font-size:18px;
                 }
+
 
                 .tb-main-card {
-                    padding: 20px 14px 17px;
+                    padding:20px 14px 17px;
                 }
+
 
                 .tb-service {
-                    font-size: 18px;
+                    font-size:18px;
                 }
+
 
                 .tb-next {
-                    padding: 14px;
+                    padding:14px;
                 }
 
+
                 .tb-queue-item {
-                    padding: 11px;
+                    padding:11px;
                 }
+
             }
+
         </style>
 
 
         <div class="tb-dashboard">
+
 
             <section class="card tb-top">
 
@@ -509,6 +788,7 @@ function renderDashboard(
                         💈
                     </div>
 
+
                     <div>
 
                         <h1>
@@ -516,6 +796,7 @@ function renderDashboard(
                                 barberProfile.name
                             )}
                         </h1>
+
 
                         <p>
                             Mi estación de trabajo
@@ -525,17 +806,22 @@ function renderDashboard(
 
                 </div>
 
+
                 <div
                     class="tb-status ${statusClass}"
                 >
+
                     ${statusIcon}
+
                     ${statusTitle}
+
                 </div>
 
             </section>
 
 
             <section class="card tb-main-card">
+
 
                 ${
                     current
@@ -545,11 +831,13 @@ function renderDashboard(
                                 CLIENTE ACTUAL
                             </p>
 
+
                             <div class="tb-current-code">
                                 ${escapeHtml(
                                     current.ticket_code
                                 )}
                             </div>
+
 
                             <p class="tb-service">
                                 ${escapeHtml(
@@ -558,7 +846,9 @@ function renderDashboard(
                                 )}
                             </p>
 
+
                             <div class="tb-actions">
+
 
                                 <button
                                     class="btn success tb-action-main"
@@ -569,6 +859,7 @@ function renderDashboard(
                                     ✅ FINALIZAR ATENCIÓN
                                 </button>
 
+
                                 <button
                                     class="btn danger tb-action-secondary"
                                     type="button"
@@ -578,21 +869,26 @@ function renderDashboard(
                                     🚫 No se presentó
                                 </button>
 
+
                             </div>
 
                           `
+
                         : next
+
                             ? `
 
                                 <p class="tb-section-label">
                                     PRÓXIMO CLIENTE
                                 </p>
 
+
                                 <div class="tb-current-code">
                                     ${escapeHtml(
                                         next.ticket_code
                                     )}
                                 </div>
+
 
                                 <p class="tb-service">
                                     ${escapeHtml(
@@ -601,7 +897,9 @@ function renderDashboard(
                                     )}
                                 </p>
 
+
                                 <div class="tb-actions">
+
 
                                     <button
                                         class="btn primary tb-action-main"
@@ -614,18 +912,22 @@ function renderDashboard(
                                         )}
                                     </button>
 
+
                                 </div>
 
                               `
+
                             : `
 
                                 <div class="tb-empty-icon">
                                     🪑
                                 </div>
 
+
                                 <h2 class="tb-empty-title">
                                     Estás disponible
                                 </h2>
+
 
                                 <p class="tb-empty-text">
                                     No tienes clientes esperando.
@@ -633,10 +935,12 @@ function renderDashboard(
                                 </p>
 
                               `
+
                 }
 
 
                 <div class="tb-stats">
+
 
                     <div class="tb-stat">
 
@@ -644,15 +948,18 @@ function renderDashboard(
                             ${waitingCount}
                         </span>
 
+
                         <span class="tb-stat-label">
                             ${queueLabel}
                         </span>
 
                     </div>
 
+
                     <div class="tb-stat">
 
                         <span class="tb-stat-number">
+
                             ${
                                 next
                                     ? escapeHtml(
@@ -660,7 +967,9 @@ function renderDashboard(
                                     )
                                     : "—"
                             }
+
                         </span>
+
 
                         <span class="tb-stat-label">
                             PRÓXIMO TURNO
@@ -668,7 +977,9 @@ function renderDashboard(
 
                     </div>
 
+
                 </div>
+
 
             </section>
 
@@ -685,11 +996,13 @@ function renderDashboard(
                                     📋 Mi cola
                                 </h2>
 
+
                                 <span class="badge">
                                     ${waitingCount}
                                 </span>
 
                             </div>
+
 
                             <div class="tb-queue-list">
 
@@ -700,23 +1013,35 @@ function renderDashboard(
                                             index
                                         ) => `
 
-                                            <div class="tb-queue-item">
+                                            <div
+                                                class="tb-queue-item"
+                                            >
 
-                                                <div class="tb-queue-info">
+                                                <div
+                                                    class="tb-queue-info"
+                                                >
 
-                                                    <span class="tb-queue-position">
+                                                    <span
+                                                        class="tb-queue-position"
+                                                    >
                                                         ${index + 1}
                                                     </span>
 
+
                                                     <div>
 
-                                                        <div class="tb-queue-code">
+                                                        <div
+                                                            class="tb-queue-code"
+                                                        >
                                                             ${escapeHtml(
                                                                 ticket.ticket_code
                                                             )}
                                                         </div>
 
-                                                        <div class="tb-queue-service">
+
+                                                        <div
+                                                            class="tb-queue-service"
+                                                        >
                                                             ${escapeHtml(
                                                                 ticket.service_name ||
                                                                 "Servicio"
@@ -727,10 +1052,13 @@ function renderDashboard(
 
                                                 </div>
 
+
                                                 ${
                                                     index === 0
                                                         ? `
-                                                            <span class="tb-next-badge">
+                                                            <span
+                                                                class="tb-next-badge"
+                                                            >
                                                                 ⏭️ SIGUIENTE
                                                             </span>
                                                           `
@@ -754,6 +1082,7 @@ function renderDashboard(
 
                             </div>
 
+
                         </section>
 
                       `
@@ -763,19 +1092,20 @@ function renderDashboard(
 
             <section class="card tb-next">
 
+
                 <div class="tb-next-head">
 
                     <h2 class="tb-next-title">
                         💡 Próxima acción
                     </h2>
 
-                    <span
-                        class="badge"
-                    >
+
+                    <span class="badge">
                         ${current ? "EN CURSO" : "LISTO"}
                     </span>
 
                 </div>
+
 
                 <p
                     style="
@@ -789,9 +1119,11 @@ function renderDashboard(
                     )}
                 </p>
 
+
                 ${
                     !current && next
                         ? `
+
                             <button
                                 class="btn primary"
                                 type="button"
@@ -808,9 +1140,11 @@ function renderDashboard(
                                     next.ticket_code
                                 )}
                             </button>
+
                           `
                         : ""
                 }
+
 
             </section>
 
@@ -830,7 +1164,12 @@ function renderDashboard(
             </div>
 
 
-            <div style="text-align:center; margin-top:2px;">
+            <div
+                style="
+                    text-align:center;
+                    margin-top:2px;
+                "
+            >
 
                 <button
                     class="btn"
@@ -842,11 +1181,17 @@ function renderDashboard(
 
             </div>
 
+
         </div>
 
     `;
 
 }
+
+
+/* ==========================================================
+   ERROR
+========================================================== */
 
 
 function showError(
@@ -856,6 +1201,7 @@ function showError(
     if (!dashboard) {
         return;
     }
+
 
     dashboard.innerHTML = `
 
@@ -871,9 +1217,11 @@ function showError(
                 ⚠️
             </div>
 
+
             <h2>
                 No se pudo cargar tu pantalla
             </h2>
+
 
             <p>
                 ${escapeHtml(
@@ -900,11 +1248,17 @@ function showError(
                 🚪 Cerrar sesión
             </button>
 
+
         </section>
 
     `;
 
 }
+
+
+/* ==========================================================
+   CARGAR DASHBOARD
+========================================================== */
 
 
 async function loadDashboard() {
@@ -915,6 +1269,7 @@ async function loadDashboard() {
     ) {
         return;
     }
+
 
     loadingDashboard =
         true;
@@ -936,11 +1291,17 @@ async function loadDashboard() {
         }
 
 
+        dashboard.style.display =
+            "block";
+
+
         dashboard.innerHTML = `
 
             <section
                 class="card hero"
-                style="text-align:center;"
+                style="
+                    text-align:center;
+                "
             >
 
                 <h2>
@@ -952,32 +1313,17 @@ async function loadDashboard() {
         `;
 
 
-        barberProfile =
-            await loadProfile();
+        const valid =
+            await verifyBarberAccess();
 
 
-        if (!barberProfile) {
-
-            throw new Error(
-                "Tu cuenta todavía no está vinculada a un barbero. Debes aceptar la invitación del administrador."
-            );
-
-        }
-
-
-        if (
-            barberProfile.active ===
-            false
-        ) {
-
-            throw new Error(
-                "Tu acceso de barbero está inactivo. Contacta al administrador."
-            );
-
+        if (!valid) {
+            return;
         }
 
 
         await loadQueue();
+
 
         renderDashboard();
 
@@ -989,9 +1335,12 @@ async function loadDashboard() {
             error
         );
 
+
         showError(
-            error.message
+            error.message ||
+            "No fue posible cargar la estación."
         );
+
 
     } finally {
 
@@ -1003,18 +1352,38 @@ async function loadDashboard() {
 }
 
 
+/* ==========================================================
+   LLAMAR SIGUIENTE
+========================================================== */
+
+
 async function callNext() {
 
-    if (runningAction) {
+    if (
+        runningAction ||
+        accessBlocked
+    ) {
         return;
     }
+
 
     runningAction =
         true;
 
+
     renderDashboard();
 
+
     try {
+
+        const valid =
+            await verifyBarberAccess();
+
+
+        if (!valid) {
+            return;
+        }
+
 
         const {
             data,
@@ -1044,7 +1413,7 @@ async function callNext() {
         }
 
 
-        await loadDashboard();
+        await loadQueue();
 
 
     } catch (error) {
@@ -1054,22 +1423,35 @@ async function callNext() {
             error
         );
 
+
         alert(
             error.message
         );
+
 
     } finally {
 
         runningAction =
             false;
 
-        if (barberProfile) {
+
+        if (
+            barberProfile &&
+            !accessBlocked
+        ) {
+
             renderDashboard();
+
         }
 
     }
 
 }
+
+
+/* ==========================================================
+   FINALIZAR TURNO
+========================================================== */
 
 
 async function finishTicket(
@@ -1078,7 +1460,8 @@ async function finishTicket(
 
     if (
         !ticketId ||
-        runningAction
+        runningAction ||
+        accessBlocked
     ) {
         return;
     }
@@ -1096,9 +1479,20 @@ async function finishTicket(
     runningAction =
         true;
 
+
     renderDashboard();
 
+
     try {
+
+        const valid =
+            await verifyBarberAccess();
+
+
+        if (!valid) {
+            return;
+        }
+
 
         const {
             data,
@@ -1127,7 +1521,7 @@ async function finishTicket(
         }
 
 
-        await loadDashboard();
+        await loadQueue();
 
 
     } catch (error) {
@@ -1137,22 +1531,35 @@ async function finishTicket(
             error
         );
 
+
         alert(
             error.message
         );
+
 
     } finally {
 
         runningAction =
             false;
 
-        if (barberProfile) {
+
+        if (
+            barberProfile &&
+            !accessBlocked
+        ) {
+
             renderDashboard();
+
         }
 
     }
 
 }
+
+
+/* ==========================================================
+   NO SE PRESENTÓ
+========================================================== */
 
 
 async function noShowTicket(
@@ -1161,7 +1568,8 @@ async function noShowTicket(
 
     if (
         !ticketId ||
-        runningAction
+        runningAction ||
+        accessBlocked
     ) {
         return;
     }
@@ -1179,9 +1587,20 @@ async function noShowTicket(
     runningAction =
         true;
 
+
     renderDashboard();
 
+
     try {
+
+        const valid =
+            await verifyBarberAccess();
+
+
+        if (!valid) {
+            return;
+        }
+
 
         const {
             data,
@@ -1210,7 +1629,7 @@ async function noShowTicket(
         }
 
 
-        await loadDashboard();
+        await loadQueue();
 
 
     } catch (error) {
@@ -1220,17 +1639,25 @@ async function noShowTicket(
             error
         );
 
+
         alert(
             error.message
         );
+
 
     } finally {
 
         runningAction =
             false;
 
-        if (barberProfile) {
+
+        if (
+            barberProfile &&
+            !accessBlocked
+        ) {
+
             renderDashboard();
+
         }
 
     }
@@ -1238,18 +1665,14 @@ async function noShowTicket(
 }
 
 
+/* ==========================================================
+   CERRAR SESIÓN
+========================================================== */
+
+
 async function barberLogout() {
 
-    if (refreshTimer) {
-
-        clearInterval(
-            refreshTimer
-        );
-
-        refreshTimer =
-            null;
-
-    }
+    stopAutoRefresh();
 
 
     sessionStorage.removeItem(
@@ -1277,15 +1700,20 @@ async function barberLogout() {
 }
 
 
+/* ==========================================================
+   ACTUALIZACIÓN AUTOMÁTICA
+
+   Cada 5 segundos:
+   1. Comprueba que la sesión siga activa.
+   2. Comprueba que el barbero siga activo.
+   3. Si está activo, actualiza la cola.
+   4. Si dejó de estar activo, bloquea la estación.
+========================================================== */
+
+
 function startAutoRefresh() {
 
-    if (refreshTimer) {
-
-        clearInterval(
-            refreshTimer
-        );
-
-    }
+    stopAutoRefresh();
 
 
     refreshTimer =
@@ -1295,6 +1723,7 @@ function startAutoRefresh() {
                 if (
                     document.hidden ||
                     runningAction ||
+                    accessBlocked ||
                     !barberProfile
                 ) {
                     return;
@@ -1303,14 +1732,31 @@ function startAutoRefresh() {
 
                 try {
 
+                    const valid =
+                        await verifyBarberAccess();
+
+
+                    if (!valid) {
+                        return;
+                    }
+
+
                     await loadQueue();
 
-                    renderDashboard();
+
+                    if (
+                        !accessBlocked
+                    ) {
+
+                        renderDashboard();
+
+                    }
+
 
                 } catch (error) {
 
                     console.error(
-                        "ERROR ACTUALIZANDO COLA:",
+                        "ERROR ACTUALIZANDO ESTACIÓN:",
                         error
                     );
 
@@ -1323,6 +1769,33 @@ function startAutoRefresh() {
 }
 
 
+/* ==========================================================
+   DETENER ACTUALIZACIÓN
+========================================================== */
+
+
+function stopAutoRefresh() {
+
+    if (refreshTimer) {
+
+        clearInterval(
+            refreshTimer
+        );
+
+
+        refreshTimer =
+            null;
+
+    }
+
+}
+
+
+/* ==========================================================
+   INICIAR MÓDULO
+========================================================== */
+
+
 async function startBarberModule() {
 
     const params =
@@ -1332,9 +1805,8 @@ async function startBarberModule() {
 
 
     if (
-        params.get(
-            "mode"
-        ) !== "dashboard" ||
+        params.get("mode") !==
+            "dashboard" ||
         !dashboard
     ) {
         return;
@@ -1361,9 +1833,22 @@ async function startBarberModule() {
 
     await loadDashboard();
 
-    startAutoRefresh();
+
+    if (
+        barberProfile &&
+        !accessBlocked
+    ) {
+
+        startAutoRefresh();
+
+    }
 
 }
+
+
+/* ==========================================================
+   CAMBIO DE SESIÓN
+========================================================== */
 
 
 client.auth.onAuthStateChange(
@@ -1383,16 +1868,7 @@ client.auth.onAuthStateChange(
             "SIGNED_OUT"
         ) {
 
-            if (refreshTimer) {
-
-                clearInterval(
-                    refreshTimer
-                );
-
-                refreshTimer =
-                    null;
-
-            }
+            stopAutoRefresh();
 
         }
 
@@ -1401,10 +1877,8 @@ client.auth.onAuthStateChange(
             session &&
             new URLSearchParams(
                 window.location.search
-            ).get(
-                "mode"
-            ) ===
-            "dashboard"
+            ).get("mode") ===
+                "dashboard"
         ) {
 
             startBarberModule();
@@ -1413,6 +1887,11 @@ client.auth.onAuthStateChange(
 
     }
 );
+
+
+/* ==========================================================
+   INICIO
+========================================================== */
 
 
 document.addEventListener(
