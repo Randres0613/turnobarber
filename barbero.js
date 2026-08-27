@@ -1,4 +1,7 @@
-/* TURNOBARBER - MI PANTALLA DE BARBERO */
+/* TURNOBARBER - MI PANTALLA DE BARBERO
+   Diseño 2.0: interfaz de trabajo rápida y visual.
+   La lógica de Supabase y los RPC existentes se mantienen.
+*/
 
 let barberProfile = null;
 let barberQueue = [];
@@ -168,411 +171,678 @@ function renderDashboard(
     const current =
         currentBarberTicket;
 
+    const waitingCount =
+        waiting.length;
+
+    const queueLabel =
+        waitingCount === 1
+            ? "cliente esperando"
+            : "clientes esperando";
+
+    const statusTitle =
+        current
+            ? "ATENDIENDO"
+            : next
+                ? "LISTO PARA ATENDER"
+                : "DISPONIBLE";
+
+    const statusIcon =
+        current
+            ? "🔵"
+            : next
+                ? "🟢"
+                : "🟢";
+
+    const statusClass =
+        current
+            ? "tb-status-serving"
+            : "tb-status-ready";
+
+    const nextAction =
+        current
+            ? "Finaliza la atención actual"
+            : next
+                ? `Llama a ${next.ticket_code}`
+                : "Esperando nuevos clientes";
+
 
     dashboard.innerHTML = `
 
-        <section
-            class="card hero"
-            style="margin-bottom:15px;"
-        >
+        <style>
+            .tb-dashboard {
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+                font-family: inherit;
+            }
 
-            <div
-                style="
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    gap:12px;
-                    flex-wrap:wrap;
-                "
-            >
+            .tb-top {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+                padding: 16px 18px;
+            }
 
-                <div>
+            .tb-brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                min-width: 0;
+            }
 
-                    <h1
-                        style="
-                            margin-top:0;
-                            margin-bottom:5px;
-                        "
-                    >
-                        💈 Mi pantalla de barbero
-                    </h1>
+            .tb-brand-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 27px;
+                background: rgba(127,127,127,.12);
+                flex: 0 0 auto;
+            }
 
-                    <h2
-                        style="
-                            margin:0 0 5px;
-                        "
-                    >
-                        ${escapeHtml(
-                            barberProfile.name
-                        )}
-                    </h2>
+            .tb-brand h1 {
+                margin: 0;
+                font-size: 21px;
+                line-height: 1.1;
+            }
 
-                    <p
-                        style="
-                            margin:0;
-                            opacity:.75;
-                        "
-                    >
-                        🟢 Barbero activo
-                    </p>
+            .tb-brand p {
+                margin: 5px 0 0;
+                opacity: .68;
+                font-size: 14px;
+            }
+
+            .tb-status {
+                display: inline-flex;
+                align-items: center;
+                gap: 7px;
+                border-radius: 999px;
+                padding: 8px 12px;
+                font-size: 12px;
+                font-weight: 800;
+                letter-spacing: .04em;
+                white-space: nowrap;
+                background: rgba(34,197,94,.12);
+            }
+
+            .tb-status-serving {
+                background: rgba(59,130,246,.14);
+            }
+
+            .tb-main-card {
+                padding: 22px 18px 20px;
+                text-align: center;
+                overflow: hidden;
+            }
+
+            .tb-section-label {
+                margin: 0;
+                font-size: 12px;
+                font-weight: 800;
+                letter-spacing: .09em;
+                opacity: .62;
+            }
+
+            .tb-current-code {
+                font-size: clamp(70px, 18vw, 112px);
+                line-height: .95;
+                font-weight: 900;
+                letter-spacing: -.04em;
+                margin: 13px 0 7px;
+            }
+
+            .tb-service {
+                font-size: 20px;
+                font-weight: 750;
+                margin: 0 0 18px;
+            }
+
+            .tb-empty-icon {
+                font-size: 58px;
+                line-height: 1;
+                margin: 6px 0 10px;
+            }
+
+            .tb-empty-title {
+                margin: 0;
+                font-size: 22px;
+            }
+
+            .tb-empty-text {
+                margin: 7px auto 0;
+                max-width: 440px;
+                opacity: .68;
+            }
+
+            .tb-stats {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0,1fr));
+                gap: 10px;
+                margin-top: 15px;
+            }
+
+            .tb-stat {
+                border-radius: 14px;
+                padding: 13px 10px;
+                background: rgba(127,127,127,.09);
+            }
+
+            .tb-stat-number {
+                display: block;
+                font-size: 26px;
+                font-weight: 900;
+                line-height: 1;
+            }
+
+            .tb-stat-label {
+                display: block;
+                margin-top: 5px;
+                font-size: 11px;
+                opacity: .65;
+                font-weight: 700;
+            }
+
+            .tb-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 9px;
+                max-width: 520px;
+                margin: 0 auto;
+            }
+
+            .tb-action-main {
+                min-height: 58px;
+                font-size: 18px !important;
+                font-weight: 850 !important;
+            }
+
+            .tb-action-secondary {
+                min-height: 48px;
+            }
+
+            .tb-next {
+                padding: 16px 18px;
+            }
+
+            .tb-next-head {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 12px;
+            }
+
+            .tb-next-title {
+                margin: 0;
+                font-size: 17px;
+            }
+
+            .tb-next-ticket {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 15px;
+                border-radius: 14px;
+                background: rgba(127,127,127,.09);
+            }
+
+            .tb-next-code {
+                font-size: 29px;
+                font-weight: 900;
+                line-height: 1;
+            }
+
+            .tb-next-service {
+                margin-top: 5px;
+                font-size: 13px;
+                opacity: .68;
+            }
+
+            .tb-queue-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .tb-queue-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 12px 13px;
+                border-radius: 12px;
+                background: rgba(127,127,127,.075);
+            }
+
+            .tb-queue-position {
+                width: 30px;
+                height: 30px;
+                border-radius: 9px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 850;
+                background: rgba(127,127,127,.13);
+                flex: 0 0 auto;
+            }
+
+            .tb-queue-info {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                min-width: 0;
+                flex: 1;
+            }
+
+            .tb-queue-code {
+                font-weight: 850;
+            }
+
+            .tb-queue-service {
+                margin-top: 3px;
+                font-size: 12px;
+                opacity: .65;
+            }
+
+            .tb-next-badge {
+                border-radius: 999px;
+                padding: 6px 9px;
+                font-size: 11px;
+                font-weight: 800;
+                background: rgba(34,197,94,.12);
+                white-space: nowrap;
+            }
+
+            .tb-message {
+                text-align: center;
+                min-height: 18px;
+                margin: 0;
+            }
+
+            .tb-footer {
+                text-align: center;
+                font-size: 11px;
+                opacity: .45;
+                padding: 3px 0 0;
+            }
+
+            @media (max-width: 480px) {
+                .tb-top {
+                    padding: 14px;
+                }
+
+                .tb-brand h1 {
+                    font-size: 18px;
+                }
+
+                .tb-main-card {
+                    padding: 20px 14px 17px;
+                }
+
+                .tb-service {
+                    font-size: 18px;
+                }
+
+                .tb-next {
+                    padding: 14px;
+                }
+
+                .tb-queue-item {
+                    padding: 11px;
+                }
+            }
+        </style>
+
+
+        <div class="tb-dashboard">
+
+            <section class="card tb-top">
+
+                <div class="tb-brand">
+
+                    <div class="tb-brand-icon">
+                        💈
+                    </div>
+
+                    <div>
+
+                        <h1>
+                            ${escapeHtml(
+                                barberProfile.name
+                            )}
+                        </h1>
+
+                        <p>
+                            Mi estación de trabajo
+                        </p>
+
+                    </div>
 
                 </div>
 
-                <button
-                    class="btn"
-                    type="button"
-                    onclick="barberLogout()"
+                <div
+                    class="tb-status ${statusClass}"
                 >
-                    🚪 Salir
-                </button>
+                    ${statusIcon}
+                    ${statusTitle}
+                </div>
 
-            </div>
-
-        </section>
-
-
-        <section
-            class="card"
-            style="margin-bottom:15px;"
-        >
-
-            <div
-                class="queue-header"
-            >
-
-                <h2>
-                    🎟️ AHORA ATENDIENDO
-                </h2>
-
-                <span
-                    class="badge"
-                >
-                    ${waiting.length}
-                    esperando
-                </span>
-
-            </div>
+            </section>
 
 
-            ${
-                current
-                    ? `
+            <section class="card tb-main-card">
 
-                        <div
-                            style="
-                                text-align:center;
-                                padding:10px 0 5px;
-                            "
-                        >
+                ${
+                    current
+                        ? `
 
-                            <p
-                                style="
-                                    margin:0;
-                                    opacity:.7;
-                                "
-                            >
-                                TURNO ACTUAL
+                            <p class="tb-section-label">
+                                CLIENTE ACTUAL
                             </p>
 
-
-                            <div
-                                style="
-                                    font-size:64px;
-                                    font-weight:800;
-                                    line-height:1;
-                                    margin:12px 0;
-                                "
-                            >
+                            <div class="tb-current-code">
                                 ${escapeHtml(
                                     current.ticket_code
                                 )}
                             </div>
 
-
-                            <h3
-                                style="
-                                    margin:5px 0 15px;
-                                "
-                            >
+                            <p class="tb-service">
                                 ${escapeHtml(
                                     current.service_name ||
                                     "Servicio"
                                 )}
-                            </h3>
+                            </p>
 
-
-                            <div
-                                style="
-                                    display:flex;
-                                    gap:8px;
-                                    justify-content:center;
-                                    flex-wrap:wrap;
-                                "
-                            >
+                            <div class="tb-actions">
 
                                 <button
-                                    class="btn success"
+                                    class="btn success tb-action-main"
                                     type="button"
-                                    onclick="finishTicket(
-                                        '${current.id}'
-                                    )"
+                                    onclick="finishTicket('${current.id}')"
+                                    ${runningAction ? "disabled" : ""}
                                 >
-                                    ✅ Finalizar atención
+                                    ✅ FINALIZAR ATENCIÓN
                                 </button>
 
-
                                 <button
-                                    class="btn danger"
+                                    class="btn danger tb-action-secondary"
                                     type="button"
-                                    onclick="noShowTicket(
-                                        '${current.id}'
-                                    )"
+                                    onclick="noShowTicket('${current.id}')"
+                                    ${runningAction ? "disabled" : ""}
                                 >
                                     🚫 No se presentó
                                 </button>
 
                             </div>
 
-                        </div>
+                          `
+                        : next
+                            ? `
 
-                    `
-                    : `
+                                <p class="tb-section-label">
+                                    PRÓXIMO CLIENTE
+                                </p>
 
-                        <div
-                            class="empty"
-                            style="text-align:center;"
-                        >
+                                <div class="tb-current-code">
+                                    ${escapeHtml(
+                                        next.ticket_code
+                                    )}
+                                </div>
 
-                            <div
-                                style="font-size:48px;"
-                            >
-                                🪑
-                            </div>
+                                <p class="tb-service">
+                                    ${escapeHtml(
+                                        next.service_name ||
+                                        "Servicio"
+                                    )}
+                                </p>
 
-                            <h3>
-                                No estás atendiendo un turno
-                            </h3>
+                                <div class="tb-actions">
 
-                            <p>
-                                ${
-                                    next
-                                        ? `
-                                            El siguiente es
-                                            <strong>
-                                                ${escapeHtml(
-                                                    next.ticket_code
-                                                )}
-                                            </strong>
-                                          `
-                                        : `
-                                            No tienes clientes
-                                            esperando.
-                                          `
-                                }
-                            </p>
+                                    <button
+                                        class="btn primary tb-action-main"
+                                        type="button"
+                                        onclick="callNext()"
+                                        ${runningAction ? "disabled" : ""}
+                                    >
+                                        📢 LLAMAR ${escapeHtml(
+                                            next.ticket_code
+                                        )}
+                                    </button>
 
-                        </div>
+                                </div>
 
-                    `
-            }
+                              `
+                            : `
 
-        </section>
+                                <div class="tb-empty-icon">
+                                    🪑
+                                </div>
+
+                                <h2 class="tb-empty-title">
+                                    Estás disponible
+                                </h2>
+
+                                <p class="tb-empty-text">
+                                    No tienes clientes esperando.
+                                    Cuando llegue un turno aparecerá aquí.
+                                </p>
+
+                              `
+                }
 
 
-        <section
-            class="card"
-            style="margin-bottom:15px;"
-        >
+                <div class="tb-stats">
 
-            <div
-                class="queue-header"
-            >
+                    <div class="tb-stat">
 
-                <h2>
-                    📋 MI COLA
-                </h2>
+                        <span class="tb-stat-number">
+                            ${waitingCount}
+                        </span>
 
-                <span
-                    class="badge"
-                >
-                    ${waiting.length}
-                </span>
+                        <span class="tb-stat-label">
+                            ${queueLabel}
+                        </span>
 
-            </div>
+                    </div>
+
+                    <div class="tb-stat">
+
+                        <span class="tb-stat-number">
+                            ${
+                                next
+                                    ? escapeHtml(
+                                        next.ticket_code
+                                    )
+                                    : "—"
+                            }
+                        </span>
+
+                        <span class="tb-stat-label">
+                            PRÓXIMO TURNO
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </section>
 
 
             ${
                 waiting.length
                     ? `
 
-                        <div
-                            class="queue"
-                        >
+                        <section class="card tb-next">
 
-                            ${waiting
-                                .map(
-                                    (
-                                        ticket,
-                                        index
-                                    ) => `
+                            <div class="tb-next-head">
 
-                                        <div
-                                            class="queue-item"
-                                            style="
-                                                margin-bottom:10px;
-                                                align-items:center;
-                                            "
-                                        >
+                                <h2 class="tb-next-title">
+                                    📋 Mi cola
+                                </h2>
 
-                                            <div>
+                                <span class="badge">
+                                    ${waitingCount}
+                                </span>
 
-                                                <strong>
-                                                    ${index + 1}.
-                                                    ${escapeHtml(
-                                                        ticket.ticket_code
-                                                    )}
-                                                </strong>
+                            </div>
 
-                                                <span>
-                                                    ${escapeHtml(
-                                                        ticket.service_name ||
-                                                        "Servicio"
-                                                    )}
-                                                </span>
+                            <div class="tb-queue-list">
+
+                                ${waiting
+                                    .map(
+                                        (
+                                            ticket,
+                                            index
+                                        ) => `
+
+                                            <div class="tb-queue-item">
+
+                                                <div class="tb-queue-info">
+
+                                                    <span class="tb-queue-position">
+                                                        ${index + 1}
+                                                    </span>
+
+                                                    <div>
+
+                                                        <div class="tb-queue-code">
+                                                            ${escapeHtml(
+                                                                ticket.ticket_code
+                                                            )}
+                                                        </div>
+
+                                                        <div class="tb-queue-service">
+                                                            ${escapeHtml(
+                                                                ticket.service_name ||
+                                                                "Servicio"
+                                                            )}
+                                                        </div>
+
+                                                    </div>
+
+                                                </div>
+
+                                                ${
+                                                    index === 0
+                                                        ? `
+                                                            <span class="tb-next-badge">
+                                                                ⏭️ SIGUIENTE
+                                                            </span>
+                                                          `
+                                                        : `
+                                                            <span
+                                                                style="
+                                                                    font-size:11px;
+                                                                    opacity:.5;
+                                                                "
+                                                            >
+                                                                En espera
+                                                            </span>
+                                                          `
+                                                }
 
                                             </div>
 
+                                        `
+                                    )
+                                    .join("")}
 
-                                            ${
-                                                index === 0 &&
-                                                !current
-                                                    ? `
-                                                        <span
-                                                            class="badge"
-                                                        >
-                                                            ⏭️ Siguiente
-                                                        </span>
-                                                      `
-                                                    : `
-                                                        <span
-                                                            style="
-                                                                opacity:.65;
-                                                                font-size:13px;
-                                                            "
-                                                        >
-                                                            Esperando
-                                                        </span>
-                                                      `
-                                            }
+                            </div>
 
-                                        </div>
+                        </section>
 
-                                    `
-                                )
-                                .join("")}
-
-                        </div>
-
-                    `
-                    : `
-
-                        <div
-                            class="empty"
-                            style="text-align:center;"
-                        >
-
-                            <p>
-                                🟢 No hay clientes esperando.
-                            </p>
-
-                        </div>
-
-                    `
+                      `
+                    : ""
             }
 
-        </section>
 
+            <section class="card tb-next">
 
-        <section
-            class="card"
-        >
+                <div class="tb-next-head">
 
-            <h2>
-                📢 Próxima acción
-            </h2>
+                    <h2 class="tb-next-title">
+                        💡 Próxima acción
+                    </h2>
 
+                    <span
+                        class="badge"
+                    >
+                        ${current ? "EN CURSO" : "LISTO"}
+                    </span>
 
-            ${
-                current
-                    ? `
+                </div>
 
-                        <p>
-                            Estás atendiendo
-                            <strong>
-                                ${escapeHtml(
-                                    current.ticket_code
-                                )}
-                            </strong>.
+                <p
+                    style="
+                        margin:0;
+                        text-align:center;
+                        font-weight:700;
+                    "
+                >
+                    ${escapeHtml(
+                        nextAction
+                    )}
+                </p>
 
-                            Finaliza la atención
-                            para continuar.
-                        </p>
-
-                    `
-                    : next
+                ${
+                    !current && next
                         ? `
-
-                            <p>
-                                Próximo cliente:
-
-                                <strong>
-                                    ${escapeHtml(
-                                        next.ticket_code
-                                    )}
-                                </strong>
-
-                                ·
-
-                                ${escapeHtml(
-                                    next.service_name ||
-                                    "Servicio"
-                                )}
-                            </p>
-
-
                             <button
-                                class="btn primary big"
+                                class="btn primary"
                                 type="button"
                                 onclick="callNext()"
+                                ${runningAction ? "disabled" : ""}
+                                style="
+                                    width:100%;
+                                    margin-top:12px;
+                                    min-height:50px;
+                                    font-weight:800;
+                                "
                             >
-                                📢 Llamar
-                                ${escapeHtml(
+                                📢 Llamar ${escapeHtml(
                                     next.ticket_code
                                 )}
                             </button>
-
                           `
-                        : `
+                        : ""
+                }
 
-                            <p>
-                                🟢 Todo al día.
-                                No hay turnos pendientes.
-                            </p>
-
-                          `
-            }
+            </section>
 
 
             <p
                 id="barberDashboardMessage"
-                style="margin-top:12px;"
+                class="tb-message"
             >
                 ${escapeHtml(
                     message
                 )}
             </p>
 
-        </section>
+
+            <div class="tb-footer">
+                Actualización automática cada 5 segundos
+            </div>
+
+
+            <div style="text-align:center; margin-top:2px;">
+
+                <button
+                    class="btn"
+                    type="button"
+                    onclick="barberLogout()"
+                >
+                    🚪 Cerrar sesión
+                </button>
+
+            </div>
+
+        </div>
 
     `;
 
@@ -591,12 +861,13 @@ function showError(
 
         <section
             class="card hero"
-            style="text-align:center;"
+            style="
+                text-align:center;
+                padding:30px 20px;
+            "
         >
 
-            <div
-                style="font-size:45px;"
-            >
+            <div style="font-size:45px;">
                 ⚠️
             </div>
 
@@ -741,6 +1012,7 @@ async function callNext() {
     runningAction =
         true;
 
+    renderDashboard();
 
     try {
 
@@ -791,6 +1063,10 @@ async function callNext() {
         runningAction =
             false;
 
+        if (barberProfile) {
+            renderDashboard();
+        }
+
     }
 
 }
@@ -820,6 +1096,7 @@ async function finishTicket(
     runningAction =
         true;
 
+    renderDashboard();
 
     try {
 
@@ -869,6 +1146,10 @@ async function finishTicket(
         runningAction =
             false;
 
+        if (barberProfile) {
+            renderDashboard();
+        }
+
     }
 
 }
@@ -898,6 +1179,7 @@ async function noShowTicket(
     runningAction =
         true;
 
+    renderDashboard();
 
     try {
 
@@ -946,6 +1228,10 @@ async function noShowTicket(
 
         runningAction =
             false;
+
+        if (barberProfile) {
+            renderDashboard();
+        }
 
     }
 
