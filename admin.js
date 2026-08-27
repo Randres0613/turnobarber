@@ -24,6 +24,15 @@ let barberServiceEditorOpen = false;
 
 let barberServiceEditorBarberId = null;
 
+// Estado visual de los acordeones principales.
+// Se conserva durante las actualizaciones automáticas del panel.
+let adminPublicQrOpen = false;
+let adminBarbersSectionOpen = false;
+let adminServicesSectionOpen = false;
+
+// Acordeones internos de cada barbero/servicio.
+const openAdminAccordions = new Set();
+
 
 // ==========================================
 // VERIFICAR SESIÓN
@@ -758,16 +767,67 @@ function renderPublicQr() {
 
             <section class="card">
 
-                <h2>
-                    📱 QR PÚBLICO
-                </h2>
+                <div
+                    onclick="toggleAdminSection('qr')"
+                    style="
+                        display:flex;
+                        align-items:center;
+                        justify-content:space-between;
+                        gap:12px;
+                        cursor:pointer;
+                        user-select:none;
+                    "
+                    role="button"
+                    tabindex="0"
+                    onkeydown="
+                        if(event.key==='Enter'||event.key===' '){
+                            event.preventDefault();
+                            toggleAdminSection('qr');
+                        }
+                    "
+                >
 
-                <div class="empty">
+                    <div class="queue-header" style="flex:1; margin:0;">
 
-                    <p>
-                        ⚠️ Esta barbería todavía no tiene
-                        un identificador público disponible.
-                    </p>
+                        <h2>
+                            📱 QR PÚBLICO
+                        </h2>
+
+                        <span class="badge">
+                            CLIENTES
+                        </span>
+
+                    </div>
+
+                    <span
+                        style="
+                            font-size:20px;
+                            flex:0 0 auto;
+                            transition:transform .2s ease;
+                            transform:${adminPublicQrOpen ? "rotate(180deg)" : "rotate(0deg)"};
+                        "
+                    >
+                        ▾
+                    </span>
+
+                </div>
+
+
+                <div
+                    style="
+                        display:${adminPublicQrOpen ? "block" : "none"};
+                        margin-top:20px;
+                    "
+                >
+
+                    <div class="empty">
+
+                        <p>
+                            ⚠️ Esta barbería todavía no tiene
+                            un identificador público disponible.
+                        </p>
+
+                    </div>
 
                 </div>
 
@@ -791,144 +851,187 @@ function renderPublicQr() {
 
         <section class="card">
 
-            <div class="queue-header">
+            <div
+                onclick="toggleAdminSection('qr')"
+                style="
+                    display:flex;
+                    align-items:center;
+                    justify-content:space-between;
+                    gap:12px;
+                    cursor:pointer;
+                    user-select:none;
+                "
+                role="button"
+                tabindex="0"
+                onkeydown="
+                    if(event.key==='Enter'||event.key===' '){
+                        event.preventDefault();
+                        toggleAdminSection('qr');
+                    }
+                "
+            >
 
-                <h2>
-                    📱 QR PÚBLICO
-                </h2>
+                <div class="queue-header" style="flex:1; margin:0;">
 
-                <span class="badge">
-                    CLIENTES
+                    <h2>
+                        📱 QR PÚBLICO
+                    </h2>
+
+                    <span class="badge">
+                        CLIENTES
+                    </span>
+
+                </div>
+
+                <span
+                    style="
+                        font-size:20px;
+                        flex:0 0 auto;
+                        transition:transform .2s ease;
+                        transform:${adminPublicQrOpen ? "rotate(180deg)" : "rotate(0deg)"};
+                    "
+                >
+                    ▾
                 </span>
 
             </div>
 
 
-            <p style="margin-top:0;">
-
-                Este es el acceso público de
-                <strong>
-                    ${escapeHtml(business.name)}
-                </strong>.
-
-            </p>
-
-
-            <p class="muted">
-
-                Tus clientes pueden escanear este QR
-                para entrar directamente a la página
-                pública y tomar su turno.
-
-            </p>
-
-
             <div
+                id="publicQrDetails"
                 style="
-                    display:flex;
-                    justify-content:center;
-                    margin:20px 0;
+                    display:${adminPublicQrOpen ? "block" : "none"};
+                    margin-top:20px;
                 "
             >
 
+                <p style="margin-top:0;">
+
+                    Este es el acceso público de
+                    <strong>
+                        ${escapeHtml(business.name)}
+                    </strong>.
+
+                </p>
+
+
+                <p class="muted">
+
+                    Tus clientes pueden escanear este QR
+                    para entrar directamente a la página
+                    pública y tomar su turno.
+
+                </p>
+
+
                 <div
-                    id="publicBusinessQr"
                     style="
-                        width:250px;
-                        min-height:250px;
                         display:flex;
-                        align-items:center;
                         justify-content:center;
-                        background:#fff;
-                        border:1px solid rgba(127,127,127,0.25);
-                        border-radius:14px;
-                        padding:15px;
-                        box-sizing:border-box;
+                        margin:20px 0;
                     "
                 >
 
-                    <span>
-                        ⏳ Generando QR...
-                    </span>
+                    <div
+                        id="publicBusinessQr"
+                        style="
+                            width:250px;
+                            min-height:250px;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                            background:#fff;
+                            border:1px solid rgba(127,127,127,0.25);
+                            border-radius:14px;
+                            padding:15px;
+                            box-sizing:border-box;
+                        "
+                    >
+
+                        <span>
+                            ⏳ Generando QR...
+                        </span>
+
+                    </div>
 
                 </div>
 
+
+                <input
+                    id="publicBusinessUrl"
+                    type="text"
+                    readonly
+                    value="${escapeHtml(publicUrl)}"
+                    style="
+                        width:100%;
+                        box-sizing:border-box;
+                        padding:11px;
+                        border-radius:8px;
+                        border:1px solid rgba(127,127,127,0.35);
+                        margin-bottom:10px;
+                        font-size:12px;
+                    "
+                >
+
+
+                <div
+                    style="
+                        display:flex;
+                        gap:8px;
+                        flex-wrap:wrap;
+                        justify-content:center;
+                    "
+                >
+
+                    <button
+                        class="btn primary"
+                        onclick="event.stopPropagation(); copyPublicBusinessLink()"
+                    >
+                        📋 Copiar enlace
+                    </button>
+
+
+                    <button
+                        class="btn"
+                        onclick="event.stopPropagation(); sharePublicBusinessLink()"
+                    >
+                        📤 Compartir
+                    </button>
+
+
+                    <button
+                        class="btn"
+                        onclick="event.stopPropagation(); downloadPublicQr()"
+                    >
+                        ⬇️ Guardar QR
+                    </button>
+
+                </div>
+
+
+                <p
+                    id="publicBusinessQrMessage"
+                    style="
+                        margin-top:12px;
+                        text-align:center;
+                    "
+                ></p>
+
+
+                <p
+                    class="muted"
+                    style="
+                        font-size:12px;
+                        text-align:center;
+                        margin-bottom:0;
+                    "
+                >
+                    Este QR es permanente y corresponde
+                    a la página pública de tu barbería.
+
+                </p>
+
             </div>
-
-
-            <input
-                id="publicBusinessUrl"
-                type="text"
-                readonly
-                value="${escapeHtml(publicUrl)}"
-                style="
-                    width:100%;
-                    box-sizing:border-box;
-                    padding:11px;
-                    border-radius:8px;
-                    border:1px solid rgba(127,127,127,0.35);
-                    margin-bottom:10px;
-                    font-size:12px;
-                "
-            >
-
-
-            <div
-                style="
-                    display:flex;
-                    gap:8px;
-                    flex-wrap:wrap;
-                    justify-content:center;
-                "
-            >
-
-                <button
-                    class="btn primary"
-                    onclick="copyPublicBusinessLink()"
-                >
-                    📋 Copiar enlace
-                </button>
-
-
-                <button
-                    class="btn"
-                    onclick="sharePublicBusinessLink()"
-                >
-                    📤 Compartir
-                </button>
-
-
-                <button
-                    class="btn"
-                    onclick="downloadPublicQr()"
-                >
-                    ⬇️ Guardar QR
-                </button>
-
-            </div>
-
-
-            <p
-                id="publicBusinessQrMessage"
-                style="
-                    margin-top:12px;
-                    text-align:center;
-                "
-            ></p>
-
-
-            <p
-                class="muted"
-                style="
-                    font-size:12px;
-                    text-align:center;
-                    margin-bottom:0;
-                "
-            >
-                Este QR es permanente y corresponde
-                a la página pública de tu barbería.
-
-            </p>
 
         </section>
 
@@ -1497,120 +1600,279 @@ function renderBarbers() {
 
         <section class="card">
 
-            <div class="queue-header">
+            <div
+                onclick="toggleAdminSection('barbers')"
+                style="
+                    display:flex;
+                    align-items:center;
+                    justify-content:space-between;
+                    gap:12px;
+                    cursor:pointer;
+                    user-select:none;
+                "
+                role="button"
+                tabindex="0"
+                onkeydown="
+                    if(event.key==='Enter'||event.key===' '){
+                        event.preventDefault();
+                        toggleAdminSection('barbers');
+                    }
+                "
+            >
 
-                <h2>
-                    👨‍💼 MIS BARBEROS
-                </h2>
+                <div class="queue-header" style="flex:1; margin:0;">
 
-                <span class="badge">
-                    ${myBarbers.length}
-                    barberos
+                    <h2>
+                        👨‍💼 MIS BARBEROS
+                    </h2>
+
+                    <span class="badge">
+                        ${myBarbers.length}
+                        barberos
+                    </span>
+
+                </div>
+
+                <span
+                    style="
+                        font-size:20px;
+                        flex:0 0 auto;
+                        transition:transform .2s ease;
+                        transform:${adminBarbersSectionOpen ? "rotate(180deg)" : "rotate(0deg)"};
+                    "
+                >
+                    ▾
                 </span>
 
             </div>
 
+
             <button
                 class="btn primary"
-                onclick="showCreateBarberForm()"
+                onclick="event.stopPropagation(); openBarbersAndCreateForm()"
+                style="margin-top:16px;"
             >
                 ➕ Nuevo barbero
             </button>
 
+
             <div
-                id="barberFormContainer"
-                style="margin-top: 20px;"
-            ></div>
+                id="barberSectionDetails"
+                style="
+                    display:${adminBarbersSectionOpen ? "block" : "none"};
+                    margin-top:20px;
+                "
+            >
 
-            <div style="margin-top: 20px;">
+                <div
+                    id="barberFormContainer"
+                ></div>
 
-                ${
-                    myBarbers.length === 0
-                    ? `
-                    <div class="empty">
-                        <p>
-                            Todavía no tienes barberos.
-                        </p>
-                        <p>
-                            Crea el primero para comenzar
-                            a organizar tu equipo.
-                        </p>
-                    </div>
-                    `
-                    : `
-                    <div
-                        class="queue"
-                        style="display:flex; flex-direction:column; gap:10px;"
-                    >
-                        ${
-                            myBarbers.map(barber => {
-                                const detailsId = `barberDetails-${barber.id}`;
-                                return `
-                                    <div
-                                        class="queue-item"
-                                        style="margin-bottom:0; display:block; padding:0; overflow:hidden;"
-                                    >
+
+                <div style="margin-top:20px;">
+
+                    ${
+                        myBarbers.length === 0
+
+                        ?
+
+                        `
+                        <div class="empty">
+
+                            <p>
+                                Todavía no tienes barberos.
+                            </p>
+
+                            <p>
+                                Crea el primero para comenzar
+                                a organizar tu equipo.
+                            </p>
+
+                        </div>
+                        `
+
+                        :
+
+                        `
+                        <div
+                            class="queue"
+                            style="
+                                display:flex;
+                                flex-direction:column;
+                                gap:10px;
+                            "
+                        >
+
+                            ${
+                                myBarbers.map(barber => {
+
+                                    const detailsId =
+                                        `barberDetails-${barber.id}`;
+
+                                    const isOpen =
+                                        openAdminAccordions.has(
+                                            detailsId
+                                        );
+
+                                    return `
+
                                         <div
-                                            onclick="toggleAdminAccordion('${detailsId}')"
-                                            style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px; cursor:pointer; user-select:none;"
-                                            role="button"
-                                            tabindex="0"
-                                            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAdminAccordion('${detailsId}');}"
+                                            class="queue-item"
+                                            style="
+                                                margin-bottom:0;
+                                                display:block;
+                                                padding:0;
+                                                overflow:hidden;
+                                            "
                                         >
-                                            <div style="min-width:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                                <strong>
-                                                    👤 ${escapeHtml(barber.name)}
-                                                </strong>
-                                                <span class="badge">
-                                                    ${barber.active ? "🟢 Activo" : "🔴 Inactivo"}
+
+                                            <div
+                                                onclick="toggleAdminAccordion('${detailsId}')"
+                                                style="
+                                                    display:flex;
+                                                    align-items:center;
+                                                    justify-content:space-between;
+                                                    gap:12px;
+                                                    padding:16px;
+                                                    cursor:pointer;
+                                                    user-select:none;
+                                                "
+                                                role="button"
+                                                tabindex="0"
+                                                onkeydown="
+                                                    if(event.key==='Enter'||event.key===' '){
+                                                        event.preventDefault();
+                                                        toggleAdminAccordion('${detailsId}');
+                                                    }
+                                                "
+                                            >
+
+                                                <div
+                                                    style="
+                                                        min-width:0;
+                                                        display:flex;
+                                                        align-items:center;
+                                                        gap:8px;
+                                                        flex-wrap:wrap;
+                                                    "
+                                                >
+
+                                                    <strong>
+                                                        👤 ${escapeHtml(barber.name)}
+                                                    </strong>
+
+                                                    <span class="badge">
+                                                        ${barber.active ? "🟢 Activo" : "🔴 Inactivo"}
+                                                    </span>
+
+                                                </div>
+
+                                                <span
+                                                    id="${detailsId}-arrow"
+                                                    style="
+                                                        font-size:20px;
+                                                        flex:0 0 auto;
+                                                        transition:transform .2s ease;
+                                                        transform:${isOpen ? "rotate(180deg)" : "rotate(0deg)"};
+                                                    "
+                                                >
+                                                    ▾
                                                 </span>
+
                                             </div>
-                                            <span
-                                                id="${detailsId}-arrow"
-                                                style="font-size:20px; flex:0 0 auto; transition:transform .2s ease;"
-                                            >▾</span>
+
+
+                                            <div
+                                                id="${detailsId}"
+                                                style="
+                                                    display:${isOpen ? "block" : "none"};
+                                                    padding:0 16px 16px;
+                                                    border-top:1px solid rgba(127,127,127,0.18);
+                                                "
+                                            >
+
+                                                <div
+                                                    style="
+                                                        display:flex;
+                                                        flex-direction:column;
+                                                        gap:8px;
+                                                        padding-top:14px;
+                                                    "
+                                                >
+
+                                                    ${
+                                                        barber.active
+
+                                                        ?
+
+                                                        `
+                                                        <button
+                                                            class="btn success"
+                                                            onclick="event.stopPropagation(); toggleBarber('${barber.id}', false)"
+                                                        >
+                                                            🟢 Activo
+                                                        </button>
+                                                        `
+
+                                                        :
+
+                                                        `
+                                                        <button
+                                                            class="btn danger"
+                                                            onclick="event.stopPropagation(); toggleBarber('${barber.id}', true)"
+                                                        >
+                                                            🔴 Inactivo
+                                                        </button>
+                                                        `
+                                                    }
+
+
+                                                    <button
+                                                        class="btn"
+                                                        onclick="event.stopPropagation(); showEditBarberForm('${barber.id}')"
+                                                    >
+                                                        ✏️ Editar
+                                                    </button>
+
+
+                                                    <button
+                                                        class="btn primary"
+                                                        onclick="event.stopPropagation(); showBarberServicesForm('${barber.id}')"
+                                                    >
+                                                        ⚙️ Servicios
+                                                    </button>
+
+
+                                                    <button
+                                                        class="btn"
+                                                        onclick="event.stopPropagation(); createBarberInvitation('${barber.id}')"
+                                                    >
+                                                        🔐 Dar acceso
+                                                    </button>
+
+                                                </div>
+
+                                            </div>
+
                                         </div>
 
-                                        <div
-                                            id="${detailsId}"
-                                            style="display:none; padding:0 16px 16px; border-top:1px solid rgba(127,127,127,0.18);"
-                                        >
-                                            <div style="display:flex; flex-direction:column; gap:8px; padding-top:14px;">
-                                                ${barber.active
-                                                    ? `
-                                                    <button class="btn success" onclick="event.stopPropagation(); toggleBarber('${barber.id}', false)">
-                                                        🟢 Activo
-                                                    </button>
-                                                    `
-                                                    : `
-                                                    <button class="btn danger" onclick="event.stopPropagation(); toggleBarber('${barber.id}', true)">
-                                                        🔴 Inactivo
-                                                    </button>
-                                                    `}
+                                    `;
 
-                                                <button class="btn" onclick="event.stopPropagation(); showEditBarberForm('${barber.id}')">
-                                                    ✏️ Editar
-                                                </button>
+                                }).join("")
+                            }
 
-                                                <button class="btn primary" onclick="event.stopPropagation(); showBarberServicesForm('${barber.id}')">
-                                                    ⚙️ Servicios
-                                                </button>
+                        </div>
+                        `
+                    }
 
-                                                <button class="btn" onclick="event.stopPropagation(); createBarberInvitation('${barber.id}')">
-                                                    🔐 Dar acceso
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join("")
-                        }
-                    </div>
-                    `
-                }
+                </div>
+
             </div>
+
         </section>
+
     `;
+
 }
 
 
@@ -2931,21 +3193,69 @@ function closeBarberServicesForm() {
 
 function toggleAdminAccordion(detailsId) {
 
-    const details = document.getElementById(detailsId);
-
-    const arrow = document.getElementById(`${detailsId}-arrow`);
-
-    if (!details) {
+    if (!detailsId) {
         return;
     }
 
-    const isOpen = details.style.display !== "none";
-
-    details.style.display = isOpen ? "none" : "block";
-
-    if (arrow) {
-        arrow.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+    if (openAdminAccordions.has(detailsId)) {
+        openAdminAccordions.delete(detailsId);
+    } else {
+        openAdminAccordions.add(detailsId);
     }
+
+    renderPanel();
+
+}
+
+
+// ==========================================
+// ACORDEONES PRINCIPALES DEL ADMINISTRADOR
+// ==========================================
+
+function toggleAdminSection(section) {
+
+    if (section === "qr") {
+
+        adminPublicQrOpen =
+            !adminPublicQrOpen;
+
+    }
+
+    if (section === "barbers") {
+
+        adminBarbersSectionOpen =
+            !adminBarbersSectionOpen;
+
+    }
+
+    if (section === "services") {
+
+        adminServicesSectionOpen =
+            !adminServicesSectionOpen;
+
+    }
+
+    renderPanel();
+
+}
+
+
+// ==========================================
+// ABRIR BARBEROS Y NUEVO BARBERO
+// ==========================================
+
+function openBarbersAndCreateForm() {
+
+    adminBarbersSectionOpen = true;
+
+    renderPanel();
+
+    setTimeout(
+        function() {
+            showCreateBarberForm();
+        },
+        0
+    );
 
 }
 
@@ -2960,92 +3270,300 @@ function renderServices() {
 
         <section class="card">
 
-            <div class="queue-header">
-                <h2>⚙️ MIS SERVICIOS</h2>
-                <span class="badge">${myServices.length} servicios</span>
+            <div
+                onclick="toggleAdminSection('services')"
+                style="
+                    display:flex;
+                    align-items:center;
+                    justify-content:space-between;
+                    gap:12px;
+                    cursor:pointer;
+                    user-select:none;
+                "
+                role="button"
+                tabindex="0"
+                onkeydown="
+                    if(event.key==='Enter'||event.key===' '){
+                        event.preventDefault();
+                        toggleAdminSection('services');
+                    }
+                "
+            >
+
+                <div class="queue-header" style="flex:1; margin:0;">
+
+                    <h2>
+                        ⚙️ MIS SERVICIOS
+                    </h2>
+
+                    <span class="badge">
+                        ${myServices.length}
+                        servicios
+                    </span>
+
+                </div>
+
+                <span
+                    style="
+                        font-size:20px;
+                        flex:0 0 auto;
+                        transition:transform .2s ease;
+                        transform:${adminServicesSectionOpen ? "rotate(180deg)" : "rotate(0deg)"};
+                    "
+                >
+                    ▾
+                </span>
+
             </div>
 
-            <button class="btn primary" onclick="showCreateServiceForm()">
+
+            <button
+                class="btn primary"
+                onclick="event.stopPropagation(); openServicesAndCreateForm()"
+                style="margin-top:16px;"
+            >
                 ➕ Nuevo servicio
             </button>
 
-            <div id="serviceFormContainer" style="margin-top: 20px;"></div>
 
-            <div style="margin-top: 20px;">
-                ${
-                    myServices.length === 0
-                    ? `
-                    <div class="empty">
-                        <p>Todavía no tienes servicios.</p>
-                        <p>Crea el primero para que tus clientes puedan tomar turnos.</p>
-                    </div>
-                    `
-                    : `
-                    <div class="queue" style="display:flex; flex-direction:column; gap:10px;">
-                        ${
-                            myServices.map(service => {
-                                const detailsId = `serviceDetails-${service.id}`;
-                                return `
-                                    <div
-                                        class="queue-item"
-                                        style="margin-bottom:0; display:block; padding:0; overflow:hidden;"
-                                    >
+            <div
+                id="serviceSectionDetails"
+                style="
+                    display:${adminServicesSectionOpen ? "block" : "none"};
+                    margin-top:20px;
+                "
+            >
+
+                <div
+                    id="serviceFormContainer"
+                ></div>
+
+
+                <div style="margin-top:20px;">
+
+                    ${
+                        myServices.length === 0
+
+                        ?
+
+                        `
+                        <div class="empty">
+
+                            <p>
+                                Todavía no tienes servicios.
+                            </p>
+
+                            <p>
+                                Crea el primero para que tus
+                                clientes puedan tomar turnos.
+                            </p>
+
+                        </div>
+                        `
+
+                        :
+
+                        `
+                        <div
+                            class="queue"
+                            style="
+                                display:flex;
+                                flex-direction:column;
+                                gap:10px;
+                            "
+                        >
+
+                            ${
+                                myServices.map(service => {
+
+                                    const detailsId =
+                                        `serviceDetails-${service.id}`;
+
+                                    const isOpen =
+                                        openAdminAccordions.has(
+                                            detailsId
+                                        );
+
+                                    return `
+
                                         <div
-                                            onclick="toggleAdminAccordion('${detailsId}')"
-                                            style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px; cursor:pointer; user-select:none;"
-                                            role="button"
-                                            tabindex="0"
-                                            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAdminAccordion('${detailsId}');}"
+                                            class="queue-item"
+                                            style="
+                                                margin-bottom:0;
+                                                display:block;
+                                                padding:0;
+                                                overflow:hidden;
+                                            "
                                         >
-                                            <div style="min-width:0; display:flex; flex-direction:column; gap:5px;">
-                                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                                    <strong>${escapeHtml(service.name)}</strong>
-                                                    <span class="badge">
-                                                        ${service.active ? "🟢 Activo" : "🔴 Inactivo"}
+
+                                            <div
+                                                onclick="toggleAdminAccordion('${detailsId}')"
+                                                style="
+                                                    display:flex;
+                                                    align-items:center;
+                                                    justify-content:space-between;
+                                                    gap:12px;
+                                                    padding:16px;
+                                                    cursor:pointer;
+                                                    user-select:none;
+                                                "
+                                                role="button"
+                                                tabindex="0"
+                                                onkeydown="
+                                                    if(event.key==='Enter'||event.key===' '){
+                                                        event.preventDefault();
+                                                        toggleAdminAccordion('${detailsId}');
+                                                    }
+                                                "
+                                            >
+
+                                                <div
+                                                    style="
+                                                        min-width:0;
+                                                        display:flex;
+                                                        flex-direction:column;
+                                                        gap:5px;
+                                                    "
+                                                >
+
+                                                    <div
+                                                        style="
+                                                            display:flex;
+                                                            align-items:center;
+                                                            gap:8px;
+                                                            flex-wrap:wrap;
+                                                        "
+                                                    >
+
+                                                        <strong>
+                                                            ${escapeHtml(service.name)}
+                                                        </strong>
+
+                                                        <span class="badge">
+                                                            ${service.active ? "🟢 Activo" : "🔴 Inactivo"}
+                                                        </span>
+
+                                                    </div>
+
+                                                    <span class="muted">
+                                                        $${Number(service.price || 0).toLocaleString("es-CO")}
+                                                        ·
+                                                        ${service.duration_minutes}
+                                                        min
                                                     </span>
+
                                                 </div>
-                                                <span class="muted">
-                                                    $${Number(service.price || 0).toLocaleString("es-CO")} · ${service.duration_minutes} min
+
+                                                <span
+                                                    id="${detailsId}-arrow"
+                                                    style="
+                                                        font-size:20px;
+                                                        flex:0 0 auto;
+                                                        transition:transform .2s ease;
+                                                        transform:${isOpen ? "rotate(180deg)" : "rotate(0deg)"};
+                                                    "
+                                                >
+                                                    ▾
                                                 </span>
+
                                             </div>
-                                            <span
-                                                id="${detailsId}-arrow"
-                                                style="font-size:20px; flex:0 0 auto; transition:transform .2s ease;"
-                                            >▾</span>
+
+
+                                            <div
+                                                id="${detailsId}"
+                                                style="
+                                                    display:${isOpen ? "block" : "none"};
+                                                    padding:0 16px 16px;
+                                                    border-top:1px solid rgba(127,127,127,0.18);
+                                                "
+                                            >
+
+                                                <div
+                                                    style="
+                                                        display:flex;
+                                                        flex-direction:column;
+                                                        gap:8px;
+                                                        padding-top:14px;
+                                                    "
+                                                >
+
+                                                    ${
+                                                        service.active
+
+                                                        ?
+
+                                                        `
+                                                        <button
+                                                            class="btn success"
+                                                            onclick="event.stopPropagation(); toggleService('${service.id}', false)"
+                                                        >
+                                                            🟢 Activo
+                                                        </button>
+                                                        `
+
+                                                        :
+
+                                                        `
+                                                        <button
+                                                            class="btn danger"
+                                                            onclick="event.stopPropagation(); toggleService('${service.id}', true)"
+                                                        >
+                                                            🔴 Inactivo
+                                                        </button>
+                                                        `
+                                                    }
+
+
+                                                    <button
+                                                        class="btn"
+                                                        onclick="event.stopPropagation(); showEditServiceForm('${service.id}')"
+                                                    >
+                                                        ✏️ Editar
+                                                    </button>
+
+                                                </div>
+
+                                            </div>
+
                                         </div>
 
-                                        <div
-                                            id="${detailsId}"
-                                            style="display:none; padding:0 16px 16px; border-top:1px solid rgba(127,127,127,0.18);"
-                                        >
-                                            <div style="display:flex; flex-direction:column; gap:8px; padding-top:14px;">
-                                                ${service.active
-                                                    ? `
-                                                    <button class="btn success" onclick="event.stopPropagation(); toggleService('${service.id}', false)">
-                                                        🟢 Activo
-                                                    </button>
-                                                    `
-                                                    : `
-                                                    <button class="btn danger" onclick="event.stopPropagation(); toggleService('${service.id}', true)">
-                                                        🔴 Inactivo
-                                                    </button>
-                                                    `}
+                                    `;
 
-                                                <button class="btn" onclick="event.stopPropagation(); showEditServiceForm('${service.id}')">
-                                                    ✏️ Editar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join("")
-                        }
-                    </div>
-                    `
-                }
+                                }).join("")
+                            }
+
+                        </div>
+                        `
+                    }
+
+                </div>
+
             </div>
+
         </section>
+
     `;
+
+}
+
+
+// ==========================================
+// ABRIR SERVICIOS Y NUEVO SERVICIO
+// ==========================================
+
+function openServicesAndCreateForm() {
+
+    adminServicesSectionOpen = true;
+
+    renderPanel();
+
+    setTimeout(
+        function() {
+            showCreateServiceForm();
+        },
+        0
+    );
+
 }
 
 
