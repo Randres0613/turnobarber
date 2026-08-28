@@ -214,10 +214,6 @@ body {
     opacity: .45;
 }
 
-/* ==========================================
-   PANTALLA GRANDE DE LLAMADO
-   ========================================== */
-
 .call-overlay {
     position: fixed;
     left: 0;
@@ -290,10 +286,6 @@ body {
 
 }
 
-/* ==========================================
-   TV PEQUEÑA / ANTIGUA
-   ========================================== */
-
 @media(max-height:700px) {
 
     .screen {
@@ -326,10 +318,6 @@ body {
     }
 
 }
-
-/* ==========================================
-   CELULAR
-   ========================================== */
 
 @media(max-width:800px) {
 
@@ -449,11 +437,6 @@ body {
 
 </main>
 
-
-<!-- ==========================================
-     PANTALLA DE LLAMADO
-     ========================================== -->
-
 <div
     id="callOverlay"
     class="call-overlay">
@@ -490,23 +473,13 @@ body {
 
 </div>
 
-
 <script>
-
-/* ==========================================
-   SUPABASE
-   ========================================== */
 
 var SUPABASE_URL =
     "https://dkgkejulxkgvjrppsmly.supabase.co";
 
 var SUPABASE_ANON_KEY =
     "sb_publishable_7mxRDvndqfxuf6rCbi8CpA_VWKgK9e2";
-
-
-/* ==========================================
-   IDENTIFICAR BARBERÍA
-   ========================================== */
 
 var params =
     new URLSearchParams(
@@ -516,11 +489,6 @@ var params =
 var slug =
     params.get("b") ||
     "barberia-el-jefe";
-
-
-/* ==========================================
-   VARIABLES
-   ========================================== */
 
 var business =
     null;
@@ -540,33 +508,11 @@ var audioContext =
 var overlayTimer =
     null;
 
-
-/*
-    Control de solicitudes.
-
-    Evita que una respuesta vieja de Supabase
-    llegue después de una nueva y cambie
-    nuevamente la información de la TV.
-*/
-
 var requestNumber =
     0;
 
-
-/*
-    Día actual.
-
-    Se utiliza para que un A-001 de un nuevo día
-    pueda volver a ser anunciado.
-*/
-
 var currentDayKey =
     getTodayKey();
-
-
-/* ==========================================
-   ELEMENTOS
-   ========================================== */
 
 var businessName =
     document.getElementById(
@@ -613,11 +559,6 @@ var callService =
         "callService"
     );
 
-
-/* ==========================================
-   FECHA
-   ========================================== */
-
 function getTodayKey() {
 
     var now =
@@ -635,11 +576,6 @@ function getTodayKey() {
         ).padStart(2, "0")
     );
 }
-
-
-/* ==========================================
-   ESCAPAR HTML
-   ========================================== */
 
 function escapeHtml(value) {
 
@@ -674,11 +610,6 @@ function escapeHtml(value) {
             "&#039;"
         );
 }
-
-
-/* ==========================================
-   REST SUPABASE COMPATIBLE CON TV ANTIGUA
-   ========================================== */
 
 function rpcRequest(
     functionName,
@@ -767,7 +698,6 @@ function rpcRequest(
 
         };
 
-
     xhr.onerror =
         function() {
 
@@ -777,7 +707,6 @@ function rpcRequest(
             );
 
         };
-
 
     try {
 
@@ -796,11 +725,6 @@ function rpcRequest(
     }
 
 }
-
-
-/* ==========================================
-   SONIDO
-   ========================================== */
 
 function activateSound() {
 
@@ -864,11 +788,6 @@ function activateSound() {
 
 }
 
-
-/* ==========================================
-   PITIDO
-   ========================================== */
-
 function playBeep() {
 
     if (
@@ -931,11 +850,6 @@ function playBeep() {
 
 }
 
-
-/* ==========================================
-   VOZ
-   ========================================== */
-
 function speakText(text) {
 
     if (
@@ -977,11 +891,6 @@ function speakText(text) {
 
 }
 
-
-/* ==========================================
-   CLAVE DEL ÚLTIMO TURNO ANUNCIADO
-   ========================================== */
-
 function getAnnouncementKey(
     barberId
 ) {
@@ -996,11 +905,6 @@ function getAnnouncementKey(
     );
 
 }
-
-
-/* ==========================================
-   LEER ÚLTIMO TURNO ANUNCIADO
-   ========================================== */
 
 function getLastAnnounced(
     barberId
@@ -1022,11 +926,6 @@ function getLastAnnounced(
 
 }
 
-
-/* ==========================================
-   GUARDAR ÚLTIMO TURNO ANUNCIADO
-   ========================================== */
-
 function saveLastAnnounced(
     barberId,
     ticketId
@@ -1047,11 +946,6 @@ function saveLastAnnounced(
     }
 
 }
-
-
-/* ==========================================
-   MOSTRAR LLAMADO
-   ========================================== */
 
 function showCallScreen(
     ticket,
@@ -1081,13 +975,6 @@ function showCallScreen(
     callOverlay.className =
         "call-overlay show";
 
-
-    /*
-        Guardamos inmediatamente el turno
-        para evitar que una actualización
-        de la página lo anuncie otra vez.
-    */
-
     if (
         barberId &&
         ticketId
@@ -1099,13 +986,6 @@ function showCallScreen(
         );
 
     }
-
-
-    /*
-        El sonido queda como estaba.
-        No dependemos de él para mostrar
-        la pantalla grande.
-    */
 
     if (
         soundEnabled
@@ -1149,7 +1029,6 @@ function showCallScreen(
 
     }
 
-
     if (
         overlayTimer
     ) {
@@ -1159,7 +1038,6 @@ function showCallScreen(
         );
 
     }
-
 
     overlayTimer =
         setTimeout(
@@ -1173,11 +1051,6 @@ function showCallScreen(
         );
 
 }
-
-
-/* ==========================================
-   CARGAR BARBERÍA
-   ========================================== */
 
 function loadBusiness() {
 
@@ -1211,7 +1084,6 @@ function loadBusiness() {
 
             }
 
-
             if (
                 !data ||
                 !data.length
@@ -1224,10 +1096,8 @@ function loadBusiness() {
 
             }
 
-
             business =
                 data[0];
-
 
             businessName.innerHTML =
                 "💈 " +
@@ -1235,13 +1105,11 @@ function loadBusiness() {
                     business.name
                 );
 
-
             businessCity.innerHTML =
                 escapeHtml(
                     business.city ||
                     ""
                 );
-
 
             loadQueues();
 
@@ -1250,18 +1118,12 @@ function loadBusiness() {
 
 }
 
-
-/* ==========================================
-   RENDERIZAR
-   ========================================== */
-
 function render(
     rows
 ) {
 
     var count =
         rows.length;
-
 
     if (
         count === 1
@@ -1284,7 +1146,6 @@ function render(
 
     }
 
-
     if (
         !count
     ) {
@@ -1300,10 +1161,8 @@ function render(
 
     }
 
-
     var html =
         "";
-
 
     for (
         var i = 0;
@@ -1314,17 +1173,14 @@ function render(
         var r =
             rows[i];
 
-
         var busy =
             !!r.current_ticket_id;
-
 
         var waiting =
             Number(
                 r.waiting_count ||
                 0
             );
-
 
         html +=
             '<article class="barber-card ' +
@@ -1334,7 +1190,6 @@ function render(
                     : ""
             ) +
             '">' +
-
 
             '<div class="barber-name">' +
 
@@ -1354,7 +1209,6 @@ function render(
 
             '</div>' +
 
-
             '<div class="status">' +
 
             (
@@ -1365,13 +1219,11 @@ function render(
 
             '</div>' +
 
-
             '<div class="current-block">' +
 
             '<div class="label">' +
             'Ahora atendiendo' +
             '</div>';
-
 
         if (
             r.current_ticket_code
@@ -1404,7 +1256,6 @@ function render(
 
         }
 
-
         html +=
             '</div>' +
 
@@ -1420,7 +1271,6 @@ function render(
             ) +
 
             '</div>';
-
 
         if (
             r.next_ticket_code
@@ -1453,7 +1303,6 @@ function render(
 
         }
 
-
         html +=
             '</div>' +
 
@@ -1469,16 +1318,10 @@ function render(
 
     }
 
-
     barberGrid.innerHTML =
         html;
 
 }
-
-
-/* ==========================================
-   CARGAR COLAS
-   ========================================== */
 
 function loadQueues() {
 
@@ -1490,20 +1333,13 @@ function loadQueues() {
 
     }
 
-
-    /*
-        Cada consulta recibe un número.
-        Solo procesamos la respuesta más reciente.
-    */
-
     requestNumber++;
 
     var thisRequest =
         requestNumber;
 
-
     rpcRequest(
-        "admin_barber_queues",
+        "public_barber_queues",
         {
             p_business_id:
                 business.id
@@ -1513,11 +1349,6 @@ function loadQueues() {
             data
         ) {
 
-            /*
-                Si esta respuesta ya quedó vieja,
-                no hacemos absolutamente nada.
-            */
-
             if (
                 thisRequest !==
                 requestNumber
@@ -1526,7 +1357,6 @@ function loadQueues() {
                 return;
 
             }
-
 
             if (
                 error
@@ -1544,15 +1374,9 @@ function loadQueues() {
 
             }
 
-
             var rows =
                 data ||
                 [];
-
-
-            /*
-                Revisamos todos los barberos.
-            */
 
             for (
                 var i = 0;
@@ -1563,7 +1387,6 @@ function loadQueues() {
                 var r =
                     rows[i];
 
-
                 if (
                     !r.current_ticket_id
                 ) {
@@ -1572,22 +1395,15 @@ function loadQueues() {
 
                 }
 
-
                 var currentId =
                     String(
                         r.current_ticket_id
                     );
 
-
                 var previousId =
                     previousServing[
                         r.barber_id
                     ];
-
-
-                /*
-                    Estado anterior de memoria.
-                */
 
                 var changedFromMemory =
                     (
@@ -1596,43 +1412,16 @@ function loadQueues() {
                         previousId
                     );
 
-
-                /*
-                    Último turno anunciado
-                    guardado en la TV.
-                */
-
                 var lastAnnounced =
                     getLastAnnounced(
                         r.barber_id
                     );
-
-
-                /*
-                    Si nunca se anunció este
-                    turno en este día, se puede
-                    anunciar.
-                */
 
                 var notAnnouncedYet =
                     (
                         lastAnnounced !==
                         currentId
                     );
-
-
-                /*
-                    Anunciamos si:
-
-                    1. El turno cambió mientras
-                       la TV estaba funcionando.
-
-                    O
-
-                    2. La TV se recargó y este
-                       turno todavía no había
-                       sido anunciado.
-                */
 
                 if (
                     changedFromMemory ||
@@ -1647,26 +1436,14 @@ function loadQueues() {
                         r.current_ticket_id
                     );
 
-                    /*
-                        Solo anunciamos un cambio
-                        por actualización.
-                    */
-
                     break;
 
                 }
 
             }
 
-
-            /*
-                Guardamos el estado actual
-                para la próxima consulta.
-            */
-
             previousServing =
                 {};
-
 
             for (
                 var j = 0;
@@ -1683,15 +1460,12 @@ function loadQueues() {
 
             }
 
-
             firstLoad =
                 false;
-
 
             render(
                 rows
             );
-
 
             updateStatus.innerHTML =
                 "Actualizado · " +
@@ -1705,19 +1479,9 @@ function loadQueues() {
 
 }
 
-
-/* ==========================================
-   INICIAR
-   ========================================== */
-
 function startApplication() {
 
     loadBusiness();
-
-
-    /*
-        Cada 5 segundos revisamos los turnos.
-    */
 
     setInterval(
         function() {
@@ -1729,7 +1493,6 @@ function startApplication() {
     );
 
 }
-
 
 startApplication();
 
