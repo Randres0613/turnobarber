@@ -134,14 +134,10 @@ async function loadBusinessTimezone() {
 // CARGAR BARBEROS SEGÚN EL SERVICIO
 // ==========================================
 //
-// IMPORTANTE:
 // Solamente se muestran los barberos que:
 // 1. pertenecen a la barbería
 // 2. están activos
 // 3. tienen asignado el servicio seleccionado
-//
-// Esto permite que la configuración sea diferente
-// para cada barbería y también para futuras barberías.
 // ==========================================
 
 async function loadBarbers(serviceId) {
@@ -190,6 +186,65 @@ async function loadBarbers(serviceId) {
         barbers = [];
 
         return false;
+    }
+
+}
+
+
+// ==========================================
+// CARGAR BARBERO DEL TURNO
+// ==========================================
+//
+// Esta función permite recuperar el barbero
+// incluso después de que el cliente recargue
+// la página o vuelva a abrirla.
+// ==========================================
+
+async function loadTicketBarber(ticketId) {
+
+    if (!ticketId) {
+
+        return null;
+    }
+
+    try {
+
+        const { data, error } =
+            await client.rpc(
+                "public_ticket_barber",
+                {
+                    p_ticket_id: ticketId
+                }
+            );
+
+        if (error) {
+
+            console.error(
+                "Error cargando barbero del turno:",
+                error
+            );
+
+            return null;
+        }
+
+        if (
+            !data ||
+            data.length === 0
+        ) {
+
+            return null;
+        }
+
+        return data[0];
+
+    } catch (error) {
+
+        console.error(
+            "Error inesperado cargando barbero del turno:",
+            error
+        );
+
+        return null;
     }
 
 }
@@ -870,7 +925,13 @@ function saveTicket() {
                 slug,
 
             ticket_date:
-                getBusinessDate()
+                getBusinessDate(),
+
+            barber_id:
+                currentTicket.barber_id || null,
+
+            barber_name:
+                currentTicket.barber_name || null
 
         })
     );
@@ -967,6 +1028,30 @@ function showTicket() {
                 <h2>
                     ${currentTicket.service_name || ""}
                 </h2>
+
+                ${
+                    currentTicket.barber_name
+
+                    ?
+
+                    `
+                        <div class="barber-assigned">
+
+                            <strong>
+                                💈 Te atenderá
+                            </strong>
+
+                            <div>
+                                ${currentTicket.barber_name}
+                            </div>
+
+                        </div>
+                    `
+
+                    :
+
+                    ""
+                }
 
                 <span
                     id="ticketBadge"
@@ -1362,7 +1447,13 @@ async function restoreSavedTicket() {
     currentTicket = {
 
         id:
-            savedTicket.ticket_id
+            savedTicket.ticket_id,
+
+        barber_id:
+            savedTicket.barber_id || null,
+
+        barber_name:
+            savedTicket.barber_name || null
 
     };
 
@@ -1416,9 +1507,37 @@ async function restoreSavedTicket() {
             id:
                 savedTicket.ticket_id,
 
-            ...ticket
+            ...ticket,
+
+            barber_id:
+                savedTicket.barber_id || null,
+
+            barber_name:
+                savedTicket.barber_name || null
 
         };
+
+
+        // ==================================
+        // RECUPERAR BARBERO DESDE SUPABASE
+        // ==================================
+
+        const barber =
+            await loadTicketBarber(
+                savedTicket.ticket_id
+            );
+
+
+        if (barber) {
+
+            currentTicket.barber_id =
+                barber.barber_id || null;
+
+            currentTicket.barber_name =
+                barber.barber_name || null;
+
+            saveTicket();
+        }
 
 
         if (
