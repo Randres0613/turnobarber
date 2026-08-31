@@ -38,6 +38,15 @@ let barbers = [];
 let currentTicket = null;
 let businessTimezone = "UTC";
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
 
 // ==========================================
 // FECHA ACTUAL DE LA BARBERÍA
@@ -284,7 +293,7 @@ async function loadBusiness() {
                     </h2>
 
                     <p>
-                        ${error.message}
+                        ${escapeHtml(error.message)}
                     </p>
 
                 </div>
@@ -310,7 +319,7 @@ async function loadBusiness() {
                     </p>
 
                     <strong>
-                        ${slug}
+                        ${escapeHtml(slug)}
                     </strong>
 
                 </div>
@@ -344,7 +353,7 @@ async function loadBusiness() {
                 </h2>
 
                 <p>
-                    ${error.message || error}
+                    ${escapeHtml(error.message || error)}
                 </p>
 
                 <button
@@ -402,7 +411,7 @@ async function loadServices() {
                     </h2>
 
                     <p>
-                        ${error.message}
+                        ${escapeHtml(error.message)}
                     </p>
 
                     <button
@@ -444,7 +453,7 @@ async function loadServices() {
                 </h2>
 
                 <p>
-                    ${error.message || error}
+                    ${escapeHtml(error.message || error)}
                 </p>
 
                 <button
@@ -474,11 +483,11 @@ function renderCustomer() {
         <div class="card hero">
 
             <h1>
-                💈 ${business.name}
+                💈 ${escapeHtml(business.name)}
             </h1>
 
             <p class="muted">
-                ${business.city || ""}
+                ${escapeHtml(business.city || "")}
             </p>
 
             <span class="badge">
@@ -516,11 +525,11 @@ function renderCustomer() {
                                     <div class="service">
 
                                         <h3>
-                                            ${service.name}
+                                            ${escapeHtml(service.name)}
                                         </h3>
 
                                         <p>
-                                            ${service.duration_minutes}
+                                            ${Number(service.duration_minutes || 0)}
                                             min
                                             ·
                                             ${money(service.price)}
@@ -528,7 +537,7 @@ function renderCustomer() {
 
                                         <button
                                             class="btn"
-                                            onclick="takeTurn('${service.id}')"
+                                            onclick="takeTurn('${escapeHtml(service.id)}')"
                                         >
                                             Tomar turno
                                         </button>
@@ -625,11 +634,11 @@ function renderBarberSelection(service) {
         <div class="card hero">
 
             <h1>
-                💈 ${business.name}
+                💈 ${escapeHtml(business.name)}
             </h1>
 
             <p class="muted">
-                ${business.city || ""}
+                ${escapeHtml(business.city || "")}
             </p>
 
             <span class="badge">
@@ -647,12 +656,12 @@ function renderBarberSelection(service) {
             <p>
                 Servicio:
                 <strong>
-                    ${service.name}
+                    ${escapeHtml(service.name)}
                 </strong>
             </p>
 
             <p class="muted">
-                ${service.duration_minutes}
+                ${Number(service.duration_minutes || 0)}
                 min
                 ·
                 ${money(service.price)}
@@ -690,7 +699,7 @@ function renderBarberSelection(service) {
                                     <div class="service">
 
                                         <h3>
-                                            💈 ${barber.name}
+                                            💈 ${escapeHtml(barber.name)}
                                         </h3>
 
                                         <p>
@@ -699,12 +708,12 @@ function renderBarberSelection(service) {
 
                                         <button
                                             class="btn"
-                                            onclick="takeTurnWithBarber(
-                                                '${service.id}',
-                                                '${barber.id}'
+                                            onclick="showTurnConfirmation(
+                                                '${escapeHtml(service.id)}',
+                                                '${escapeHtml(barber.id)}'
                                             )"
                                         >
-                                            Elegir ${barber.name}
+                                            Elegir ${escapeHtml(barber.name)}
                                         </button>
 
                                     </div>
@@ -733,6 +742,35 @@ function renderBarberSelection(service) {
 // ==========================================
 // CREAR TURNO CON BARBERO
 // ==========================================
+
+function showTurnConfirmation(
+    serviceId,
+    barberId
+) {
+    const service = services.find(s => s.id === serviceId);
+    const barber = barbers.find(b => b.id === barberId);
+
+    if (!service || !barber) {
+        alert("No se encontró el servicio o el barbero.");
+        return;
+    }
+
+    app.innerHTML = `
+        <div class="card hero">
+            <h1>💈 ${escapeHtml(business.name)}</h1>
+            <p class="muted">Confirma los datos de tu turno</p>
+        </div>
+        <div class="card">
+            <h2>Confirma tu turno</h2>
+            <div class="status-box">
+                <p><strong>Servicio:</strong> ${escapeHtml(service.name)}</p>
+                <p><strong>Barbero:</strong> 💈 ${escapeHtml(barber.name)}</p>
+                <p class="muted">${escapeHtml(service.duration_minutes)} min · ${money(service.price)}</p>
+            </div>
+            <button class="btn primary" onclick="takeTurnWithBarber('${escapeHtml(service.id)}','${escapeHtml(barber.id)}')">✅ Confirmar turno</button>
+            <button class="btn secondary" onclick="renderBarberSelection(services.find(s => s.id === '${escapeHtml(service.id)}'))">← Volver</button>
+        </div>`;
+}
 
 async function takeTurnWithBarber(
     serviceId,
@@ -767,9 +805,9 @@ async function takeTurnWithBarber(
             </h2>
 
             <p>
-                ${barber.name}
+                ${escapeHtml(barber.name)}
                 ·
-                ${service.name}
+                ${escapeHtml(service.name)}
             </p>
 
             <p>
@@ -809,7 +847,7 @@ async function takeTurnWithBarber(
                     </h2>
 
                     <p>
-                        ${error.message}
+                        ${escapeHtml(error.message)}
                     </p>
 
                     <button
@@ -880,7 +918,7 @@ async function takeTurnWithBarber(
                 </h2>
 
                 <p>
-                    ${error.message || error}
+                    ${escapeHtml(error.message || error)}
                 </p>
 
                 <button
@@ -1004,11 +1042,11 @@ function showTicket() {
         <div class="card hero">
 
             <h1>
-                💈 ${business.name}
+                💈 ${escapeHtml(business.name)}
             </h1>
 
             <p class="muted">
-                ${business.city || ""}
+                ${escapeHtml(business.city || "")}
             </p>
 
         </div>
@@ -1022,11 +1060,11 @@ function showTicket() {
                 </p>
 
                 <div class="ticket-number">
-                    ${currentTicket.ticket_code || "..."}
+                    ${escapeHtml(currentTicket.ticket_code || "...")}
                 </div>
 
                 <h2>
-                    ${currentTicket.service_name || ""}
+                    ${escapeHtml(currentTicket.service_name || "")}
                 </h2>
 
                 ${
@@ -1042,7 +1080,7 @@ function showTicket() {
                             </strong>
 
                             <div>
-                                ${currentTicket.barber_name}
+                                ${escapeHtml(currentTicket.barber_name)}
                             </div>
 
                         </div>
@@ -1207,7 +1245,7 @@ function renderTicketStatus(ticket) {
                 <p>
                     Hay
                     <strong>
-                        ${ticket.people_ahead}
+                        ${Number(ticket.people_ahead || 0)}
                     </strong>
                     personas antes que tú.
                 </p>
@@ -1234,7 +1272,7 @@ function renderTicketStatus(ticket) {
                         `
                             ⏱️ Tiempo estimado:
                             <strong>
-                                ${ticket.estimated_minutes} min
+                                ${Number(ticket.estimated_minutes || 0)} min
                             </strong>
                         `
 
@@ -1243,6 +1281,19 @@ function renderTicketStatus(ticket) {
                         "🟢 Próximo turno"
                     }
 
+                </p>
+
+                <button
+                    class="btn secondary"
+                    type="button"
+                    disabled
+                    title="La cancelación requiere una operación segura en Supabase que aún no existe en este proyecto."
+                >
+                    Cancelar turno
+                </button>
+
+                <p class="tool-note">
+                    La cancelación estará disponible cuando se habilite el RPC seguro en Supabase.
                 </p>
 
             </div>
@@ -1626,7 +1677,7 @@ async function startApp() {
                 </h2>
 
                 <p>
-                    ${error.message || error}
+                    ${escapeHtml(error.message || error)}
                 </p>
 
                 <button

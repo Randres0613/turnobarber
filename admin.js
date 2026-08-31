@@ -23,6 +23,19 @@ let barberQueues = [];
 let barberServiceEditorOpen = false;
 
 let barberServiceEditorBarberId = null;
+let activeAdminTab = "home";
+let adminMoreView = "menu";
+let inPersonService = null;
+let inPersonBarbers = [];
+let inPersonBarber = null;
+let inPersonTicket = null;
+let inPersonLoadingBarbers = false;
+let inPersonCreatingTicket = false;
+let inPersonError = "";
+
+function formatMoney(value) {
+    return "$" + Number(value || 0).toLocaleString("es-CO");
+}
 
 // Estado visual de los acordeones principales.
 // Se conserva durante las actualizaciones automáticas del panel.
@@ -729,26 +742,297 @@ async function loadBarbers() {
 
 function renderPanel() {
 
+    adminApp.className = "admin-shell";
     adminApp.innerHTML = `
-
-        ${renderPublicQr()}
-
-        ${renderBarberQueues()}
-
-        ${renderBarbers()}
-
-        ${renderServices()}
-
-        <button
-            class="btn"
-            onclick="logout()"
-            style="margin-top: 10px;"
-        >
-            🚪 Cerrar sesión
-        </button>
-
+        <section class="admin-tab ${activeAdminTab === "home" ? "active" : ""}" data-admin-tab="home">
+            ${renderAdminHome()}
+        </section>
+        <section class="admin-tab ${activeAdminTab === "tickets" ? "active" : ""}" data-admin-tab="tickets">
+            ${renderOperationalQueues()}
+        </section>
+        <section class="admin-tab ${activeAdminTab === "new" ? "active" : ""}" data-admin-tab="new">
+            ${renderNewTicketAccess()}
+        </section>
+        <section class="admin-tab ${activeAdminTab === "barbers" ? "active" : ""}" data-admin-tab="barbers">
+            ${renderBarberCards()}
+            ${renderBarbers()}
+        </section>
+        <section class="admin-tab ${activeAdminTab === "more" ? "active" : ""}" data-admin-tab="more">
+            ${renderMoreContent()}
+        </section>
+        ${renderAdminNavigation()}
     `;
 
+}
+
+function showAdminTab(tab) {
+    activeAdminTab = tab;
+    if (tab === "more") {
+        adminMoreView = "menu";
+    }
+    renderPanel();
+}
+
+function renderAdminNavigation() {
+    const tabs = [
+        ["home", "⌂", "Inicio"], ["tickets", "☷", "Turnos"],
+        ["new", "＋", "Nuevo turno"], ["barbers", "✂", "Barberos"], ["more", "•••", "Más"]
+    ];
+    return `<nav class="admin-bottom-nav" aria-label="Navegación del administrador">${tabs.map(([id, icon, label]) => `
+        <button class="admin-nav-button ${activeAdminTab === id ? "active" : ""}" onclick="showAdminTab('${id}')" type="button" aria-current="${activeAdminTab === id ? "page" : "false"}"><span>${icon}</span>${label}</button>`).join("")}</nav>`;
+}
+
+function renderAdminHome() {
+    const waiting = barberQueues.reduce((total, barber) => total + Number(barber.waiting_count || 0), 0);
+    const current = barberQueues.find(barber => barber.current_ticket_id);
+    const activeBarbers = myBarbers.filter(barber => barber.active !== false).length;
+    return `
+        <section class="card admin-current">
+            <div class="queue-header"><div><p class="muted" style="margin:0;">${escapeHtml(business.name)}</p><h2>Panel de hoy</h2></div><span class="badge">● ONLINE</span></div>
+            ${current ? `<p><strong>Atendiendo ${escapeHtml(current.current_ticket_code)}</strong> · 💈 ${escapeHtml(current.barber_name)}</p><div class="admin-actions"><button class="btn success" onclick="finishTicket('${escapeHtml(current.current_ticket_id)}')">✅ Finalizar</button><button class="btn danger" onclick="noShowTicket('${escapeHtml(current.current_ticket_id)}')">🚫 No se presentó</button></div>` : `<p class="muted">No hay un turno en atención.</p>`}
+        </section>
+        <section class="admin-summary">
+            <div class="admin-stat"><strong>${waiting}</strong><span>Esperando</span></div>
+            <div class="admin-stat"><strong>${activeBarbers}</strong><span>Barberos activos</span></div>
+            <div class="admin-stat"><strong>${barberQueues.filter(barber => barber.current_ticket_id).length}</strong><span>Atendiendo</span></div>
+            <div class="admin-stat"><strong>${myBarbers.length}</strong><span>Total barberos</span></div>
+        </section>
+        <section class="card"><div class="queue-header"><h2>Acciones rápidas</h2></div><div class="admin-actions"><button class="btn primary" onclick="showAdminTab('new')">＋ Crear turno</button><button class="btn secondary" onclick="showAdminTab('tickets')">Ver colas</button></div></section>
+        <section class="card"><div class="queue-header"><h2>Actividad reciente</h2><span class="badge muted">Actualizado</span></div>${renderRecentActivity()}</section>`;
+}
+
+function renderRecentActivity() {
+    if (!barberQueues.length) return `<p class="muted">Aún no hay actividad para mostrar.</p>`;
+    return `<ul class="queue-list">${barberQueues.map(barber => `<li>💈 <strong>${escapeHtml(barber.barber_name)}</strong>: ${barber.current_ticket_code ? `atiende ${escapeHtml(barber.current_ticket_code)}` : barber.next_ticket_code ? `siguiente ${escapeHtml(barber.next_ticket_code)}` : "sin turnos pendientes"}</li>`).join("")}</ul>`;
+}
+
+function renderOperationalQueues() {
+    if (!barberQueues.length) return `<section class="card empty">No hay barberos activos ni colas disponibles.</section>`;
+    return `<section class="card"><div class="queue-header"><h2>Turnos por barbero</h2><span class="badge">${barberQueues.length} colas</span></div><p class="muted">Cada cola conserva el orden FIFO asignado a su barbero.</p><div class="admin-barber-grid">${barberQueues.map(renderQueueCard).join("")}</div></section>`;
+}
+
+function renderQueueCard(barber) {
+    const waiting = Number(barber.waiting_count || 0);
+    const later = Math.max(0, waiting - (barber.next_ticket_id ? 1 : 0));
+    const currentActions = barber.current_ticket_id ? `<div class="ticket-tools"><button class="btn success" onclick="finishTicket('${escapeHtml(barber.current_ticket_id)}')">Finalizar</button><button class="btn danger" onclick="noShowTicket('${escapeHtml(barber.current_ticket_id)}')">No se presentó</button><button class="btn secondary" disabled title="Requiere un RPC de reordenamiento no disponible">Mover después</button><button class="btn secondary" disabled title="Requiere un RPC de cambio de servicio no disponible">Cambiar servicio</button><button class="btn secondary" disabled title="Requiere un RPC de cancelación no disponible">Cancelar</button></div><p class="tool-note">Las últimas tres acciones requieren un RPC seguro que no existe aún en este repositorio.</p>` : barber.next_ticket_id ? `<div class="ticket-tools"><button class="btn primary" onclick="callNext('${escapeHtml(barber.barber_id)}')">📢 Llamar ${escapeHtml(barber.next_ticket_code)}</button></div>` : `<span class="badge muted">Sin turnos</span>`;
+    return `<article class="tb-barber-card"><div class="queue-header"><h3>💈 ${escapeHtml(barber.barber_name)}</h3><span class="badge ${barber.current_ticket_id ? "" : "warn"}">${barber.current_ticket_id ? "Atendiendo" : "Disponible"}</span></div><p><strong>Actual:</strong> ${barber.current_ticket_code ? escapeHtml(barber.current_ticket_code) : "—"}</p><p><strong>Siguiente:</strong> ${barber.next_ticket_code ? `${escapeHtml(barber.next_ticket_code)} · ${escapeHtml(barber.next_service_name || "Servicio")}` : "—"}</p><p><strong>Esperando:</strong> ${waiting}</p><p><strong>Posteriores:</strong> ${later}${later ? " en cola" : ""}</p>${currentActions}</article>`;
+}
+
+function renderBarberCards() {
+    if (!myBarbers.length) return `<section class="card empty">Aún no hay barberos creados.</section>`;
+    return `<section class="card"><div class="queue-header"><h2>Equipo de barberos</h2><button class="btn secondary" style="width:auto;margin:0;" onclick="showAdminTab('tickets')">Ver colas</button></div><div class="admin-barber-grid">${myBarbers.map(barber => { const queue = barberQueues.find(item => item.barber_id === barber.id) || {}; return `<article class="tb-barber-card"><h3>💈 ${escapeHtml(barber.name)}</h3><span class="badge ${barber.active === false ? "muted" : ""}">${barber.active === false ? "Inactivo" : "Disponible"}</span><p>Turno actual: <strong>${escapeHtml(queue.current_ticket_code || "—")}</strong></p><p>Esperando: <strong>${Number(queue.waiting_count || 0)}</strong></p><p>Atendidos hoy: <strong>—</strong></p><button class="btn secondary" onclick="showAdminTab('tickets')">Abrir cola</button></article>`; }).join("")}</div><p class="tool-note">“Atendidos hoy” no está disponible en los RPC actuales.</p></section>`;
+}
+
+function renderNewTicketAccess() {
+    const activeServices = myServices.filter(service => service.active !== false);
+
+    if (inPersonTicket) {
+        return `
+            <section class="card hero in-person-result">
+                <span class="badge">TURNO CREADO CORRECTAMENTE</span>
+                <p class="muted">El turno presencial ya está en la cola normal.</p>
+                <div class="ticket-number">${escapeHtml(inPersonTicket.ticket_code || "—")}</div>
+                <h2>${escapeHtml(inPersonTicket.service_name || inPersonService?.name || "Servicio")}</h2>
+                <p>💈 ${escapeHtml(inPersonTicket.barber_name || inPersonBarber?.name || "Barbero")}</p>
+                <div class="status-box"><strong>El cliente debe esperar su llamado.</strong></div>
+                <button class="btn primary" onclick="startInPersonTicket()">＋ Crear otro turno</button>
+                <button class="btn secondary" onclick="showAdminTab('tickets')">Ver colas</button>
+            </section>`;
+    }
+
+    if (!inPersonService) {
+        return `
+            <section class="card">
+                <div class="queue-header"><div><p class="muted" style="margin:0;">${escapeHtml(business.name)}</p><h2>Nuevo turno presencial</h2></div><span class="badge">PASO 1 DE 3</span></div>
+                <p class="muted">Selecciona el servicio que solicita el cliente.</p>
+                ${inPersonError ? `<p class="tb-form-error">${escapeHtml(inPersonError)}</p>` : ""}
+                ${activeServices.length ? `<div class="tb-option-grid">${activeServices.map(service => `<button class="tb-option" type="button" onclick="selectInPersonService('${escapeHtml(service.id)}')"><strong>${escapeHtml(service.name)}</strong><span>${Number(service.duration_minutes || 0)} min · ${formatMoney(service.price)}</span></button>`).join("")}</div>` : `<div class="empty">No hay servicios activos disponibles.</div>`}
+            </section>`;
+    }
+
+    if (!inPersonBarber) {
+        return `
+            <section class="card">
+                <div class="queue-header"><div><p class="muted" style="margin:0;">Servicio seleccionado</p><h2>${escapeHtml(inPersonService.name)}</h2></div><span class="badge">PASO 2 DE 3</span></div>
+                <p class="muted">Selecciona un barbero activo habilitado para este servicio.</p>
+                ${inPersonError ? `<p class="tb-form-error">${escapeHtml(inPersonError)}</p>` : ""}
+                ${inPersonLoadingBarbers ? `<div class="empty">Cargando barberos disponibles…</div>` : inPersonBarbers.length ? `<div class="tb-option-grid">${inPersonBarbers.map(barber => `<button class="tb-option" type="button" onclick="selectInPersonBarber('${escapeHtml(barber.id)}')"><strong>💈 ${escapeHtml(barber.name)}</strong><span>Disponible para ${escapeHtml(inPersonService.name)}</span></button>`).join("")}</div>` : `<div class="empty">No hay barberos activos habilitados para este servicio.</div>`}
+                <button class="btn secondary" onclick="startInPersonTicket()">← Cambiar servicio</button>
+            </section>`;
+    }
+
+    return `
+        <section class="card">
+            <div class="queue-header"><div><p class="muted" style="margin:0;">${escapeHtml(business.name)}</p><h2>Confirma el turno presencial</h2></div><span class="badge">PASO 3 DE 3</span></div>
+            ${inPersonError ? `<p class="tb-form-error">${escapeHtml(inPersonError)}</p>` : ""}
+            <div class="status-box">
+                <p><strong>Servicio:</strong> ${escapeHtml(inPersonService.name)}</p>
+                <p><strong>Barbero:</strong> 💈 ${escapeHtml(inPersonBarber.name)}</p>
+                <p class="muted"><strong>Duración:</strong> ${Number(inPersonService.duration_minutes || 0)} min</p>
+            </div>
+            <button id="confirmInPersonTicket" class="btn primary" type="button" onclick="createInPersonTicket()" ${inPersonCreatingTicket ? "disabled" : ""}>${inPersonCreatingTicket ? "⏳ Creando turno…" : "✅ Confirmar turno"}</button>
+            <button class="btn secondary" type="button" onclick="inPersonBarber = null; inPersonError = ''; renderPanel();" ${inPersonCreatingTicket ? "disabled" : ""}>← Cambiar barbero</button>
+        </section>`;
+}
+
+function showAdminSettings() {
+    activeAdminTab = "more";
+    adminMoreView = "settings";
+    adminBarbersSectionOpen = true;
+    adminServicesSectionOpen = true;
+    renderPanel();
+}
+
+function showAdminMore() {
+    activeAdminTab = "more";
+    adminMoreView = "menu";
+    renderPanel();
+}
+
+function renderMoreContent() {
+    if (adminMoreView === "settings") {
+        return renderAdminSettings();
+    }
+
+    return `
+        <section class="card">
+            <div class="queue-header"><div><p class="muted" style="margin:0;">Administración</p><h2>Más opciones</h2></div><span class="badge muted">PANEL</span></div>
+            <button class="btn primary" type="button" onclick="showAdminSettings()">⚙️ Ajustes</button>
+            <p class="tool-note">Gestiona la información disponible, los servicios, los barberos y sus especialidades.</p>
+        </section>
+        ${renderPublicQr()}
+        <button class="btn" onclick="logout()">🚪 Cerrar sesión</button>`;
+}
+
+function formatBusinessFieldLabel(key) {
+    const labels = {
+        id: "Identificador",
+        name: "Nombre",
+        city: "Ciudad",
+        phone: "Teléfono",
+        timezone: "Zona horaria",
+        qr_slug: "Identificador público",
+        role: "Rol"
+    };
+    return labels[key] || String(key).replaceAll("_", " ");
+}
+
+function formatBusinessFieldValue(value) {
+    if (typeof value === "boolean") return value ? "Sí" : "No";
+    return String(value);
+}
+
+function renderBusinessReadOnlyDetails() {
+    const fields = Object.entries(business || {})
+        .filter(([, value]) => value !== null && value !== undefined && typeof value !== "object")
+        .map(([key, value]) => `<div class="settings-row"><span>${escapeHtml(formatBusinessFieldLabel(key))}</span><strong>${escapeHtml(formatBusinessFieldValue(value))}</strong></div>`)
+        .join("");
+
+    return fields || `<p class="muted">No hay datos adicionales disponibles.</p>`;
+}
+
+function renderAdminSettings() {
+    return `
+        <section class="card settings-intro">
+            <button class="btn secondary settings-back" type="button" onclick="showAdminMore()">← Volver a Más</button>
+            <p class="muted" style="margin:12px 0 0;">Administración</p>
+            <h2>⚙️ Ajustes</h2>
+            <p class="muted">Administra los recursos disponibles de tu barbería.</p>
+        </section>
+        <section class="card">
+            <div class="queue-header"><h2>Información de la barbería</h2><span class="badge muted">SOLO LECTURA</span></div>
+            <div class="settings-readonly">${renderBusinessReadOnlyDetails()}</div>
+            <p class="tool-note">Los datos generales podrán editarse cuando exista una operación segura de actualización para la barbería.</p>
+        </section>
+        <section class="settings-section"><div class="settings-section-title"><h2>Servicios</h2><p class="muted">Crea, edita y activa o desactiva los servicios.</p></div>${renderServices()}</section>
+        <section class="settings-section"><div class="settings-section-title"><h2>Barberos y servicios habilitados</h2><p class="muted">Edita el nombre, el estado y las especialidades de cada barbero.</p></div>${renderBarbers()}</section>`;
+}
+
+function startInPersonTicket() {
+    inPersonService = null;
+    inPersonBarbers = [];
+    inPersonBarber = null;
+    inPersonTicket = null;
+    inPersonLoadingBarbers = false;
+    inPersonCreatingTicket = false;
+    inPersonError = "";
+    activeAdminTab = "new";
+    renderPanel();
+}
+
+async function selectInPersonService(serviceId) {
+    const service = myServices.find(item => item.id === serviceId && item.active !== false);
+    if (!service || !business || inPersonLoadingBarbers || inPersonCreatingTicket) return;
+
+    inPersonService = service;
+    inPersonBarber = null;
+    inPersonBarbers = [];
+    inPersonError = "";
+    inPersonLoadingBarbers = true;
+    renderPanel();
+
+    try {
+        const { data, error } = await client.rpc("public_get_barbers_for_service", {
+            p_business_id: business.id,
+            p_service_id: service.id
+        });
+        if (error) throw error;
+        inPersonBarbers = (data || []).filter(barber => barber.active !== false);
+    } catch (error) {
+        console.error("ERROR CARGANDO BARBEROS PARA TURNO PRESENCIAL:", error);
+        inPersonError = error.message || "No fue posible cargar los barberos disponibles.";
+    } finally {
+        inPersonLoadingBarbers = false;
+        renderPanel();
+    }
+}
+
+function selectInPersonBarber(barberId) {
+    if (inPersonCreatingTicket) return;
+    const barber = inPersonBarbers.find(item => item.id === barberId);
+    if (!barber) {
+        inPersonError = "No se encontró el barbero seleccionado.";
+        renderPanel();
+        return;
+    }
+    inPersonBarber = barber;
+    inPersonError = "";
+    renderPanel();
+}
+
+async function createInPersonTicket() {
+    if (!business || !inPersonService || !inPersonBarber || inPersonCreatingTicket) return;
+
+    inPersonCreatingTicket = true;
+    inPersonError = "";
+    renderPanel();
+
+    try {
+        const { data, error } = await client.rpc("public_take_ticket", {
+            p_business_id: business.id,
+            p_service_id: inPersonService.id,
+            p_barber_id: inPersonBarber.id
+        });
+        if (error) throw error;
+        if (!data || !data.length || !data[0]?.ticket_code) {
+            throw new Error("Supabase no devolvió un turno válido.");
+        }
+
+        inPersonTicket = data[0];
+        try {
+            await loadPanel();
+        } catch (refreshError) {
+            console.error("ERROR ACTUALIZANDO PANEL DESPUÉS DEL TURNO:", refreshError);
+        }
+    } catch (error) {
+        console.error("ERROR CREANDO TURNO PRESENCIAL:", error);
+        if (!inPersonTicket) {
+            inPersonError = error.message || "No fue posible crear el turno. Intenta nuevamente.";
+        }
+    } finally {
+        inPersonCreatingTicket = false;
+        renderPanel();
+    }
 }
 
 

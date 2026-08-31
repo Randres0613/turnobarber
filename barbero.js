@@ -433,7 +433,7 @@ function renderDashboard(
         current
             ? "Finaliza la atención actual"
             : next
-                ? `Llama a ${next.ticket_code}`
+                ? `Llama a ${escapeHtml(next.ticket_code)}`
                 : "Esperando nuevos clientes";
 
 
@@ -546,9 +546,15 @@ function renderDashboard(
 
 
             .tb-empty-icon {
-                font-size:58px;
-                line-height:1;
-                margin:6px 0 10px;
+                width:150px;
+                margin:4px auto 10px;
+                line-height:0;
+            }
+
+            .tb-barber-chair {
+                display:block;
+                width:100%;
+                height:auto;
             }
 
 
@@ -920,7 +926,20 @@ function renderDashboard(
                             : `
 
                                 <div class="tb-empty-icon">
-                                    🪑
+                                    <svg
+                                        class="tb-barber-chair"
+                                        viewBox="0 0 220 132"
+                                        role="img"
+                                        aria-label="Silla de barbería disponible"
+                                    >
+                                        <path d="M68 57V37c0-12 10-22 22-22h39c12 0 22 10 22 22v20" fill="#dbeafe" stroke="#335b88" stroke-width="6" stroke-linejoin="round"/>
+                                        <path d="M59 55h104c8 0 14 6 14 14v13H45V69c0-8 6-14 14-14Z" fill="#315d8d" stroke="#203a57" stroke-width="6" stroke-linejoin="round"/>
+                                        <path d="M60 84h102l-13 18H73L60 84Z" fill="#1e3854"/>
+                                        <path d="M110 102v15" stroke="#9fb4c9" stroke-width="7" stroke-linecap="round"/>
+                                        <path d="M74 120h72" stroke="#b8c7d6" stroke-width="8" stroke-linecap="round"/>
+                                        <path d="M47 82l-17 16m143-16 17 16" stroke="#203a57" stroke-width="6" stroke-linecap="round"/>
+                                        <circle cx="28" cy="100" r="7" fill="#60a5fa"/><circle cx="192" cy="100" r="7" fill="#60a5fa"/>
+                                    </svg>
                                 </div>
 
 
