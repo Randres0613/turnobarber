@@ -25,6 +25,7 @@ let barberServiceEditorOpen = false;
 let barberServiceEditorBarberId = null;
 let activeAdminTab = "home";
 let adminMoreView = "menu";
+let adminSettingsOpen = false;
 let inPersonService = null;
 let inPersonBarbers = [];
 let inPersonBarber = null;
@@ -743,7 +744,59 @@ async function loadBarbers() {
 function renderPanel() {
 
     adminApp.className = "admin-shell";
+
+    const header = `
+        <header
+            class="admin-mobile-header"
+            style="
+                position:relative;
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                gap:12px;
+                padding:12px 4px 16px;
+            "
+        >
+            <div style="min-width:0;">
+                <p class="muted" style="margin:0;font-size:12px;">TurnoBarber</p>
+                <strong style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                    ${escapeHtml(business?.name || "Mi barbería")}
+                </strong>
+            </div>
+            <button
+                type="button"
+                class="btn secondary"
+                onclick="showAdminSettings()"
+                aria-label="Abrir ajustes"
+                title="Ajustes"
+                style="
+                    width:44px;
+                    height:44px;
+                    min-width:44px;
+                    padding:0;
+                    margin:0;
+                    border-radius:50%;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    font-size:20px;
+                "
+            >
+                ⚙️
+            </button>
+        </header>
+    `;
+
+    if (adminSettingsOpen) {
+        adminApp.innerHTML = `
+            ${header}
+            ${renderAdminSettings()}
+        `;
+        return;
+    }
+
     adminApp.innerHTML = `
+        ${header}
         <section class="admin-tab ${activeAdminTab === "home" ? "active" : ""}" data-admin-tab="home">
             ${renderAdminHome()}
         </section>
@@ -766,6 +819,7 @@ function renderPanel() {
 }
 
 function showAdminTab(tab) {
+    adminSettingsOpen = false;
     activeAdminTab = tab;
     if (tab === "more") {
         adminMoreView = "menu";
@@ -876,29 +930,28 @@ function renderNewTicketAccess() {
 }
 
 function showAdminSettings() {
-    activeAdminTab = "more";
+    adminSettingsOpen = true;
     adminMoreView = "settings";
     adminBarbersSectionOpen = true;
     adminServicesSectionOpen = true;
     renderPanel();
 }
 
-function showAdminMore() {
-    activeAdminTab = "more";
+function closeAdminSettings() {
+    adminSettingsOpen = false;
     adminMoreView = "menu";
     renderPanel();
 }
 
-function renderMoreContent() {
-    if (adminMoreView === "settings") {
-        return renderAdminSettings();
-    }
+function showAdminMore() {
+    closeAdminSettings();
+}
 
+function renderMoreContent() {
     return `
         <section class="card">
             <div class="queue-header"><div><p class="muted" style="margin:0;">Administración</p><h2>Más opciones</h2></div><span class="badge muted">PANEL</span></div>
-            <button class="btn primary" type="button" onclick="showAdminSettings()">⚙️ Ajustes</button>
-            <p class="tool-note">Gestiona la información disponible, los servicios, los barberos y sus especialidades.</p>
+            <p class="tool-note">El acceso a Ajustes está disponible mediante el icono ⚙️ de la parte superior.</p>
         </section>
         ${renderPublicQr()}
         <button class="btn" onclick="logout()">🚪 Cerrar sesión</button>`;
@@ -934,7 +987,7 @@ function renderBusinessReadOnlyDetails() {
 function renderAdminSettings() {
     return `
         <section class="card settings-intro">
-            <button class="btn secondary settings-back" type="button" onclick="showAdminMore()">← Volver a Más</button>
+            <button class="btn secondary settings-back" type="button" onclick="closeAdminSettings()">← Volver a Más</button>
             <p class="muted" style="margin:12px 0 0;">Administración</p>
             <h2>⚙️ Ajustes</h2>
             <p class="muted">Administra los recursos disponibles de tu barbería.</p>
@@ -2797,6 +2850,72 @@ async function createBarber() {
 
 
 // ==========================================
+// MODALES DEL ADMINISTRADOR
+// ==========================================
+
+function closeAdminModal() {
+    const modal = document.getElementById("adminActionModal");
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function createAdminModal(title, contentHtml) {
+    closeAdminModal();
+
+    const modal = document.createElement("div");
+    modal.id = "adminActionModal";
+    modal.style.cssText = `
+        position:fixed;
+        inset:0;
+        z-index:10000;
+        background:rgba(0,0,0,.58);
+        display:flex;
+        align-items:flex-start;
+        justify-content:center;
+        padding:16px;
+        box-sizing:border-box;
+        overflow-y:auto;
+    `;
+
+    modal.innerHTML = `
+        <div
+            class="card"
+            style="
+                width:min(520px,100%);
+                margin:20px auto;
+                max-height:calc(100vh - 40px);
+                overflow-y:auto;
+                box-sizing:border-box;
+                position:relative;
+                padding:20px;
+            "
+        >
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                <h2 style="margin:0;">${escapeHtml(title)}</h2>
+                <button
+                    type="button"
+                    class="btn secondary"
+                    onclick="closeAdminModal()"
+                    aria-label="Cerrar"
+                    style="width:40px;height:40px;min-width:40px;padding:0;margin:0;border-radius:50%;"
+                >✕</button>
+            </div>
+            <div id="adminActionModalContent" style="margin-top:18px;">${contentHtml}</div>
+        </div>
+    `;
+
+    modal.addEventListener("click", event => {
+        if (event.target === modal) {
+            closeAdminModal();
+        }
+    });
+
+    document.body.appendChild(modal);
+    return document.getElementById("adminActionModalContent");
+}
+
+// ==========================================
 // FORMULARIO EDITAR BARBERO
 // ==========================================
 
@@ -2804,100 +2923,42 @@ function showEditBarberForm(
     barberId
 ) {
 
-    const barber =
-        myBarbers.find(
-            b => b.id === barberId
-        );
-
+    const barber = myBarbers.find(b => b.id === barberId);
 
     if (!barber) {
-
-        alert(
-            "No se encontró el barbero."
-        );
-
+        alert("No se encontró el barbero.");
         return;
-
     }
 
-
-    const container =
-        document.getElementById(
-            "barberFormContainer"
-        );
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    container.innerHTML = `
-
-        <div class="card">
-
-            <h3>
-                ✏️ Editar barbero
-            </h3>
-
-
-            <div style="margin-bottom: 10px;">
-
-                <label>
-                    Nombre
-                </label>
-
-
+    createAdminModal(
+        `Editar barbero`,
+        `
+            <p class="muted" style="margin-top:0;">Actualiza el nombre de ${escapeHtml(barber.name)}.</p>
+            <div style="margin-bottom:14px;">
+                <label for="editBarberName">Nombre</label>
                 <input
                     id="editBarberName"
                     type="text"
-                    value="${escapeHtml(
-                        barber.name
-                    )}"
+                    value="${escapeHtml(barber.name)}"
                     maxlength="100"
-                    style="
-                        width: 100%;
-                        box-sizing: border-box;
-                        padding: 12px;
-                        margin-top: 5px;
-                    "
+                    style="width:100%;box-sizing:border-box;padding:12px;margin-top:6px;"
                 >
-
             </div>
-
-
-            <button
-                class="btn primary"
-                onclick="updateBarber(
-                    '${barber.id}'
-                )"
-            >
+            <button class="btn primary" type="button" onclick="updateBarber('${barber.id}')" style="width:100%;">
                 💾 Guardar cambios
             </button>
+            <p id="barberFormMessage" style="margin:12px 0 0;"></p>
+        `
+    );
 
-
-            <button
-                class="btn"
-                onclick="closeBarberForm()"
-                style="margin-top: 5px;"
-            >
-                Cancelar
-            </button>
-
-
-            <p
-                id="barberFormMessage"
-                style="margin-top: 10px;"
-            ></p>
-
-        </div>
-
-    `;
-
+    setTimeout(() => {
+        const input = document.getElementById("editBarberName");
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }, 0);
 }
-
 
 // ==========================================
 // ACTUALIZAR BARBERO
@@ -2988,6 +3049,8 @@ async function updateBarber(
 
     }
 
+
+    closeAdminModal();
 
     await loadBarbers();
 
@@ -3081,259 +3144,86 @@ async function toggleBarber(
 
 async function showBarberServicesForm(barberId) {
 
-    const barber =
-        myBarbers.find(
-            b => b.id === barberId
-        );
-
+    const barber = myBarbers.find(b => b.id === barberId);
 
     if (!barber) {
-
-        alert(
-            "No se encontró el barbero."
-        );
-
+        alert("No se encontró el barbero.");
         return;
-
     }
-
-
-    const container =
-        document.getElementById(
-            "barberFormContainer"
-        );
-
-
-    if (!container) {
-
-        return;
-
-    }
-
 
     barberServiceEditorOpen = true;
-
     barberServiceEditorBarberId = barberId;
 
-
-    container.innerHTML = `
-
-        <div class="card" style="border: 2px solid rgba(0, 150, 136, 0.25);">
-
-            <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;">
-
-                <div>
-
-                    <h3 style="margin-top:0;">
-                        ⚙️ Servicios de ${escapeHtml(barber.name)}
-                    </h3>
-
-                    <p style="margin-bottom:0;">
-                        Selecciona los servicios que este barbero puede realizar.
-                    </p>
-
-                </div>
-
-                <span class="badge">
-                    ${barber.active ? "🟢 Barbero activo" : "🔴 Barbero inactivo"}
-                </span>
-
+    createAdminModal(
+        `Servicios de ${barber.name}`,
+        `
+            <p class="muted" style="margin-top:0;">Selecciona los servicios que este barbero puede realizar.</p>
+            <div id="barberServicesEditorContent">
+                <div class="empty"><p>⏳ Cargando servicios...</p></div>
             </div>
-
-            <div
-                id="barberServicesEditorContent"
-                style="margin-top:20px;"
-            >
-                <div class="empty">
-                    <p>⏳ Cargando servicios...</p>
-                </div>
-            </div>
-
-        </div>
-
-    `;
-
+        `
+    );
 
     try {
-
-        const {
-            data,
-            error
-        } =
-            await client.rpc(
-                "admin_barber_services",
-                {
-                    p_barber_id:
-                        barberId
-                }
-            );
-
+        const { data, error } = await client.rpc("admin_barber_services", {
+            p_barber_id: barberId
+        });
 
         if (error) {
             throw error;
         }
 
-
         const services = data || [];
-
-        const editor =
-            document.getElementById(
-                "barberServicesEditorContent"
-            );
-
+        const editor = document.getElementById("barberServicesEditorContent");
 
         if (!editor) {
             return;
         }
 
-
         if (services.length === 0) {
-
             editor.innerHTML = `
-
                 <div class="empty">
-                    <p>
-                        No tienes servicios creados todavía.
-                    </p>
-                    <p>
-                        Primero crea servicios en <strong>Mis servicios</strong>.
-                    </p>
-                    <button
-                        class="btn"
-                        onclick="closeBarberServicesForm()"
-                        style="margin-top:8px;"
-                    >
-                        ← Volver
-                    </button>
+                    <p>No tienes servicios creados todavía.</p>
+                    <p>Primero crea servicios en <strong>Mis servicios</strong>.</p>
+                    <button class="btn secondary" type="button" onclick="closeBarberServicesForm()" style="margin-top:8px;width:100%;">← Volver</button>
                 </div>
-
             `;
-
             return;
         }
 
-
         editor.innerHTML = `
-
-            <div style="display:flex; flex-direction:column; gap:10px;">
-
+            <div style="display:flex;flex-direction:column;gap:10px;">
                 ${services.map(service => `
-
-                    <label
-                        style="
-                            display:flex;
-                            align-items:center;
-                            justify-content:space-between;
-                            gap:12px;
-                            padding:14px;
-                            border:1px solid rgba(127,127,127,0.25);
-                            border-radius:12px;
-                            cursor:${service.active ? "pointer" : "default"};
-                            opacity:${service.active ? "1" : "0.65"};
-                        "
-                    >
-
-                        <span style="display:flex; align-items:center; gap:12px; min-width:0;">
-
-                            <input
-                                type="checkbox"
-                                data-barber-service-id="${service.id}"
-                                ${service.assigned ? "checked" : ""}
-                                ${service.active ? "" : "disabled"}
-                                style="width:20px; height:20px; flex:0 0 auto;"
-                            >
-
+                    <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;border:1px solid rgba(127,127,127,.25);border-radius:12px;cursor:${service.active ? "pointer" : "default"};opacity:${service.active ? "1" : ".65"};">
+                        <span style="display:flex;align-items:center;gap:10px;min-width:0;">
+                            <input type="checkbox" data-barber-service-id="${service.id}" ${service.assigned ? "checked" : ""} ${service.active ? "" : "disabled"} style="width:20px;height:20px;flex:0 0 auto;">
                             <span style="min-width:0;">
-
-                                <strong style="display:block;">
-                                    ${escapeHtml(service.name)}
-                                </strong>
-
-                                <small>
-                                    $${Number(service.price || 0).toLocaleString("es-CO")} · ${Number(service.duration_minutes || 0)} min
-                                </small>
-
+                                <strong style="display:block;">${escapeHtml(service.name)}</strong>
+                                <small>$${Number(service.price || 0).toLocaleString("es-CO")} · ${Number(service.duration_minutes || 0)} min</small>
                             </span>
-
                         </span>
-
-                        <span class="badge">
-                            ${service.active ? (service.assigned ? "Asignado" : "No asignado") : "Servicio inactivo"}
-                        </span>
-
+                        <span class="badge">${service.active ? (service.assigned ? "Asignado" : "No asignado") : "Inactivo"}</span>
                     </label>
-
                 `).join("")}
-
             </div>
-
-            <p
-                id="barberServicesFormMessage"
-                style="margin:15px 0 0;"
-            ></p>
-
-            <div
-                style="
-                    display:flex;
-                    gap:8px;
-                    flex-wrap:wrap;
-                    margin-top:15px;
-                "
-            >
-
-                <button
-                    class="btn primary"
-                    onclick="saveBarberServices('${barberId}')"
-                >
-                    💾 Guardar cambios
-                </button>
-
-                <button
-                    class="btn"
-                    onclick="closeBarberServicesForm()"
-                >
-                    Cancelar
-                </button>
-
-            </div>
-
+            <p id="barberServicesFormMessage" style="margin:14px 0 0;"></p>
+            <button class="btn primary" type="button" onclick="saveBarberServices('${barberId}')" style="width:100%;margin-top:12px;">💾 Guardar cambios</button>
+            <button class="btn secondary" type="button" onclick="closeBarberServicesForm()" style="width:100%;margin-top:8px;">Cancelar</button>
         `;
 
     } catch (error) {
-
-        console.error(
-            "ERROR CARGANDO SERVICIOS DEL BARBERO:",
-            error
-        );
-
-        const editor =
-            document.getElementById(
-                "barberServicesEditorContent"
-            );
-
+        console.error("ERROR CARGANDO SERVICIOS DEL BARBERO:", error);
+        const editor = document.getElementById("barberServicesEditorContent");
         if (editor) {
-
             editor.innerHTML = `
-
                 <div class="empty">
                     <p>❌ ${escapeHtml(error.message)}</p>
-                    <button
-                        class="btn"
-                        onclick="closeBarberServicesForm()"
-                        style="margin-top:8px;"
-                    >
-                        ← Volver
-                    </button>
+                    <button class="btn secondary" type="button" onclick="closeBarberServicesForm()" style="margin-top:8px;width:100%;">← Volver</button>
                 </div>
-
             `;
-
         }
-
     }
-
 }
-
 
 // ==========================================
 // GUARDAR SERVICIOS DEL BARBERO
@@ -3433,6 +3323,7 @@ async function saveBarberServices(barberId) {
 
         barberServiceEditorOpen = false;
         barberServiceEditorBarberId = null;
+        closeAdminModal();
 
         await loadPanel();
 
@@ -3465,6 +3356,7 @@ function closeBarberServicesForm() {
 
     barberServiceEditorOpen = false;
     barberServiceEditorBarberId = null;
+    closeAdminModal();
 
     renderPanel();
 
