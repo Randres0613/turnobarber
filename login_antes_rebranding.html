@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>TurnoBarber - Acceso</title>
+
+    <link
+        rel="stylesheet"
+        href="styles.css"
+    >
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    ></script>
+
+</head>
+
+
+<body>
+
+
+    <!-- ==========================================
+         INICIO DE SESIÓN
+    =========================================== -->
+
+    <main
+        id="loginApp"
+        class="card hero"
+        style="max-width: 500px; margin: 50px auto;"
+    >
+
+        <h1>💈 TurnoBarber</h1>
+
+        <h2>🔐 Acceso administrador</h2>
+
+        <p>
+            Inicia sesión para administrar tu barbería.
+        </p>
+
+
+        <form id="loginForm">
+
+            <div style="margin-bottom: 15px;">
+
+                <label for="email">
+                    Correo electrónico
+                </label>
+
+                <input
+                    id="email"
+                    type="email"
+                    placeholder="Correo electrónico"
+                    autocomplete="email"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                >
+
+            </div>
+
+
+            <div style="margin-bottom: 15px;">
+
+                <label for="password">
+                    Contraseña
+                </label>
+
+                <input
+                    id="password"
+                    type="password"
+                    placeholder="Contraseña"
+                    autocomplete="current-password"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                >
+
+            </div>
+
+
+            <button
+                id="loginButton"
+                type="submit"
+                class="btn primary big"
+                style="width: 100%;"
+            >
+                🔐 Iniciar sesión
+            </button>
+
+
+            <p
+                id="loginMessage"
+                style="margin-top: 15px;"
+            ></p>
+
+        </form>
+
+
+        <hr style="margin: 25px 0;">
+
+
+        <!-- ==========================================
+             CREAR CUENTA
+        =========================================== -->
+
+        <div style="text-align: center; margin-bottom: 20px;">
+
+            <p style="margin-bottom: 10px;">
+                ¿Aún no tienes una cuenta?
+            </p>
+
+            <a
+                href="registro.html"
+                class="btn primary big"
+                style="
+                    display: block;
+                    width: 100%;
+                    box-sizing: border-box;
+                    text-decoration: none;
+                "
+            >
+                🆕 Crear mi barbería
+            </a>
+
+        </div>
+
+
+        <!-- ==========================================
+             RECUPERAR CONTRASEÑA
+        =========================================== -->
+
+        <button
+            id="forgotPasswordButton"
+            class="btn"
+            type="button"
+            style="width: 100%;"
+        >
+            🔑 Olvidé mi contraseña
+        </button>
+
+
+        <p
+            id="forgotMessage"
+            style="margin-top: 15px;"
+        ></p>
+
+    </main>
+
+
+    <!-- ==========================================
+         CAMBIAR CONTRASEÑA
+    =========================================== -->
+
+    <main
+        id="recoveryApp"
+        class="card hero"
+        style="max-width: 500px; margin: 50px auto; display: none;"
+    >
+
+        <h1>💈 TurnoBarber</h1>
+
+        <h2>🔐 Crear nueva contraseña</h2>
+
+        <p>
+            Escribe una nueva contraseña para tu cuenta.
+        </p>
+
+
+        <form id="recoveryForm">
+
+            <div style="margin-bottom: 15px;">
+
+                <label for="newPassword">
+                    Nueva contraseña
+                </label>
+
+                <input
+                    id="newPassword"
+                    type="password"
+                    placeholder="Nueva contraseña"
+                    autocomplete="new-password"
+                    minlength="6"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                >
+
+            </div>
+
+
+            <div style="margin-bottom: 15px;">
+
+                <label for="confirmPassword">
+                    Confirmar contraseña
+                </label>
+
+                <input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Repite la contraseña"
+                    autocomplete="new-password"
+                    minlength="6"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px;"
+                >
+
+            </div>
+
+
+            <button
+                id="recoveryButton"
+                type="submit"
+                class="btn primary big"
+                style="width: 100%;"
+            >
+                🔐 Guardar nueva contraseña
+            </button>
+
+
+            <p
+                id="recoveryMessage"
+                style="margin-top: 15px;"
+            ></p>
+
+        </form>
+
+    </main>
+
+
+    <!-- SUPABASE -->
+
+    <script src="supabase.js"></script>
+
+
+    <script>
+
+
+        // ==========================================
+        // ELEMENTOS
+        // ==========================================
+
+        const loginApp =
+            document.getElementById("loginApp");
+
+
+        const recoveryApp =
+            document.getElementById("recoveryApp");
+
+
+        const loginForm =
+            document.getElementById("loginForm");
+
+
+        const loginButton =
+            document.getElementById("loginButton");
+
+
+        const loginMessage =
+            document.getElementById("loginMessage");
+
+
+        const forgotPasswordButton =
+            document.getElementById(
+                "forgotPasswordButton"
+            );
+
+
+        const forgotMessage =
+            document.getElementById("forgotMessage");
+
+
+        const recoveryForm =
+            document.getElementById("recoveryForm");
+
+
+        const recoveryButton =
+            document.getElementById("recoveryButton");
+
+
+        const recoveryMessage =
+            document.getElementById("recoveryMessage");
+
+
+        // ==========================================
+        // MOSTRAR LOGIN
+        // ==========================================
+
+        function showLogin() {
+
+            loginApp.style.display =
+                "block";
+
+            recoveryApp.style.display =
+                "none";
+
+        }
+
+
+        // ==========================================
+        // MOSTRAR RECUPERACIÓN
+        // ==========================================
+
+        function showRecovery() {
+
+            loginApp.style.display =
+                "none";
+
+            recoveryApp.style.display =
+                "block";
+
+        }
+
+
+        // ==========================================
+        // OBTENER BARBERÍA PENDIENTE
+        // ==========================================
+
+        function getPendingBusiness() {
+
+            const saved =
+                localStorage.getItem(
+                    "turnobarber_pending_business"
+                );
+
+
+            if (!saved) {
+
+                return null;
+
+            }
+
+
+            try {
+
+                return JSON.parse(saved);
+
+            } catch (error) {
+
+                console.error(
+                    "ERROR LEYENDO BARBERÍA PENDIENTE:",
+                    error
+                );
+
+
+                localStorage.removeItem(
+                    "turnobarber_pending_business"
+                );
+
+
+                return null;
+
+            }
+
+        }
+
+
+        // ==========================================
+        // BORRAR BARBERÍA PENDIENTE
+        // ==========================================
+
+        function clearPendingBusiness() {
+
+            localStorage.removeItem(
+                "turnobarber_pending_business"
+            );
+
+        }
+
+
+        // ==========================================
+        // CREAR BARBERÍA DESPUÉS DEL LOGIN
+        // ==========================================
+
+        async function createPendingBusiness() {
+
+            const pendingBusiness =
+                getPendingBusiness();
+
+
+            if (!pendingBusiness) {
+
+                return true;
+
+            }
+
+
+            loginMessage.textContent =
+                "🏪 Configurando tu barbería...";
+
+
+            const {
+                data,
+                error
+            } =
+                await client.rpc(
+                    "create_business_for_current_user",
+                    {
+                        p_business_name:
+                            pendingBusiness.business_name,
+
+                        p_city:
+                            pendingBusiness.city,
+
+                        p_phone:
+                            pendingBusiness.phone || null
+                    }
+                );
+
+
+            if (error) {
+
+                console.error(
+                    "ERROR CREANDO BARBERÍA:",
+                    error
+                );
+
+
+                if (
+                    error.message &&
+                    error.message.includes(
+                        "Este usuario ya tiene una barbería"
+                    )
+                ) {
+
+                    clearPendingBusiness();
+
+                    return true;
+
+                }
+
+
+                throw error;
+
+            }
+
+
+            if (
+                !data ||
+                data.length === 0
+            ) {
+
+                throw new Error(
+                    "No se pudo crear la barbería."
+                );
+
+            }
+
+
+            const createdBusiness =
+                data[0];
+
+
+            console.log(
+                "BARBERÍA CREADA:",
+                createdBusiness
+            );
+
+
+            clearPendingBusiness();
+
+
+            loginMessage.textContent =
+                "✅ Barbería creada correctamente.";
+
+
+            return true;
+
+        }
+
+
+        // ==========================================
+        // INICIAR SESIÓN
+        // ==========================================
+
+        loginForm.addEventListener(
+            "submit",
+            async function(event) {
+
+                event.preventDefault();
+
+
+                const email =
+                    document
+                        .getElementById("email")
+                        .value
+                        .trim();
+
+
+                const password =
+                    document
+                        .getElementById("password")
+                        .value;
+
+
+                loginButton.disabled =
+                    true;
+
+
+                loginButton.textContent =
+                    "🔄 Iniciando sesión...";
+
+
+                loginMessage.textContent =
+                    "";
+
+
+                try {
+
+                    const {
+                        data,
+                        error
+                    } =
+                        await client.auth.signInWithPassword({
+
+                            email:
+                                email,
+
+                            password:
+                                password
+
+                        });
+
+
+                    if (error) {
+
+                        throw error;
+
+                    }
+
+
+                    if (
+                        !data ||
+                        !data.user
+                    ) {
+
+                        throw new Error(
+                            "No se pudo iniciar sesión."
+                        );
+
+                    }
+
+
+                    if (
+                        !data.user.email_confirmed_at
+                    ) {
+
+                        await client.auth.signOut();
+
+
+                        throw new Error(
+                            "Debes confirmar tu correo electrónico antes de iniciar sesión."
+                        );
+
+                    }
+
+
+                    loginMessage.textContent =
+                        "✅ Inicio de sesión correcto.";
+
+
+                    await createPendingBusiness();
+
+
+                    loginMessage.textContent =
+                        "✅ Todo listo. Entrando al panel...";
+
+
+                    setTimeout(
+                        function() {
+
+                            window.location.href =
+                                "admin.html";
+
+                        },
+                        700
+                    );
+
+
+                } catch (error) {
+
+                    console.error(
+                        "ERROR LOGIN:",
+                        error
+                    );
+
+
+                    loginMessage.textContent =
+                        "❌ " + error.message;
+
+
+                    loginButton.disabled =
+                        false;
+
+
+                    loginButton.textContent =
+                        "🔐 Iniciar sesión";
+
+                }
+
+            }
+        );
+
+
+        // ==========================================
+        // ENVIAR RECUPERACIÓN
+        // ==========================================
+
+        forgotPasswordButton.addEventListener(
+            "click",
+            async function() {
+
+                const email =
+                    document
+                        .getElementById("email")
+                        .value
+                        .trim();
+
+
+                if (!email) {
+
+                    forgotMessage.textContent =
+                        "⚠️ Escribe primero tu correo electrónico.";
+
+                    return;
+
+                }
+
+
+                forgotPasswordButton.disabled =
+                    true;
+
+
+                forgotPasswordButton.textContent =
+                    "📨 Enviando...";
+
+
+                forgotMessage.textContent =
+                    "";
+
+
+                try {
+
+                    const {
+                        error
+                    } =
+                        await client.auth.resetPasswordForEmail(
+                            email,
+                            {
+                                redirectTo:
+                                    "https://randres0613.github.io/turnobarber/login.html"
+                            }
+                        );
+
+
+                    if (error) {
+
+                        throw error;
+
+                    }
+
+
+                    forgotMessage.textContent =
+                        "✅ Hemos enviado un enlace de recuperación a tu correo.";
+
+
+                } catch (error) {
+
+                    console.error(
+                        "ERROR RECOVERY:",
+                        error
+                    );
+
+
+                    forgotMessage.textContent =
+                        "❌ " + error.message;
+
+                }
+
+
+                forgotPasswordButton.disabled =
+                    false;
+
+
+                forgotPasswordButton.textContent =
+                    "🔑 Olvidé mi contraseña";
+
+            }
+        );
+
+
+        // ==========================================
+        // GUARDAR NUEVA CONTRASEÑA
+        // ==========================================
+
+        recoveryForm.addEventListener(
+            "submit",
+            async function(event) {
+
+                event.preventDefault();
+
+
+                const newPassword =
+                    document
+                        .getElementById("newPassword")
+                        .value;
+
+
+                const confirmPassword =
+                    document
+                        .getElementById("confirmPassword")
+                        .value;
+
+
+                if (
+                    newPassword.length <
+                    6
+                ) {
+
+                    recoveryMessage.textContent =
+                        "❌ La contraseña debe tener mínimo 6 caracteres.";
+
+                    return;
+
+                }
+
+
+                if (
+                    newPassword !==
+                    confirmPassword
+                ) {
+
+                    recoveryMessage.textContent =
+                        "❌ Las contraseñas no coinciden.";
+
+                    return;
+
+                }
+
+
+                recoveryButton.disabled =
+                    true;
+
+
+                recoveryButton.textContent =
+                    "🔄 Guardando...";
+
+
+                recoveryMessage.textContent =
+                    "";
+
+
+                try {
+
+                    const {
+                        error
+                    } =
+                        await client.auth.updateUser({
+                            password:
+                                newPassword
+                        });
+
+
+                    if (error) {
+
+                        throw error;
+
+                    }
+
+
+                    recoveryMessage.textContent =
+                        "✅ Contraseña actualizada correctamente.";
+
+
+                    recoveryButton.textContent =
+                        "✅ Contraseña guardada";
+
+
+                    setTimeout(
+                        async function() {
+
+                            await client.auth.signOut();
+
+
+                            window.location.href =
+                                "login.html";
+
+                        },
+                        1500
+                    );
+
+
+                } catch (error) {
+
+                    console.error(
+                        "ERROR CAMBIANDO CONTRASEÑA:",
+                        error
+                    );
+
+
+                    recoveryMessage.textContent =
+                        "❌ " + error.message;
+
+
+                    recoveryButton.disabled =
+                        false;
+
+
+                    recoveryButton.textContent =
+                        "🔐 Guardar nueva contraseña";
+
+                }
+
+            }
+        );
+
+
+        // ==========================================
+        // DETECTAR RECUPERACIÓN SUPABASE
+        // ==========================================
+
+        client.auth.onAuthStateChange(
+            function(event, session) {
+
+                console.log(
+                    "AUTH EVENT:",
+                    event
+                );
+
+
+                if (
+                    event ===
+                    "PASSWORD_RECOVERY"
+                ) {
+
+                    showRecovery();
+
+                }
+
+            }
+        );
+
+
+        // ==========================================
+        // RESPALDO: DETECTAR RECOVERY EN URL
+        // ==========================================
+
+        if (
+            window.location.hash.includes(
+                "type=recovery"
+            )
+        ) {
+
+            showRecovery();
+
+        }
+
+
+    </script>
+
+
+</body>
+
+</html>

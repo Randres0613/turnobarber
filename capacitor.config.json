@@ -1,0 +1,14 @@
+{
+  "appId": "com.turnobarber.app",
+  "appName": "TurnoBarber 360",
+  "webDir": "www",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0,
+      "launchAutoHide": true,
+      "launchFadeOutDuration": 0,
+      "backgroundColor": "#172033",
+      "showSpinner": false
+    }
+  }
+}
