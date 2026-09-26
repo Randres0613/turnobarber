@@ -530,16 +530,50 @@
 
 
             loginMessage.textContent =
-                "🏪 Configurando tu barbería...";
+                "🏪 Configurando tu organización y barbería...";
+
+
+            const timezone =
+                Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+
+            if (!timezone) {
+
+                throw new Error(
+                    "No se pudo determinar la zona horaria de tu dispositivo."
+                );
+
+            }
+
+
+            const organizationName =
+                (
+                    pendingBusiness.organization_name ||
+                    pendingBusiness.business_name ||
+                    ""
+                ).trim();
+
+
+            if (!organizationName) {
+
+                throw new Error(
+                    "No se encontró el nombre de la organización."
+                );
+
+            }
 
 
             const {
                 data,
                 error
-            } =
+            }
+                =
                 await client.rpc(
-                    "create_business_for_current_user",
+                    "create_initial_organization_business_for_current_user",
                     {
+                        p_organization_name:
+                            organizationName,
+
                         p_business_name:
                             pendingBusiness.business_name,
 
@@ -547,7 +581,10 @@
                             pendingBusiness.city,
 
                         p_phone:
-                            pendingBusiness.phone || null
+                            pendingBusiness.phone || null,
+
+                        p_timezone:
+                            timezone
                     }
                 );
 
@@ -555,23 +592,9 @@
             if (error) {
 
                 console.error(
-                    "ERROR CREANDO BARBERÍA:",
+                    "ERROR CREANDO ORGANIZACIÓN Y BARBERÍA:",
                     error
                 );
-
-
-                if (
-                    error.message &&
-                    error.message.includes(
-                        "Este usuario ya tiene una barbería"
-                    )
-                ) {
-
-                    clearPendingBusiness();
-
-                    return true;
-
-                }
 
 
                 throw error;
@@ -585,7 +608,7 @@
             ) {
 
                 throw new Error(
-                    "No se pudo crear la barbería."
+                    "No se pudo crear la organización y la barbería."
                 );
 
             }
@@ -596,7 +619,7 @@
 
 
             console.log(
-                "BARBERÍA CREADA:",
+                "ORGANIZACIÓN Y BARBERÍA CREADAS:",
                 createdBusiness
             );
 
@@ -605,7 +628,7 @@
 
 
             loginMessage.textContent =
-                "✅ Barbería creada correctamente.";
+                "✅ Organización y barbería creadas correctamente.";
 
 
             return true;
@@ -703,18 +726,65 @@
                         "✅ Inicio de sesión correcto.";
 
 
-                    await createPendingBusiness();
+                    loginMessage.textContent =
+                        "✅ Todo listo. Verificando acceso...";
+
+
+                    let isPlatformAdmin = false;
+
+
+                    try {
+
+                        const {
+                            data: platformAdminData,
+                            error: platformAdminError
+                        } =
+                            await client.rpc(
+                                "is_platform_admin"
+                            );
+
+
+                        if (platformAdminError) {
+
+                            throw platformAdminError;
+
+                        }
+
+
+                        isPlatformAdmin =
+                            platformAdminData === true;
+
+
+                    } catch (platformAdminError) {
+
+                        console.error(
+                            "ERROR VERIFICANDO SUPERADMIN:",
+                            platformAdminError
+                        );
+
+                    }
+
+
+                    if (!isPlatformAdmin) {
+
+                        await createPendingBusiness();
+
+                    }
 
 
                     loginMessage.textContent =
-                        "✅ Todo listo. Entrando al panel...";
+                        isPlatformAdmin
+                            ? "✅ Acceso Superadmin autorizado. Entrando..."
+                            : "✅ Todo listo. Entrando al panel...";
 
 
                     setTimeout(
                         function() {
 
                             window.location.href =
-                                "admin.html";
+                                isPlatformAdmin
+                                    ? "superadmin.html"
+                                    : "admin.html";
 
                         },
                         700

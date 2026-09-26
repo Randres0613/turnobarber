@@ -1,0 +1,3081 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurnoBarber 360 - Superadmin</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root{
+            --tb360-navy:#172033;
+            --tb360-blue:#2855D9;
+            --tb360-green:#20B968;
+            --tb360-yellow:#F4C84A;
+            --tb360-bg:#F5F7FA;
+            --tb360-text:#172033;
+            --tb360-muted:#667085;
+        }
+
+        body{
+            background:
+                radial-gradient(circle at 50% 0%, rgba(40,85,217,.10), transparent 34%),
+                var(--tb360-bg);
+            color:var(--tb360-text);
+            min-height:100vh;
+        }
+
+        .superadmin-shell{
+            width:min(1180px, calc(100% - 32px));
+            margin:24px auto 40px;
+        }
+
+        .superadmin-header{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:18px;
+            padding:20px 22px;
+            background:#fff;
+            border:1px solid rgba(23,32,51,.08);
+            border-radius:20px;
+            box-shadow:0 12px 35px rgba(23,32,51,.08);
+        }
+
+        .superadmin-brand{
+            display:flex;
+            align-items:center;
+            gap:14px;
+        }
+
+        .superadmin-brand img{
+            width:54px;
+            height:54px;
+            object-fit:contain;
+        }
+
+        .superadmin-brand h1{
+            margin:0;
+            color:var(--tb360-navy);
+            font-size:24px;
+        }
+
+        .superadmin-brand p{
+            margin:4px 0 0;
+            color:var(--tb360-muted);
+            font-size:14px;
+        }
+
+        .superadmin-actions{
+            display:flex;
+            align-items:center;
+            gap:10px;
+        }
+
+        .superadmin-badge{
+            display:inline-flex;
+            align-items:center;
+            padding:8px 12px;
+            border-radius:999px;
+            background:rgba(32,185,104,.12);
+            color:#137545;
+            font-weight:700;
+            font-size:12px;
+        }
+
+        .superadmin-main{
+            margin-top:20px;
+        }
+
+        .superadmin-welcome{
+            padding:24px;
+            margin-bottom:18px;
+        }
+
+        .superadmin-welcome h2{
+            margin:0 0 8px;
+            color:var(--tb360-navy);
+        }
+
+        .superadmin-welcome p{
+            margin:0;
+            color:var(--tb360-muted);
+        }
+
+        .superadmin-dashboard{
+            margin-bottom:18px;
+        }
+
+        .superadmin-section-title{
+            display:flex;
+            align-items:flex-end;
+            justify-content:space-between;
+            gap:12px;
+            margin-bottom:12px;
+        }
+
+        .superadmin-section-title h3{
+            margin:0;
+            color:var(--tb360-navy);
+        }
+
+        .superadmin-section-title p{
+            margin:0;
+            color:var(--tb360-muted);
+            font-size:13px;
+        }
+
+        .superadmin-metrics{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));
+            gap:12px;
+        }
+
+        .superadmin-metric{
+            padding:18px;
+            border:1px solid rgba(23,32,51,.08);
+            border-radius:16px;
+            background:#fff;
+            box-shadow:0 8px 22px rgba(23,32,51,.05);
+        }
+
+        .superadmin-metric-label{
+            color:var(--tb360-muted);
+            font-size:13px;
+            margin-bottom:8px;
+        }
+
+        .superadmin-metric-value{
+            color:var(--tb360-navy);
+            font-size:28px;
+            font-weight:800;
+            line-height:1;
+        }
+
+        .superadmin-metric-note{
+            margin-top:8px;
+            color:var(--tb360-muted);
+            font-size:12px;
+        }
+
+        .superadmin-status-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
+            gap:12px;
+            margin-top:12px;
+        }
+
+        .superadmin-status-card{
+            padding:16px 18px;
+            border:1px solid rgba(23,32,51,.08);
+            border-radius:16px;
+            background:#fff;
+        }
+
+        .superadmin-status-card strong{
+            color:var(--tb360-navy);
+        }
+
+        .superadmin-status-row{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            padding:7px 0;
+            color:var(--tb360-muted);
+            font-size:14px;
+        }
+
+        .superadmin-status-row span:last-child{
+            color:var(--tb360-navy);
+            font-weight:800;
+        }
+
+        .superadmin-loading,
+        .superadmin-error{
+            padding:18px;
+            border-radius:16px;
+            background:#fff;
+            border:1px solid rgba(23,32,51,.08);
+            color:var(--tb360-muted);
+        }
+
+        .superadmin-error{
+            color:#9b2c2c;
+        }
+
+        .superadmin-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+            gap:16px;
+        }
+
+        .superadmin-module{
+            display:block;
+            text-align:left;
+            padding:22px;
+            min-height:150px;
+            border:1px solid rgba(23,32,51,.08);
+            border-radius:18px;
+            background:#fff;
+            box-shadow:0 10px 28px rgba(23,32,51,.06);
+        }
+
+        .superadmin-module-icon{
+            font-size:30px;
+            margin-bottom:12px;
+        }
+
+        .superadmin-module h3{
+            margin:0 0 7px;
+            color:var(--tb360-navy);
+            font-size:18px;
+        }
+
+        .superadmin-module p{
+            margin:0;
+            color:var(--tb360-muted);
+            font-size:14px;
+            line-height:1.45;
+        }
+
+        .superadmin-module.disabled{
+            opacity:.72;
+        }
+
+        .superadmin-module.actionable{
+            cursor:pointer;
+            transition:transform .15s ease, box-shadow .15s ease;
+        }
+
+        .superadmin-module.actionable:hover{
+            transform:translateY(-2px);
+            box-shadow:0 14px 34px rgba(23,32,51,.10);
+        }
+
+        .superadmin-view-header{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            margin-bottom:14px;
+        }
+
+        .superadmin-view-header h3{
+            margin:0;
+            color:var(--tb360-navy);
+        }
+
+        .superadmin-businesses{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+            gap:14px;
+        }
+
+        .superadmin-business-card{
+            padding:18px;
+            border:1px solid rgba(23,32,51,.08);
+            border-radius:16px;
+            background:#fff;
+            box-shadow:0 8px 22px rgba(23,32,51,.05);
+        }
+
+        .superadmin-business-head{
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:12px;
+        }
+
+        .superadmin-business-card h4{
+            margin:0;
+            color:var(--tb360-navy);
+            font-size:17px;
+        }
+
+        .superadmin-business-meta{
+            margin:5px 0 12px;
+            color:var(--tb360-muted);
+            font-size:13px;
+        }
+
+        .superadmin-business-badge{
+            display:inline-flex;
+            align-items:center;
+            padding:6px 9px;
+            border-radius:999px;
+            font-size:11px;
+            font-weight:800;
+            text-transform:uppercase;
+            white-space:nowrap;
+        }
+
+        .superadmin-business-badge.active{
+            background:rgba(32,185,104,.12);
+            color:#137545;
+        }
+
+        .superadmin-business-badge.trial{
+            background:rgba(244,200,74,.18);
+            color:#7a5a00;
+        }
+
+        .superadmin-business-badge.other{
+            background:rgba(23,32,51,.08);
+            color:var(--tb360-navy);
+        }
+
+        .superadmin-business-stats{
+            display:grid;
+            grid-template-columns:repeat(3, 1fr);
+            gap:8px;
+            margin-top:12px;
+        }
+
+        .superadmin-business-stat{
+            padding:9px;
+            border-radius:10px;
+            background:var(--tb360-bg);
+            text-align:center;
+        }
+
+        .superadmin-business-stat strong{
+            display:block;
+            color:var(--tb360-navy);
+            font-size:17px;
+        }
+
+        .superadmin-business-stat span{
+            color:var(--tb360-muted);
+            font-size:11px;
+        }
+
+        .superadmin-business-details{
+            margin-top:12px;
+            padding-top:12px;
+            border-top:1px solid rgba(23,32,51,.07);
+            color:var(--tb360-muted);
+            font-size:12px;
+            line-height:1.55;
+        }
+
+        .superadmin-users{
+            display:grid;
+            gap:14px;
+        }
+
+        .superadmin-user-card{
+            padding:18px;
+            border:1px solid rgba(23,32,51,.08);
+            border-radius:16px;
+            background:#fff;
+            box-shadow:0 8px 22px rgba(23,32,51,.05);
+        }
+
+        .superadmin-user-head{
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:12px;
+        }
+
+        .superadmin-user-card h4{
+            margin:0;
+            color:var(--tb360-navy);
+            font-size:16px;
+            word-break:break-word;
+        }
+
+        .superadmin-user-meta{
+            margin:5px 0 12px;
+            color:var(--tb360-muted);
+            font-size:13px;
+        }
+
+        .superadmin-user-badge{
+            display:inline-flex;
+            align-items:center;
+            padding:6px 9px;
+            border-radius:999px;
+            font-size:11px;
+            font-weight:800;
+            text-transform:uppercase;
+            white-space:nowrap;
+        }
+
+        .superadmin-user-badge.superadmin{
+            background:rgba(32,185,104,.12);
+            color:#137545;
+        }
+
+        .superadmin-user-badge.owner{
+            background:rgba(46,91,210,.10);
+            color:#2449a8;
+        }
+
+        .superadmin-user-badge.other{
+            background:rgba(23,32,51,.08);
+            color:var(--tb360-navy);
+        }
+
+        .superadmin-user-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+            gap:8px;
+        }
+
+        .superadmin-user-detail{
+            padding:10px;
+            border-radius:10px;
+            background:var(--tb360-bg);
+            color:var(--tb360-muted);
+            font-size:12px;
+            line-height:1.45;
+        }
+
+        .superadmin-user-detail strong{
+            display:block;
+            color:var(--tb360-navy);
+            margin-bottom:2px;
+        }
+
+        .superadmin-user-barbers{
+            margin-top:12px;
+            padding-top:12px;
+            border-top:1px solid rgba(23,32,51,.07);
+            color:var(--tb360-muted);
+            font-size:12px;
+        }
+
+        .superadmin-module-status{
+            display:inline-block;
+            margin-top:14px;
+            font-size:11px;
+            font-weight:700;
+            color:var(--tb360-muted);
+            text-transform:uppercase;
+            letter-spacing:.04em;
+        }
+
+
+        .superadmin-subscriptions{
+            display:grid;
+            gap:14px;
+        }
+
+        .superadmin-subscription-card{
+            padding:18px;
+            border:1px solid rgba(23,32,51,.08);
+            border-radius:16px;
+            background:#fff;
+            box-shadow:0 8px 22px rgba(23,32,51,.05);
+        }
+
+        .superadmin-subscription-head{
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:12px;
+        }
+
+        .superadmin-subscription-card h4{
+            margin:0;
+            color:var(--tb360-navy);
+            font-size:17px;
+        }
+
+        .superadmin-subscription-meta{
+            margin:5px 0 12px;
+            color:var(--tb360-muted);
+            font-size:13px;
+        }
+
+        .superadmin-subscription-badge{
+            display:inline-flex;
+            align-items:center;
+            padding:6px 9px;
+            border-radius:999px;
+            font-size:11px;
+            font-weight:800;
+            text-transform:uppercase;
+            white-space:nowrap;
+        }
+
+        .superadmin-subscription-badge.active{
+            background:rgba(32,185,104,.12);
+            color:#137545;
+        }
+
+        .superadmin-subscription-badge.trial{
+            background:rgba(244,200,74,.18);
+            color:#7a5a00;
+        }
+
+        .superadmin-subscription-badge.warn{
+            background:rgba(244,200,74,.18);
+            color:#7a5a00;
+        }
+
+        .superadmin-subscription-badge.danger{
+            background:rgba(190,45,45,.10);
+            color:#9b2c2c;
+        }
+
+        .superadmin-subscription-badge.other{
+            background:rgba(23,32,51,.08);
+            color:var(--tb360-navy);
+        }
+
+        .superadmin-subscription-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+            gap:8px;
+        }
+
+        .superadmin-subscription-detail{
+            padding:10px;
+            border-radius:10px;
+            background:var(--tb360-bg);
+            color:var(--tb360-muted);
+            font-size:12px;
+            line-height:1.45;
+        }
+
+        .superadmin-subscription-detail strong{
+            display:block;
+            color:var(--tb360-navy);
+            margin-bottom:2px;
+        }
+
+        .superadmin-subscription-note{
+            margin-top:12px;
+            padding-top:12px;
+            border-top:1px solid rgba(23,32,51,.07);
+            color:var(--tb360-muted);
+            font-size:12px;
+            line-height:1.5;
+        }
+
+        .superadmin-plans{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));
+            gap:14px;
+        }
+
+        .superadmin-plan-card{
+            padding:20px;
+            border:1px solid rgba(23,32,51,.08);
+            border-radius:16px;
+            background:#fff;
+            box-shadow:0 8px 22px rgba(23,32,51,.05);
+        }
+
+        .superadmin-plan-head{
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:12px;
+        }
+
+        .superadmin-plan-card h4{
+            margin:0;
+            color:var(--tb360-navy);
+            font-size:18px;
+        }
+
+        .superadmin-plan-code{
+            display:inline-flex;
+            padding:6px 9px;
+            border-radius:999px;
+            background:rgba(40,85,217,.10);
+            color:#2449a8;
+            font-size:11px;
+            font-weight:800;
+        }
+
+        .superadmin-plan-prices{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:8px;
+            margin-top:16px;
+        }
+
+        .superadmin-plan-price{
+            padding:12px;
+            border-radius:10px;
+            background:var(--tb360-bg);
+        }
+
+        .superadmin-plan-price strong{
+            display:block;
+            color:var(--tb360-navy);
+            font-size:18px;
+            margin-top:3px;
+        }
+
+        .superadmin-plan-price span{
+            color:var(--tb360-muted);
+            font-size:11px;
+        }
+
+        .superadmin-plan-details{
+            margin-top:12px;
+            padding-top:12px;
+            border-top:1px solid rgba(23,32,51,.07);
+            color:var(--tb360-muted);
+            font-size:12px;
+            line-height:1.55;
+        }
+
+        .superadmin-readonly-note{
+            margin-bottom:14px;
+            padding:12px 14px;
+            border-radius:12px;
+            background:rgba(244,200,74,.14);
+            color:#6f5700;
+            font-size:13px;
+            line-height:1.5;
+        }
+
+        .superadmin-plan-actions{
+            margin-top:14px;
+            padding-top:14px;
+            border-top:1px solid rgba(23,32,51,.07);
+        }
+
+        .superadmin-plan-edit{
+            margin-top:12px;
+            padding:14px;
+            border-radius:12px;
+            background:var(--tb360-bg);
+        }
+
+        .superadmin-plan-edit-grid{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:10px;
+        }
+
+        .superadmin-plan-edit label{
+            display:block;
+            color:var(--tb360-muted);
+            font-size:12px;
+            font-weight:700;
+        }
+
+        .superadmin-plan-edit input,
+        .superadmin-plan-edit textarea{
+            width:100%;
+            box-sizing:border-box;
+            margin-top:6px;
+            padding:10px;
+            border:1px solid rgba(23,32,51,.14);
+            border-radius:9px;
+            background:#fff;
+            color:var(--tb360-navy);
+            font:inherit;
+        }
+
+        .superadmin-plan-edit textarea{
+            min-height:72px;
+            resize:vertical;
+        }
+
+        .superadmin-plan-edit-actions{
+            display:flex;
+            gap:8px;
+            flex-wrap:wrap;
+            margin-top:10px;
+        }
+
+        .superadmin-history{
+            margin-top:18px;
+        }
+
+        .superadmin-history-table-wrap{
+            overflow-x:auto;
+            border:1px solid rgba(23,32,51,.08);
+            border-radius:12px;
+            background:#fff;
+        }
+
+        .superadmin-history-table{
+            width:100%;
+            min-width:760px;
+            border-collapse:collapse;
+            font-size:12px;
+        }
+
+        .superadmin-history-table th,
+        .superadmin-history-table td{
+            padding:10px;
+            text-align:left;
+            border-bottom:1px solid rgba(23,32,51,.07);
+            vertical-align:top;
+        }
+
+        .superadmin-history-table th{
+            color:var(--tb360-navy);
+            background:var(--tb360-bg);
+        }
+
+        .superadmin-history-table tr:last-child td{
+            border-bottom:0;
+        }
+
+        .superadmin-stats-controls{
+            display:flex;
+            gap:8px;
+            flex-wrap:wrap;
+            align-items:end;
+            margin-bottom:16px;
+        }
+
+        .superadmin-stats-date{
+            display:flex;
+            gap:8px;
+            flex-wrap:wrap;
+            align-items:end;
+        }
+
+        .superadmin-stats-date label{
+            color:var(--tb360-muted);
+            font-size:12px;
+            font-weight:700;
+        }
+
+        .superadmin-stats-date input{
+            display:block;
+            margin-top:5px;
+            padding:9px 10px;
+            border:1px solid rgba(23,32,51,.14);
+            border-radius:9px;
+            background:#fff;
+            color:var(--tb360-navy);
+            font:inherit;
+        }
+
+        .superadmin-global-stats-grid{
+            display:grid;
+            grid-template-columns:repeat(4,minmax(0,1fr));
+            gap:12px;
+        }
+
+        .superadmin-global-stat{
+            padding:15px;
+            border:1px solid rgba(23,32,51,.08);
+            border-radius:12px;
+            background:#fff;
+        }
+
+        .superadmin-global-stat-label{
+            color:var(--tb360-muted);
+            font-size:12px;
+            font-weight:700;
+        }
+
+        .superadmin-global-stat-value{
+            margin-top:5px;
+            color:var(--tb360-navy);
+            font-size:24px;
+            font-weight:800;
+        }
+
+        .superadmin-global-stat-note{
+            margin-top:3px;
+            color:var(--tb360-muted);
+            font-size:11px;
+        }
+
+        .superadmin-stats-panels{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:14px;
+            margin-top:16px;
+        }
+
+        .superadmin-stats-panel{
+            padding:16px;
+            border:1px solid rgba(23,32,51,.08);
+            border-radius:12px;
+            background:#fff;
+        }
+
+        .superadmin-stats-panel h4{
+            margin:0 0 10px;
+            color:var(--tb360-navy);
+        }
+
+        .superadmin-stats-table{
+            width:100%;
+            border-collapse:collapse;
+            font-size:12px;
+        }
+
+        .superadmin-stats-table th,
+        .superadmin-stats-table td{
+            padding:8px 6px;
+            text-align:left;
+            border-bottom:1px solid rgba(23,32,51,.07);
+        }
+
+        .superadmin-stats-table th{
+            color:var(--tb360-muted);
+        }
+
+        @media (max-width:900px){
+            .superadmin-global-stats-grid{
+                grid-template-columns:repeat(2,minmax(0,1fr));
+            }
+            .superadmin-stats-panels{
+                grid-template-columns:1fr;
+            }
+        }
+
+        #accessState{
+            max-width:560px;
+            margin:70px auto;
+            text-align:center;
+            padding:30px;
+        }
+
+        #accessState h2{
+            margin:0 0 10px;
+            color:var(--tb360-navy);
+        }
+
+        #accessState p{
+            margin:0;
+            color:var(--tb360-muted);
+        }
+
+        @media (max-width:700px){
+            .superadmin-header{
+                align-items:flex-start;
+                flex-direction:column;
+            }
+
+            .superadmin-actions{
+                width:100%;
+                justify-content:space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <section id="accessState" class="card hero">
+        <h2>🔐 Verificando acceso...</h2>
+        <p>Comprobando autorización de Superadmin.</p>
+    </section>
+
+    <div id="superadminApp" style="display:none;">
+        <div class="superadmin-shell">
+
+            <header class="superadmin-header">
+                <div class="superadmin-brand">
+                    <img
+                        src="assets/brand/icon-maestro.png"
+                        alt="TurnoBarber 360"
+                    >
+                    <div>
+                        <h1>TurnoBarber 360</h1>
+                        <p>Panel global de administración</p>
+                    </div>
+                </div>
+
+                <div class="superadmin-actions">
+                    <span class="superadmin-badge">SUPERADMIN</span>
+                    <button
+                        type="button"
+                        class="btn"
+                        onclick="logout()"
+                    >
+                        🚪 Salir
+                    </button>
+                </div>
+            </header>
+
+            <main class="superadmin-main">
+                <section class="card superadmin-welcome">
+                    <h2>Panel Superadmin</h2>
+                    <p>
+                        Administración global de TurnoBarber 360.
+                        Desde aquí se gestionarán las barberías, usuarios,
+                        suscripciones, planes, precios, estadísticas y auditoría.
+                    </p>
+                </section>
+
+                <section id="dashboardView" class="superadmin-dashboard" aria-label="Resumen global">
+                    <div class="superadmin-section-title">
+                        <div>
+                            <h3>Resumen de la plataforma</h3>
+                            <p>Datos actuales obtenidos directamente de Supabase.</p>
+                        </div>
+                        <button
+                            id="refreshDashboardButton"
+                            type="button"
+                            class="btn secondary"
+                            onclick="loadDashboard()"
+                        >
+                            🔄 Actualizar
+                        </button>
+                    </div>
+
+                    <div id="dashboardContent">
+                        <div class="superadmin-loading">Cargando indicadores...</div>
+                    </div>
+                </section>
+
+                <section
+                    id="businessesView"
+                    class="superadmin-dashboard"
+                    aria-label="Barberías registradas"
+                    style="display:none;"
+                >
+                    <div class="superadmin-view-header">
+                        <div>
+                            <h3>💈 Barberías registradas</h3>
+                            <p>Consulta global de las barberías de TurnoBarber 360.</p>
+                        </div>
+                        <button
+                            type="button"
+                            class="btn secondary"
+                            onclick="showHome()"
+                        >
+                            ← Volver al inicio
+                        </button>
+                    </div>
+
+                    <div id="businessesContent">
+                        <div class="superadmin-loading">Cargando barberías...</div>
+                    </div>
+                </section>
+
+                <section
+                    id="businessDetailView"
+                    class="superadmin-dashboard"
+                    aria-label="Detalle y estadísticas de barbería"
+                    style="display:none;"
+                >
+                    <div class="superadmin-view-header">
+                        <div>
+                            <h3>📊 Detalle de barbería</h3>
+                            <p>Indicadores y comportamiento de una barbería específica.</p>
+                        </div>
+                        <button type="button" class="btn secondary" onclick="showBusinesses()">← Volver a barberías</button>
+                    </div>
+
+                    <div class="superadmin-stats-controls">
+                        <button type="button" class="btn secondary" onclick="setBusinessStatsPreset(7)">7 días</button>
+                        <button type="button" class="btn secondary" onclick="setBusinessStatsPreset(30)">30 días</button>
+                        <button type="button" class="btn secondary" onclick="setBusinessStatsPreset(90)">90 días</button>
+                        <div class="superadmin-stats-date">
+                            <label>Desde<input id="businessStatsStart" type="date"></label>
+                            <label>Hasta<input id="businessStatsEnd" type="date"></label>
+                            <button type="button" class="btn primary" onclick="loadBusinessStatistics()">🔄 Actualizar</button>
+                        </div>
+                    </div>
+
+                    <div id="businessStatisticsContent">
+                        <div class="superadmin-loading">Selecciona una barbería...</div>
+                    </div>
+                </section>
+
+                <section
+                    id="usersView"
+                    class="superadmin-dashboard"
+                    aria-label="Usuarios de la plataforma"
+                    style="display:none;"
+                >
+                    <div class="superadmin-view-header">
+                        <div>
+                            <h3>👥 Usuarios de la plataforma</h3>
+                            <p>Consulta global de cuentas, roles y relación con las barberías.</p>
+                        </div>
+                        <button
+                            type="button"
+                            class="btn secondary"
+                            onclick="showHome()"
+                        >
+                            ← Volver al inicio
+                        </button>
+                    </div>
+
+                    <div id="usersContent">
+                        <div class="superadmin-loading">Cargando usuarios...</div>
+                    </div>
+                </section>
+
+
+                <section
+                    id="subscriptionsView"
+                    class="superadmin-dashboard"
+                    aria-label="Suscripciones de la plataforma"
+                    style="display:none;"
+                >
+                    <div class="superadmin-view-header">
+                        <div>
+                            <h3>💳 Suscripciones</h3>
+                            <p>Consulta global de planes, estados y períodos de suscripción.</p>
+                        </div>
+                        <button
+                            type="button"
+                            class="btn secondary"
+                            onclick="showHome()"
+                        >
+                            ← Volver al inicio
+                        </button>
+                    </div>
+
+                    <div id="subscriptionsContent">
+                        <div class="superadmin-loading">Cargando suscripciones...</div>
+                    </div>
+                </section>
+
+                <section
+                    id="plansView"
+                    class="superadmin-dashboard"
+                    aria-label="Planes y precios"
+                    style="display:none;"
+                >
+                    <div class="superadmin-view-header">
+                        <div>
+                            <h3>💰 Planes y precios</h3>
+                            <p>Catálogo actual de planes configurado en Supabase.</p>
+                        </div>
+                        <button
+                            type="button"
+                            class="btn secondary"
+                            onclick="showHome()"
+                        >
+                            ← Volver al inicio
+                        </button>
+                    </div>
+
+                    <div class="superadmin-readonly-note">
+                        🔐 La edición está protegida para Superadmin. Cada cambio exige motivo, valida los valores y queda registrado en el historial. Las suscripciones y pagos existentes no se modifican.
+                    </div>
+
+                    <div id="plansContent">
+                        <div class="superadmin-loading">Cargando planes y precios...</div>
+                    </div>
+
+                    <section class="superadmin-history" aria-label="Historial de cambios de precios">
+                        <div class="superadmin-section-title">
+                            <div>
+                                <h3>🧾 Historial de cambios</h3>
+                                <p>Registro de las modificaciones realizadas por Superadmin.</p>
+                            </div>
+                            <button type="button" class="btn secondary" onclick="loadPlanPriceHistory()">🔄 Actualizar</button>
+                        </div>
+                        <div id="planPriceHistoryContent">
+                            <div class="superadmin-loading">Cargando historial...</div>
+                        </div>
+                    </section>
+                </section>
+
+                <section
+                    id="globalStatisticsView"
+                    class="superadmin-dashboard"
+                    aria-label="Estadísticas globales"
+                    style="display:none;"
+                >
+                    <div class="superadmin-view-header">
+                        <div>
+                            <h3>📊 Estadísticas globales</h3>
+                            <p>Indicadores consolidados de toda la plataforma para el período seleccionado.</p>
+                        </div>
+                        <button type="button" class="btn secondary" onclick="showHome()">← Volver al inicio</button>
+                    </div>
+
+                    <div class="superadmin-stats-controls">
+                        <button type="button" class="btn secondary" onclick="setGlobalStatsPreset(7)">7 días</button>
+                        <button type="button" class="btn secondary" onclick="setGlobalStatsPreset(30)">30 días</button>
+                        <button type="button" class="btn secondary" onclick="setGlobalStatsPreset(90)">90 días</button>
+                        <div class="superadmin-stats-date">
+                            <label>Desde<input id="globalStatsStart" type="date"></label>
+                            <label>Hasta<input id="globalStatsEnd" type="date"></label>
+                            <button type="button" class="btn primary" onclick="loadGlobalStatistics()">🔄 Actualizar</button>
+                        </div>
+                    </div>
+
+                    <div id="globalStatisticsContent">
+                        <div class="superadmin-loading">Cargando estadísticas...</div>
+                    </div>
+                </section>
+
+                <section
+                    id="auditView"
+                    class="superadmin-dashboard"
+                    aria-label="Auditoría global"
+                    style="display:none;"
+                >
+                    <div class="superadmin-view-header">
+                        <div>
+                            <h3>🧾 Auditoría global</h3>
+                            <p>Historial de cambios administrativos y eventos de suscripción registrados en la plataforma.</p>
+                        </div>
+                        <button type="button" class="btn secondary" onclick="showHome()">← Volver al inicio</button>
+                    </div>
+
+                    <div class="superadmin-readonly-note">
+                        🔐 Esta vista es de consulta. Los registros no se pueden modificar desde Superadmin.
+                    </div>
+
+                    <div class="superadmin-section-title">
+                        <div>
+                            <h3>Historial global</h3>
+                            <p>Los cambios de precios muestran el Superadmin responsable. Los eventos de suscripción corresponden al sistema/proveedor.</p>
+                        </div>
+                        <button type="button" class="btn secondary" onclick="loadGlobalAudit()">🔄 Actualizar</button>
+                    </div>
+
+                    <div id="auditContent">
+                        <div class="superadmin-loading">Cargando auditoría...</div>
+                    </div>
+                </section>
+
+                <section class="superadmin-grid" aria-label="Módulos Superadmin">
+                    <article class="superadmin-module">
+                        <div class="superadmin-module-icon">🏠</div>
+                        <h3>Inicio</h3>
+                        <p>Vista global de la plataforma y sus principales indicadores.</p>
+                        <span class="superadmin-module-status">Módulo base</span>
+                    </article>
+
+                    <article
+                        class="superadmin-module actionable"
+                        role="button"
+                        tabindex="0"
+                        onclick="showBusinesses()"
+                        onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();showBusinesses();}"
+                    >
+                        <div class="superadmin-module-icon">💈</div>
+                        <h3>Barberías</h3>
+                        <p>Consulta global de las barberías registradas y sus principales datos.</p>
+                        <span class="superadmin-module-status">Ver barberías</span>
+                    </article>
+
+                    <article
+                        class="superadmin-module actionable"
+                        role="button"
+                        tabindex="0"
+                        onclick="showUsers()"
+                        onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();showUsers();}"
+                    >
+                        <div class="superadmin-module-icon">👥</div>
+                        <h3>Usuarios</h3>
+                        <p>Consulta global de cuentas, roles y relación con las barberías.</p>
+                        <span class="superadmin-module-status">Ver usuarios</span>
+                    </article>
+
+                    <article
+                        class="superadmin-module actionable"
+                        role="button"
+                        tabindex="0"
+                        onclick="showSubscriptions()"
+                        onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();showSubscriptions();}"
+                    >
+                        <div class="superadmin-module-icon">💳</div>
+                        <h3>Suscripciones</h3>
+                        <p>Consulta global de planes, estados y períodos de suscripción.</p>
+                        <span class="superadmin-module-status">Ver suscripciones</span>
+                    </article>
+
+                    <article
+                        class="superadmin-module actionable"
+                        role="button"
+                        tabindex="0"
+                        onclick="showPlans()"
+                        onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();showPlans();}"
+                    >
+                        <div class="superadmin-module-icon">💰</div>
+                        <h3>Planes y precios</h3>
+                        <p>Consulta del catálogo de planes y sus precios mensuales y anuales.</p>
+                        <span class="superadmin-module-status">Ver planes y precios</span>
+                    </article>
+
+                    <article
+                        class="superadmin-module actionable"
+                        role="button"
+                        tabindex="0"
+                        onclick="showGlobalStatistics()"
+                        onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();showGlobalStatistics();}"
+                    >
+                        <div class="superadmin-module-icon">📊</div>
+                        <h3>Estadísticas globales</h3>
+                        <p>Indicadores consolidados de toda la plataforma.</p>
+                        <span class="superadmin-module-status">Ver estadísticas</span>
+                    </article>
+
+                    <article
+                        class="superadmin-module actionable"
+                        role="button"
+                        tabindex="0"
+                        onclick="showAudit()"
+                        onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();showAudit();}"
+                    >
+                        <div class="superadmin-module-icon">🧾</div>
+                        <h3>Auditoría</h3>
+                        <p>Historial de cambios administrativos y eventos de suscripción.</p>
+                        <span class="superadmin-module-status">Ver auditoría</span>
+                    </article>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="supabase.js"></script>
+    <script>
+        function formatNumber(value) {
+            return new Intl.NumberFormat("es-CO").format(Number(value || 0));
+        }
+
+        function renderDashboard(data) {
+            const dashboardContent = document.getElementById("dashboardContent");
+
+            if (!dashboardContent) {
+                return;
+            }
+
+            const item = Array.isArray(data) ? data[0] : data;
+
+            if (!item) {
+                dashboardContent.innerHTML = `
+                    <div class="superadmin-error">
+                        No se recibieron datos del resumen global.
+                    </div>
+                `;
+                return;
+            }
+
+            dashboardContent.innerHTML = `
+                <div class="superadmin-metrics">
+                    <article class="superadmin-metric">
+                        <div class="superadmin-metric-label">💈 Barberías</div>
+                        <div class="superadmin-metric-value">${formatNumber(item.businesses_total)}</div>
+                        <div class="superadmin-metric-note">Registradas</div>
+                    </article>
+
+                    <article class="superadmin-metric">
+                        <div class="superadmin-metric-label">👤 Barberos</div>
+                        <div class="superadmin-metric-value">${formatNumber(item.barbers_total)}</div>
+                        <div class="superadmin-metric-note">En la plataforma</div>
+                    </article>
+
+                    <article class="superadmin-metric">
+                        <div class="superadmin-metric-label">🎫 Turnos</div>
+                        <div class="superadmin-metric-value">${formatNumber(item.tickets_total)}</div>
+                        <div class="superadmin-metric-note">Históricos</div>
+                    </article>
+
+                    <article class="superadmin-metric">
+                        <div class="superadmin-metric-label">💳 Suscripciones</div>
+                        <div class="superadmin-metric-value">${formatNumber(item.subscriptions_total)}</div>
+                        <div class="superadmin-metric-note">Registradas</div>
+                    </article>
+
+                    <article class="superadmin-metric">
+                        <div class="superadmin-metric-label">🧾 Pagos</div>
+                        <div class="superadmin-metric-value">${formatNumber(item.payments_total)}</div>
+                        <div class="superadmin-metric-note">Registrados</div>
+                    </article>
+
+                    <article class="superadmin-metric">
+                        <div class="superadmin-metric-label">🛠️ Servicios</div>
+                        <div class="superadmin-metric-value">${formatNumber(item.services_total)}</div>
+                        <div class="superadmin-metric-note">En la plataforma</div>
+                    </article>
+                </div>
+
+                <div class="superadmin-status-grid">
+                    <article class="superadmin-status-card">
+                        <strong>Estado de barberías</strong>
+                        <div class="superadmin-status-row">
+                            <span>🟢 Activas</span>
+                            <span>${formatNumber(item.businesses_active)}</span>
+                        </div>
+                        <div class="superadmin-status-row">
+                            <span>🟡 En prueba</span>
+                            <span>${formatNumber(item.businesses_trial)}</span>
+                        </div>
+                    </article>
+
+                    <article class="superadmin-status-card">
+                        <strong>Estado de suscripciones</strong>
+                        <div class="superadmin-status-row">
+                            <span>🟢 Activas</span>
+                            <span>${formatNumber(item.subscriptions_active)}</span>
+                        </div>
+                        <div class="superadmin-status-row">
+                            <span>🟡 En prueba</span>
+                            <span>${formatNumber(item.subscriptions_trial)}</span>
+                        </div>
+                    </article>
+
+                    <article class="superadmin-status-card">
+                        <strong>Actividad</strong>
+                        <div class="superadmin-status-row">
+                            <span>🎫 Turnos de hoy</span>
+                            <span>${formatNumber(item.tickets_today)}</span>
+                        </div>
+                        <div class="superadmin-status-row">
+                            <span>💰 Movimientos financieros</span>
+                            <span>${formatNumber(item.financial_entries_total)}</span>
+                        </div>
+                    </article>
+                </div>
+            `;
+        }
+
+        async function loadDashboard() {
+            const dashboardContent = document.getElementById("dashboardContent");
+            const refreshButton = document.getElementById("refreshDashboardButton");
+
+            if (dashboardContent) {
+                dashboardContent.innerHTML = `
+                    <div class="superadmin-loading">Cargando indicadores...</div>
+                `;
+            }
+
+            if (refreshButton) {
+                refreshButton.disabled = true;
+            }
+
+            try {
+                const {
+                    data,
+                    error
+                } = await client.rpc("superadmin_dashboard_summary");
+
+                if (error) {
+                    throw error;
+                }
+
+                renderDashboard(data);
+
+            } catch (error) {
+                console.error("ERROR CARGANDO DASHBOARD SUPERADMIN:", error);
+
+                if (dashboardContent) {
+                    dashboardContent.innerHTML = `
+                        <div class="superadmin-error">
+                            No fue posible cargar el resumen global.
+                            <br>
+                            <small>${escapeHtml(error && error.message ? error.message : "Error desconocido.")}</small>
+                        </div>
+                    `;
+                }
+
+            } finally {
+                if (refreshButton) {
+                    refreshButton.disabled = false;
+                }
+            }
+        }
+
+        function normalizeStatus(value) {
+            return String(value || "").trim().toUpperCase();
+        }
+
+        function businessStatusLabel(status) {
+            const normalized = normalizeStatus(status);
+
+            if (normalized === "ACTIVE") {
+                return {
+                    label: "Activa",
+                    className: "active"
+                };
+            }
+
+            if (normalized === "TRIAL") {
+                return {
+                    label: "En prueba",
+                    className: "trial"
+                };
+            }
+
+            return {
+                label: normalized || "Sin estado",
+                className: "other"
+            };
+        }
+
+        function formatDate(value) {
+            if (!value) {
+                return "No disponible";
+            }
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                return "No disponible";
+            }
+
+            return new Intl.DateTimeFormat("es-CO", {
+                dateStyle: "medium"
+            }).format(date);
+        }
+
+        function renderBusinesses(data) {
+            const businessesContent =
+                document.getElementById("businessesContent");
+
+            if (!businessesContent) {
+                return;
+            }
+
+            const businesses = Array.isArray(data) ? data : [];
+
+            if (businesses.length === 0) {
+                businessesContent.innerHTML = `
+                    <div class="superadmin-loading">
+                        No hay barberías registradas.
+                    </div>
+                `;
+                return;
+            }
+
+            businessesContent.innerHTML = `
+                <div class="superadmin-businesses">
+                    ${businesses.map(function(business) {
+                        const status =
+                            businessStatusLabel(
+                                business.subscription_status
+                            );
+
+                        return `
+                            <article class="superadmin-business-card">
+                                <div class="superadmin-business-head">
+                                    <div>
+                                        <h4>${escapeHtml(business.name)}</h4>
+                                        <div class="superadmin-business-meta">
+                                            ${escapeHtml(business.city || "Ciudad no disponible")}
+                                            · Plan ${escapeHtml(
+                                                String(business.plan || "—").toUpperCase()
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <span class="superadmin-business-badge ${status.className}">
+                                        ${escapeHtml(status.label)}
+                                    </span>
+                                </div>
+
+                                <div class="superadmin-business-stats">
+                                    <div class="superadmin-business-stat">
+                                        <strong>${formatNumber(business.barbers_count)}</strong>
+                                        <span>Barberos</span>
+                                    </div>
+
+                                    <div class="superadmin-business-stat">
+                                        <strong>${formatNumber(business.services_count)}</strong>
+                                        <span>Servicios</span>
+                                    </div>
+
+                                    <div class="superadmin-business-stat">
+                                        <strong>${formatNumber(business.tickets_count)}</strong>
+                                        <span>Turnos</span>
+                                    </div>
+                                </div>
+
+                                <div class="superadmin-business-details">
+                                    <div>📞 Teléfono: ${escapeHtml(business.phone || "No registrado")}</div>
+                                    <div>🔗 QR: ${escapeHtml(business.qr_slug || "No registrado")}</div>
+                                    <div>🌎 Zona horaria: ${escapeHtml(business.timezone || "No registrada")}</div>
+                                    <div>📅 Creada: ${escapeHtml(formatDate(business.created_at))}</div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    class="btn secondary"
+                                    style="width:100%;margin-top:14px;"
+                                    onclick="showBusinessDetail('${business.id}')"
+                                >
+                                    📊 Ver detalle y estadísticas
+                                </button>
+                            </article>
+                        `;
+                    }).join("")}
+                </div>
+            `;
+        }
+
+        function hideBusinessDetailView() {
+            const view = document.getElementById("businessDetailView");
+            if (view) view.style.display = "none";
+        }
+
+        function localBusinessDateInputValue(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, "0");
+            const d = String(date.getDate()).padStart(2, "0");
+            return `${y}-${m}-${d}`;
+        }
+
+        function setBusinessStatsPreset(days) {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - (Number(days) - 1));
+
+            const startInput = document.getElementById("businessStatsStart");
+            const endInput = document.getElementById("businessStatsEnd");
+
+            if (startInput) startInput.value = localBusinessDateInputValue(start);
+            if (endInput) endInput.value = localBusinessDateInputValue(end);
+
+            loadBusinessStatistics();
+        }
+
+        function initializeBusinessStatsDates() {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - 29);
+
+            const startInput = document.getElementById("businessStatsStart");
+            const endInput = document.getElementById("businessStatsEnd");
+
+            if (startInput && !startInput.value) startInput.value = localBusinessDateInputValue(start);
+            if (endInput && !endInput.value) endInput.value = localBusinessDateInputValue(end);
+        }
+
+        function renderBusinessStatistics(row) {
+            const container = document.getElementById("businessStatisticsContent");
+            if (!container) return;
+
+            if (!row) {
+                container.innerHTML = `<div class="superadmin-loading">No se encontraron datos para esta barbería.</div>`;
+                return;
+            }
+
+            let planDistribution = row.plan_distribution || {};
+            let dailyTickets = row.daily_tickets || [];
+            let barberPerformance = row.barber_performance || [];
+
+            if (typeof planDistribution === "string") {
+                try { planDistribution = JSON.parse(planDistribution); } catch (_) { planDistribution = {}; }
+            }
+            if (typeof dailyTickets === "string") {
+                try { dailyTickets = JSON.parse(dailyTickets); } catch (_) { dailyTickets = []; }
+            }
+            if (typeof barberPerformance === "string") {
+                try { barberPerformance = JSON.parse(barberPerformance); } catch (_) { barberPerformance = []; }
+            }
+
+            const planRows = Object.entries(planDistribution).length
+                ? Object.entries(planDistribution).map(([plan, total]) => `<tr><td>${escapeHtml(plan)}</td><td>${formatNumber(total)}</td></tr>`).join("")
+                : `<tr><td colspan="2">Sin suscripción activa o en prueba.</td></tr>`;
+
+            const dailyRows = Array.isArray(dailyTickets) && dailyTickets.length
+                ? dailyTickets.map(item => `
+                    <tr>
+                        <td>${escapeHtml(item.date || "")}</td>
+                        <td>${formatNumber(item.total)}</td>
+                        <td>${formatNumber(item.done)}</td>
+                        <td>${formatNumber(item.no_show)}</td>
+                        <td>${formatNumber(item.cancelled)}</td>
+                    </tr>
+                `).join("")
+                : `<tr><td colspan="5">Sin datos de turnos en el período.</td></tr>`;
+
+            const barberRows = Array.isArray(barberPerformance) && barberPerformance.length
+                ? barberPerformance.map(item => `
+                    <tr>
+                        <td>${escapeHtml(item.name || "Sin nombre")}</td>
+                        <td>${formatNumber(item.tickets_total)}</td>
+                        <td>${formatNumber(item.tickets_done)}</td>
+                        <td>${formatNumber(item.tickets_no_show)}</td>
+                        <td>${formatNumber(item.tickets_cancelled)}</td>
+                    </tr>
+                `).join("")
+                : `<tr><td colspan="5">No hay barberos registrados.</td></tr>`;
+
+            const subscriptionStatus = row.subscription_status_current || row.subscription_status || "Sin estado";
+            const subscriptionEnd = row.subscription_period_end ? formatDate(row.subscription_period_end) : "No registrada";
+
+            container.innerHTML = `
+                <div class="superadmin-readonly-note">
+                    📍 <strong>${escapeHtml(row.business_name || "Barbería")}</strong> · ${escapeHtml(row.city || "Ciudad no disponible")} · Plan ${escapeHtml(String(row.plan || "—").toUpperCase())} · Estado ${escapeHtml(subscriptionStatus)}
+                </div>
+
+                <p class="muted" style="margin:0 0 14px;">Período: <strong>${escapeHtml(row.period_start || "")}</strong> → <strong>${escapeHtml(row.period_end || "")}</strong></p>
+
+                <div class="superadmin-global-stats-grid">
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">👤 Barberos activos</div><div class="superadmin-global-stat-value">${formatNumber(row.barbers_active)}</div><div class="superadmin-global-stat-note">De ${formatNumber(row.barbers_total)} registrados</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">✂️ Servicios activos</div><div class="superadmin-global-stat-value">${formatNumber(row.services_active)}</div><div class="superadmin-global-stat-note">De ${formatNumber(row.services_total)} configurados</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">🎫 Turnos</div><div class="superadmin-global-stat-value">${formatNumber(row.tickets_total)}</div><div class="superadmin-global-stat-note">Generados en el período</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">✅ Atendidos</div><div class="superadmin-global-stat-value">${formatNumber(row.tickets_done)}</div><div class="superadmin-global-stat-note">Estado done</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">🚫 No presentados</div><div class="superadmin-global-stat-value">${formatNumber(row.tickets_no_show)}</div><div class="superadmin-global-stat-note">Estado no_show</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">❌ Cancelados</div><div class="superadmin-global-stat-value">${formatNumber(row.tickets_cancelled)}</div><div class="superadmin-global-stat-note">Estado cancelled</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">💰 Ingreso estimado</div><div class="superadmin-global-stat-value">${formatMoneyGlobal(row.estimated_revenue)}</div><div class="superadmin-global-stat-note">Servicios de turnos atendidos</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">💳 Pagos aprobados</div><div class="superadmin-global-stat-value">${formatMoneyGlobal(row.payment_amount)}</div><div class="superadmin-global-stat-note">${formatNumber(row.payment_count)} pagos en el período</div></article>
+                </div>
+
+                <div class="superadmin-stats-panels">
+                    <section class="superadmin-stats-panel">
+                        <h4>💳 Suscripción</h4>
+                        <table class="superadmin-stats-table"><tbody>
+                            <tr><td>Plan</td><td>${escapeHtml(String(row.plan || "—").toUpperCase())}</td></tr>
+                            <tr><td>Estado</td><td>${escapeHtml(subscriptionStatus)}</td></tr>
+                            <tr><td>Fin del período</td><td>${escapeHtml(subscriptionEnd)}</td></tr>
+                        </tbody></table>
+                    </section>
+                    <section class="superadmin-stats-panel">
+                        <h4>💳 Distribución de planes</h4>
+                        <table class="superadmin-stats-table"><thead><tr><th>Plan</th><th>Cantidad</th></tr></thead><tbody>${planRows}</tbody></table>
+                    </section>
+                </div>
+
+                <section class="superadmin-stats-panel" style="margin-top:14px;">
+                    <h4>👤 Rendimiento por barbero</h4>
+                    <div style="overflow-x:auto;">
+                        <table class="superadmin-stats-table" style="min-width:700px;">
+                            <thead><tr><th>Barbero</th><th>Turnos</th><th>Atendidos</th><th>No presentados</th><th>Cancelados</th></tr></thead>
+                            <tbody>${barberRows}</tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <div class="superadmin-stats-panels" style="margin-top:14px;">
+                    <section class="superadmin-stats-panel">
+                        <h4>🎫 Estado de turnos</h4>
+                        <table class="superadmin-stats-table"><tbody>
+                            <tr><td>Atendidos</td><td>${formatNumber(row.tickets_done)}</td></tr>
+                            <tr><td>No presentados</td><td>${formatNumber(row.tickets_no_show)}</td></tr>
+                            <tr><td>Cancelados</td><td>${formatNumber(row.tickets_cancelled)}</td></tr>
+                            <tr><td>En espera</td><td>${formatNumber(row.tickets_waiting)}</td></tr>
+                            <tr><td>En atención</td><td>${formatNumber(row.tickets_serving)}</td></tr>
+                        </tbody></table>
+                    </section>
+                    <section class="superadmin-stats-panel">
+                        <h4>📍 Información de la barbería</h4>
+                        <table class="superadmin-stats-table"><tbody>
+                            <tr><td>Ciudad</td><td>${escapeHtml(row.city || "No registrada")}</td></tr>
+                            <tr><td>Teléfono</td><td>${escapeHtml(row.phone || "No registrado")}</td></tr>
+                            <tr><td>QR</td><td>${escapeHtml(row.qr_slug || "No registrado")}</td></tr>
+                            <tr><td>Zona horaria</td><td>${escapeHtml(row.timezone || "America/Bogota")}</td></tr>
+                        </tbody></table>
+                    </section>
+                </div>
+
+                <section class="superadmin-stats-panel" style="margin-top:14px;">
+                    <h4>📅 Evolución diaria de turnos</h4>
+                    <div style="overflow-x:auto;">
+                        <table class="superadmin-stats-table" style="min-width:620px;">
+                            <thead><tr><th>Fecha</th><th>Total</th><th>Atendidos</th><th>No presentados</th><th>Cancelados</th></tr></thead>
+                            <tbody>${dailyRows}</tbody>
+                        </table>
+                    </div>
+                </section>
+            `;
+        }
+
+        async function loadBusinessStatistics() {
+            const container = document.getElementById("businessStatisticsContent");
+            const businessId = window.selectedSuperadminBusinessId;
+            initializeBusinessStatsDates();
+
+            const start = document.getElementById("businessStatsStart")?.value;
+            const end = document.getElementById("businessStatsEnd")?.value;
+
+            if (!businessId || !start || !end) return;
+
+            if (container) container.innerHTML = `<div class="superadmin-loading">Cargando estadísticas de la barbería...</div>`;
+
+            try {
+                const { data, error } = await client.rpc("superadmin_business_statistics", {
+                    p_business_id: businessId,
+                    p_start_date: start,
+                    p_end_date: end
+                });
+
+                if (error) throw error;
+
+                const row = Array.isArray(data) ? data[0] : data;
+                renderBusinessStatistics(row);
+            } catch (error) {
+                console.error("ERROR CARGANDO ESTADÍSTICAS DE BARBERÍA:", error);
+                if (container) {
+                    container.innerHTML = `<div class="superadmin-error">No fue posible cargar las estadísticas de la barbería.<br><small>${escapeHtml(error?.message || "Error desconocido.")}</small></div>`;
+                }
+            }
+        }
+
+        async function showBusinessDetail(businessId) {
+            hideAuditView();
+            if (!businessId) return;
+
+            window.selectedSuperadminBusinessId = businessId;
+
+            const views = [
+                "dashboardView",
+                "businessesView",
+                "usersView",
+                "subscriptionsView",
+                "plansView",
+                "globalStatisticsView"
+            ];
+            views.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.style.display = "none";
+            });
+
+            const view = document.getElementById("businessDetailView");
+            const modules = document.querySelector(".superadmin-grid");
+            if (view) view.style.display = "block";
+            if (modules) modules.style.display = "none";
+
+            initializeBusinessStatsDates();
+            await loadBusinessStatistics();
+        }
+
+        async function loadBusinesses() {
+            const businessesContent =
+                document.getElementById("businessesContent");
+
+            if (businessesContent) {
+                businessesContent.innerHTML = `
+                    <div class="superadmin-loading">
+                        Cargando barberías...
+                    </div>
+                `;
+            }
+
+            try {
+                const {
+                    data,
+                    error
+                } = await client.rpc("superadmin_businesses_list");
+
+                if (error) {
+                    throw error;
+                }
+
+                renderBusinesses(data);
+
+            } catch (error) {
+                console.error(
+                    "ERROR CARGANDO BARBERÍAS SUPERADMIN:",
+                    error
+                );
+
+                if (businessesContent) {
+                    businessesContent.innerHTML = `
+                        <div class="superadmin-error">
+                            No fue posible cargar las barberías.
+                            <br>
+                            <small>${escapeHtml(
+                                error && error.message
+                                    ? error.message
+                                    : "Error desconocido."
+                            )}</small>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+
+        function userRoleClass(role) {
+            const normalized = String(role || "").toLowerCase();
+
+            if (normalized === "superadmin") {
+                return "superadmin";
+            }
+
+            if (normalized === "owner") {
+                return "owner";
+            }
+
+            return "other";
+        }
+
+        function userRoleLabel(role) {
+            const normalized = String(role || "").toLowerCase();
+
+            if (normalized === "superadmin") {
+                return "Superadmin";
+            }
+
+            if (normalized === "owner") {
+                return "Administrador";
+            }
+
+            return normalized || "Sin rol";
+        }
+
+        function formatDateTime(value) {
+            if (!value) {
+                return "No registrado";
+            }
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                return "No registrado";
+            }
+
+            return new Intl.DateTimeFormat("es-CO", {
+                dateStyle: "medium",
+                timeStyle: "short"
+            }).format(date);
+        }
+
+        function renderUsers(data) {
+            const usersContent =
+                document.getElementById("usersContent");
+
+            if (!usersContent) {
+                return;
+            }
+
+            const users = Array.isArray(data) ? data : [];
+
+            if (users.length === 0) {
+                usersContent.innerHTML = `
+                    <div class="superadmin-loading">
+                        No hay usuarios relacionados con la plataforma.
+                    </div>
+                `;
+                return;
+            }
+
+            usersContent.innerHTML = `
+                <div class="superadmin-users">
+                    ${users.map(function(user) {
+                        const roleClass =
+                            userRoleClass(user.role);
+
+                        return `
+                            <article class="superadmin-user-card">
+                                <div class="superadmin-user-head">
+                                    <div>
+                                        <h4>${escapeHtml(user.email || "Correo no disponible")}</h4>
+                                        <div class="superadmin-user-meta">
+                                            ${escapeHtml(
+                                                user.business_name
+                                                    ? user.business_name
+                                                    : "Acceso global de plataforma"
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <span class="superadmin-user-badge ${roleClass}">
+                                        ${escapeHtml(userRoleLabel(user.role))}
+                                    </span>
+                                </div>
+
+                                <div class="superadmin-user-grid">
+                                    <div class="superadmin-user-detail">
+                                        <strong>Estado de correo</strong>
+                                        ${user.email_confirmed ? "Confirmado" : "No confirmado"}
+                                    </div>
+
+                                    <div class="superadmin-user-detail">
+                                        <strong>Último acceso</strong>
+                                        ${escapeHtml(formatDateTime(user.last_sign_in_at))}
+                                    </div>
+
+                                    <div class="superadmin-user-detail">
+                                        <strong>Cuenta creada</strong>
+                                        ${escapeHtml(formatDateTime(user.account_created_at))}
+                                    </div>
+
+                                    <div class="superadmin-user-detail">
+                                        <strong>Barberos vinculados</strong>
+                                        ${formatNumber(user.barbers_count)}
+                                    </div>
+                                </div>
+
+                                ${
+                                    user.barbers
+                                        ? `
+                                            <div class="superadmin-user-barbers">
+                                                💈 Barberos: ${escapeHtml(user.barbers)}
+                                            </div>
+                                        `
+                                        : ""
+                                }
+                            </article>
+                        `;
+                    }).join("")}
+                </div>
+            `;
+        }
+
+        async function loadUsers() {
+            const usersContent =
+                document.getElementById("usersContent");
+
+            if (usersContent) {
+                usersContent.innerHTML = `
+                    <div class="superadmin-loading">
+                        Cargando usuarios...
+                    </div>
+                `;
+            }
+
+            try {
+                const {
+                    data,
+                    error
+                } = await client.rpc("superadmin_users_list");
+
+                if (error) {
+                    throw error;
+                }
+
+                renderUsers(data);
+
+            } catch (error) {
+                console.error(
+                    "ERROR CARGANDO USUARIOS SUPERADMIN:",
+                    error
+                );
+
+                if (usersContent) {
+                    usersContent.innerHTML = `
+                        <div class="superadmin-error">
+                            No fue posible cargar los usuarios.
+                            <br>
+                            <small>${escapeHtml(
+                                error && error.message
+                                    ? error.message
+                                    : "Error desconocido."
+                            )}</small>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+
+        function subscriptionStatusInfo(status) {
+            const normalized = normalizeStatus(status);
+
+            if (normalized === "ACTIVE") return { label: "Activa", className: "active" };
+            if (normalized === "TRIAL") return { label: "En prueba", className: "trial" };
+            if (normalized === "PAST_DUE") return { label: "Pago pendiente", className: "warn" };
+            if (normalized === "SUSPENDED") return { label: "Suspendida", className: "danger" };
+            if (normalized === "TRIAL_EXPIRED") return { label: "Prueba vencida", className: "danger" };
+            return { label: normalized || "Sin estado", className: "other" };
+        }
+
+        function subscriptionPlanLabel(plan) {
+            const normalized = String(plan || "").trim().toUpperCase();
+            return normalized || "Sin plan";
+        }
+
+        function billingCycleLabel(cycle) {
+            const normalized = String(cycle || "").trim().toLowerCase();
+            if (normalized === "monthly") return "Mensual";
+            if (normalized === "yearly") return "Anual";
+            return cycle || "No registrado";
+        }
+
+        function renderSubscriptions(data) {
+            const subscriptionsContent = document.getElementById("subscriptionsContent");
+            if (!subscriptionsContent) return;
+
+            const subscriptions = Array.isArray(data) ? data : [];
+            if (subscriptions.length === 0) {
+                subscriptionsContent.innerHTML = `<div class="superadmin-loading">No hay suscripciones registradas.</div>`;
+                return;
+            }
+
+            subscriptionsContent.innerHTML = `
+                <div class="superadmin-subscriptions">
+                    ${subscriptions.map(function(subscription) {
+                        const status = subscriptionStatusInfo(subscription.status);
+                        return `
+                            <article class="superadmin-subscription-card">
+                                <div class="superadmin-subscription-head">
+                                    <div>
+                                        <h4>${escapeHtml(subscription.business_name || "Barbería sin nombre")}</h4>
+                                        <div class="superadmin-subscription-meta">
+                                            ${escapeHtml(subscription.city || "Ciudad no disponible")} · Plan ${escapeHtml(subscriptionPlanLabel(subscription.plan))} · ${escapeHtml(billingCycleLabel(subscription.billing_cycle))}
+                                        </div>
+                                    </div>
+                                    <span class="superadmin-subscription-badge ${status.className}">${escapeHtml(status.label)}</span>
+                                </div>
+                                <div class="superadmin-subscription-grid">
+                                    <div class="superadmin-subscription-detail"><strong>Inicio del período</strong>${escapeHtml(formatDateTime(subscription.current_period_start))}</div>
+                                    <div class="superadmin-subscription-detail"><strong>Vencimiento</strong>${escapeHtml(formatDateTime(subscription.current_period_end))}</div>
+                                    <div class="superadmin-subscription-detail"><strong>Prueba</strong>${subscription.trial_ends_at ? `Hasta ${escapeHtml(formatDateTime(subscription.trial_ends_at))}` : "No aplica"}</div>
+                                    <div class="superadmin-subscription-detail"><strong>Período de gracia</strong>${subscription.grace_period_ends_at ? escapeHtml(formatDateTime(subscription.grace_period_ends_at)) : "No registrado"}</div>
+                                    <div class="superadmin-subscription-detail"><strong>Proveedor</strong>${escapeHtml(subscription.provider || "No registrado")}</div>
+                                    <div class="superadmin-subscription-detail"><strong>ID suscripción proveedor</strong>${escapeHtml(subscription.provider_subscription_id || "No registrado")}</div>
+                                </div>
+                                <div class="superadmin-subscription-note">
+                                    <div>📅 Creada: ${escapeHtml(formatDateTime(subscription.created_at))}</div>
+                                    <div>🔄 Actualizada: ${escapeHtml(formatDateTime(subscription.updated_at))}</div>
+                                    ${subscription.canceled_at ? `<div>⛔ Cancelada: ${escapeHtml(formatDateTime(subscription.canceled_at))}</div>` : ""}
+                                </div>
+                            </article>
+                        `;
+                    }).join("")}
+                </div>
+            `;
+        }
+
+        async function loadSubscriptions() {
+            const subscriptionsContent = document.getElementById("subscriptionsContent");
+            if (subscriptionsContent) subscriptionsContent.innerHTML = `<div class="superadmin-loading">Cargando suscripciones...</div>`;
+
+            try {
+                const { data, error } = await client.rpc("superadmin_subscriptions_list");
+                if (error) throw error;
+                renderSubscriptions(data);
+            } catch (error) {
+                console.error("ERROR CARGANDO SUSCRIPCIONES SUPERADMIN:", error);
+                if (subscriptionsContent) {
+                    subscriptionsContent.innerHTML = `
+                        <div class="superadmin-error">
+                            No fue posible cargar las suscripciones.<br>
+                            <small>${escapeHtml(error && error.message ? error.message : "Error desconocido.")}</small>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function formatMoneyCOP(value) {
+            const amount = Number(value || 0);
+            return new Intl.NumberFormat("es-CO", {
+                style: "currency",
+                currency: "COP",
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        let editingPlanCode = "";
+
+        function renderPlans(data) {
+            const plansContent = document.getElementById("plansContent");
+            if (!plansContent) return;
+
+            const plans = Array.isArray(data) ? data : [];
+
+            if (plans.length === 0) {
+                plansContent.innerHTML = `
+                    <div class="superadmin-loading">No hay planes configurados en el catálogo.</div>
+                `;
+                return;
+            }
+
+            plansContent.innerHTML = `
+                <div class="superadmin-plans">
+                    ${plans.map(function(plan) {
+                        const code = String(plan.code || "").toUpperCase();
+                        const isEditing = editingPlanCode === code;
+                        return `
+                            <article class="superadmin-plan-card">
+                                <div class="superadmin-plan-head">
+                                    <div>
+                                        <h4>${escapeHtml(plan.name || plan.code || "Plan")}</h4>
+                                    </div>
+                                    <span class="superadmin-plan-code">${escapeHtml(code)}</span>
+                                </div>
+
+                                <div class="superadmin-plan-prices">
+                                    <div class="superadmin-plan-price">
+                                        <span>Mensual</span>
+                                        <strong>${escapeHtml(formatMoneyCOP(plan.monthly_price_cop))}</strong>
+                                    </div>
+                                    <div class="superadmin-plan-price">
+                                        <span>Anual</span>
+                                        <strong>${escapeHtml(formatMoneyCOP(plan.yearly_price_cop))}</strong>
+                                    </div>
+                                </div>
+
+                                <div class="superadmin-plan-details">
+                                    <div>💈 Máximo de barberos: ${formatNumber(plan.max_active_barbers)}</div>
+                                    <div>📍 Máximo de sedes: ${formatNumber(plan.max_locations)}</div>
+                                    <div>⏳ Prueba: ${formatNumber(plan.trial_days)} días</div>
+                                    <div>📅 Catálogo desde: ${escapeHtml(formatDate(plan.created_at))}</div>
+                                </div>
+
+                                <div class="superadmin-plan-actions">
+                                    <button type="button" class="btn secondary" onclick="togglePlanEditor('${escapeHtml(code)}')">
+                                        ${isEditing ? "✕ Cancelar edición" : "✏️ Editar precios"}
+                                    </button>
+                                    ${isEditing ? `
+                                        <div class="superadmin-plan-edit">
+                                            <div class="superadmin-plan-edit-grid">
+                                                <label>Precio mensual (COP)
+                                                    <input id="planMonthly_${escapeHtml(code)}" type="number" min="0" step="1" value="${escapeHtml(String(plan.monthly_price_cop))}">
+                                                </label>
+                                                <label>Precio anual (COP)
+                                                    <input id="planYearly_${escapeHtml(code)}" type="number" min="0" step="1" value="${escapeHtml(String(plan.yearly_price_cop))}">
+                                                </label>
+                                            </div>
+                                            <label style="display:block;margin-top:10px;">Motivo del cambio
+                                                <textarea id="planReason_${escapeHtml(code)}" maxlength="500" placeholder="Ej. Actualización del catálogo comercial"></textarea>
+                                            </label>
+                                            <div class="superadmin-plan-edit-actions">
+                                                <button type="button" class="btn primary" onclick="savePlanPrices('${escapeHtml(code)}')">💾 Guardar cambio</button>
+                                                <button type="button" class="btn secondary" onclick="togglePlanEditor('${escapeHtml(code)}')">Cancelar</button>
+                                            </div>
+                                        </div>
+                                    ` : ""}
+                                </div>
+                            </article>
+                        `;
+                    }).join("")}
+                </div>
+            `;
+        }
+
+        function togglePlanEditor(planCode) {
+            const code = String(planCode || "").trim().toUpperCase();
+            editingPlanCode = editingPlanCode === code ? "" : code;
+
+            // Al abrir/cerrar el editor no volvemos a consultar Supabase.
+            // La consulta anterior vaciaba temporalmente el contenedor,
+            // cambiaba la altura de la página y provocaba el salto visual.
+            // Renderizamos con los datos ya cargados para mantener estable
+            // la posición del scroll.
+            renderPlans(window.superadminPlans || []);
+        }
+
+        async function savePlanPrices(planCode) {
+            const code = String(planCode || "").trim().toUpperCase();
+            const monthlyInput = document.getElementById(`planMonthly_${code}`);
+            const yearlyInput = document.getElementById(`planYearly_${code}`);
+            const reasonInput = document.getElementById(`planReason_${code}`);
+
+            if (!monthlyInput || !yearlyInput || !reasonInput) return;
+
+            const monthlyRaw = String(monthlyInput.value || "").trim();
+            const yearlyRaw = String(yearlyInput.value || "").trim();
+            const reason = String(reasonInput.value || "").trim();
+            const monthly = Number(monthlyRaw);
+            const yearly = Number(yearlyRaw);
+
+            if (!Number.isInteger(monthly) || monthly < 0) {
+                alert("El precio mensual debe ser un número entero mayor o igual a 0.");
+                monthlyInput.focus();
+                return;
+            }
+
+            if (!Number.isInteger(yearly) || yearly < 0) {
+                alert("El precio anual debe ser un número entero mayor o igual a 0.");
+                yearlyInput.focus();
+                return;
+            }
+
+            if (reason.length < 5) {
+                alert("Debes indicar un motivo de al menos 5 caracteres.");
+                reasonInput.focus();
+                return;
+            }
+
+            const currentPlan = (window.superadminPlans || []).find(function(item) {
+                return String(item.code || "").toUpperCase() === code;
+            });
+
+            if (currentPlan && Number(currentPlan.monthly_price_cop) === monthly && Number(currentPlan.yearly_price_cop) === yearly) {
+                alert("No hay cambios de precio para guardar.");
+                return;
+            }
+
+            const confirmed = window.confirm(
+                `¿Confirmas el cambio de precios del plan ${code}?\n\nMensual: ${formatMoneyCOP(monthly)}\nAnual: ${formatMoneyCOP(yearly)}\n\nMotivo: ${reason}`
+            );
+
+            if (!confirmed) return;
+
+            try {
+                const { data, error } = await client.rpc("superadmin_update_plan_prices", {
+                    p_plan_code: code,
+                    p_monthly_price_cop: monthly,
+                    p_yearly_price_cop: yearly,
+                    p_reason: reason
+                });
+
+                if (error) throw error;
+
+                const updated = Array.isArray(data) ? data[0] : data;
+                alert(`Precios del plan ${code} actualizados correctamente.`);
+                editingPlanCode = "";
+                await loadPlans();
+                await loadPlanPriceHistory();
+            } catch (error) {
+                console.error("ERROR ACTUALIZANDO PRECIOS SUPERADMIN:", error);
+                alert(error && error.message ? error.message : "No fue posible actualizar los precios.");
+            }
+        }
+
+        function renderPlanPriceHistory(data) {
+            const container = document.getElementById("planPriceHistoryContent");
+            if (!container) return;
+
+            const rows = Array.isArray(data) ? data : [];
+
+            if (rows.length === 0) {
+                container.innerHTML = `<div class="superadmin-loading">Aún no hay cambios registrados.</div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="superadmin-history-table-wrap">
+                    <table class="superadmin-history-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Plan</th>
+                                <th>Mensual</th>
+                                <th>Anual</th>
+                                <th>Superadmin</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.slice(0, 50).map(function(row) {
+                                return `
+                                    <tr>
+                                        <td>${escapeHtml(formatDateTime(row.changed_at))}</td>
+                                        <td><strong>${escapeHtml(String(row.plan_code || "").toUpperCase())}</strong></td>
+                                        <td>${escapeHtml(formatMoneyCOP(row.monthly_price_before))} → ${escapeHtml(formatMoneyCOP(row.monthly_price_after))}</td>
+                                        <td>${escapeHtml(formatMoneyCOP(row.yearly_price_before))} → ${escapeHtml(formatMoneyCOP(row.yearly_price_after))}</td>
+                                        <td>${escapeHtml(row.changed_by_email || "Cuenta Superadmin")}</td>
+                                        <td>${escapeHtml(row.reason || "")}</td>
+                                    </tr>
+                                `;
+                            }).join("")}
+                        </tbody>
+                    </table>
+                </div>
+                ${rows.length > 50 ? `<p class="muted" style="font-size:12px;margin:8px 0 0;">Mostrando los 50 cambios más recientes.</p>` : ""}
+            `;
+        }
+
+        async function loadPlanPriceHistory() {
+            const container = document.getElementById("planPriceHistoryContent");
+            if (container) container.innerHTML = `<div class="superadmin-loading">Cargando historial...</div>`;
+
+            try {
+                const { data, error } = await client.rpc("superadmin_plan_price_history");
+                if (error) throw error;
+                renderPlanPriceHistory(data);
+            } catch (error) {
+                console.error("ERROR CARGANDO HISTORIAL DE PRECIOS SUPERADMIN:", error);
+                if (container) {
+                    container.innerHTML = `
+                        <div class="superadmin-error">
+                            No fue posible cargar el historial de cambios.<br>
+                            <small>${escapeHtml(error && error.message ? error.message : "Error desconocido.")}</small>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        async function loadPlans() {
+            const plansContent = document.getElementById("plansContent");
+            if (plansContent) {
+                plansContent.innerHTML = `<div class="superadmin-loading">Cargando planes y precios...</div>`;
+            }
+
+            try {
+                const { data, error } = await client
+                    .from("subscription_plans")
+                    .select("code,name,monthly_price_cop,yearly_price_cop,max_active_barbers,max_locations,trial_days,created_at")
+                    .order("monthly_price_cop", { ascending: true });
+
+                if (error) throw error;
+
+                window.superadminPlans = Array.isArray(data) ? data : [];
+                renderPlans(window.superadminPlans);
+                await loadPlanPriceHistory();
+            } catch (error) {
+                console.error("ERROR CARGANDO PLANES SUPERADMIN:", error);
+                if (plansContent) {
+                    plansContent.innerHTML = `
+                        <div class="superadmin-error">
+                            No fue posible cargar el catálogo de planes.<br>
+                            <small>${escapeHtml(error && error.message ? error.message : "Error desconocido.")}</small>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function localDateInputValue(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, "0");
+            const d = String(date.getDate()).padStart(2, "0");
+            return `${y}-${m}-${d}`;
+        }
+
+        function setGlobalStatsPreset(days) {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - (Number(days) - 1));
+
+            const startInput = document.getElementById("globalStatsStart");
+            const endInput = document.getElementById("globalStatsEnd");
+
+            if (startInput) startInput.value = localDateInputValue(start);
+            if (endInput) endInput.value = localDateInputValue(end);
+
+            loadGlobalStatistics();
+        }
+
+        function initializeGlobalStatsDates() {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - 29);
+
+            const startInput = document.getElementById("globalStatsStart");
+            const endInput = document.getElementById("globalStatsEnd");
+
+            if (startInput && !startInput.value) startInput.value = localDateInputValue(start);
+            if (endInput && !endInput.value) endInput.value = localDateInputValue(end);
+        }
+
+        function formatMoneyGlobal(value) {
+            return new Intl.NumberFormat("es-CO", {
+                style: "currency",
+                currency: "COP",
+                maximumFractionDigits: 0
+            }).format(Number(value || 0));
+        }
+
+        function renderGlobalStatistics(row) {
+            const container = document.getElementById("globalStatisticsContent");
+            if (!container) return;
+
+            if (!row) {
+                container.innerHTML = `<div class="superadmin-loading">No hay datos para el período seleccionado.</div>`;
+                return;
+            }
+
+            let planDistribution = row.plan_distribution || {};
+            let dailyTickets = row.daily_tickets || [];
+
+            if (typeof planDistribution === "string") {
+                try { planDistribution = JSON.parse(planDistribution); } catch (_) { planDistribution = {}; }
+            }
+            if (typeof dailyTickets === "string") {
+                try { dailyTickets = JSON.parse(dailyTickets); } catch (_) { dailyTickets = []; }
+            }
+
+            const planRows = Object.entries(planDistribution).length
+                ? Object.entries(planDistribution).map(([plan, total]) => `<tr><td>${escapeHtml(plan)}</td><td>${formatNumber(total)}</td></tr>`).join("")
+                : `<tr><td colspan="2">Sin suscripciones activas o en prueba.</td></tr>`;
+
+            const dailyRows = Array.isArray(dailyTickets) && dailyTickets.length
+                ? dailyTickets.map(item => `
+                    <tr>
+                        <td>${escapeHtml(item.date || "")}</td>
+                        <td>${formatNumber(item.total)}</td>
+                        <td>${formatNumber(item.done)}</td>
+                        <td>${formatNumber(item.no_show)}</td>
+                        <td>${formatNumber(item.cancelled)}</td>
+                    </tr>
+                `).join("")
+                : `<tr><td colspan="5">Sin datos de turnos en el período.</td></tr>`;
+
+            container.innerHTML = `
+                <p class="muted" style="margin:0 0 14px;">Período: <strong>${escapeHtml(row.start_date || "")}</strong> → <strong>${escapeHtml(row.end_date || "")}</strong></p>
+
+                <div class="superadmin-global-stats-grid">
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">💈 Barberías</div><div class="superadmin-global-stat-value">${formatNumber(row.businesses_total)}</div><div class="superadmin-global-stat-note">${formatNumber(row.businesses_active)} activas · ${formatNumber(row.businesses_trial)} en prueba</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">👤 Barberos activos</div><div class="superadmin-global-stat-value">${formatNumber(row.barbers_active)}</div><div class="superadmin-global-stat-note">En toda la plataforma</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">✂️ Servicios activos</div><div class="superadmin-global-stat-value">${formatNumber(row.services_active)}</div><div class="superadmin-global-stat-note">Configurados actualmente</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">🎫 Turnos</div><div class="superadmin-global-stat-value">${formatNumber(row.tickets_total)}</div><div class="superadmin-global-stat-note">Generados en el período</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">✅ Atendidos</div><div class="superadmin-global-stat-value">${formatNumber(row.tickets_done)}</div><div class="superadmin-global-stat-note">Estado done</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">🚫 No presentados</div><div class="superadmin-global-stat-value">${formatNumber(row.tickets_no_show)}</div><div class="superadmin-global-stat-note">Estado no_show</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">💰 Ingreso estimado</div><div class="superadmin-global-stat-value">${formatMoneyGlobal(row.estimated_revenue)}</div><div class="superadmin-global-stat-note">Servicios de turnos atendidos</div></article>
+                    <article class="superadmin-global-stat"><div class="superadmin-global-stat-label">💳 Pagos aprobados</div><div class="superadmin-global-stat-value">${formatMoneyGlobal(row.payments_approved_amount)}</div><div class="superadmin-global-stat-note">${formatNumber(row.payments_approved)} pagos registrados</div></article>
+                </div>
+
+                <div class="superadmin-stats-panels">
+                    <section class="superadmin-stats-panel">
+                        <h4>💳 Distribución de planes</h4>
+                        <table class="superadmin-stats-table"><thead><tr><th>Plan</th><th>Cantidad</th></tr></thead><tbody>${planRows}</tbody></table>
+                    </section>
+                    <section class="superadmin-stats-panel">
+                        <h4>🎫 Estado de turnos</h4>
+                        <table class="superadmin-stats-table"><thead><tr><th>Estado</th><th>Cantidad</th></tr></thead><tbody>
+                            <tr><td>Atendidos</td><td>${formatNumber(row.tickets_done)}</td></tr>
+                            <tr><td>No presentados</td><td>${formatNumber(row.tickets_no_show)}</td></tr>
+                            <tr><td>Cancelados</td><td>${formatNumber(row.tickets_cancelled)}</td></tr>
+                            <tr><td>En espera</td><td>${formatNumber(row.tickets_waiting)}</td></tr>
+                            <tr><td>En atención</td><td>${formatNumber(row.tickets_serving)}</td></tr>
+                        </tbody></table>
+                    </section>
+                </div>
+
+                <section class="superadmin-stats-panel" style="margin-top:14px;">
+                    <h4>📅 Evolución diaria de turnos</h4>
+                    <div style="overflow-x:auto;">
+                        <table class="superadmin-stats-table" style="min-width:620px;">
+                            <thead><tr><th>Fecha</th><th>Total</th><th>Atendidos</th><th>No presentados</th><th>Cancelados</th></tr></thead>
+                            <tbody>${dailyRows}</tbody>
+                        </table>
+                    </div>
+                </section>
+            `;
+        }
+
+        async function loadGlobalStatistics() {
+            const container = document.getElementById("globalStatisticsContent");
+            initializeGlobalStatsDates();
+
+            const start = document.getElementById("globalStatsStart")?.value;
+            const end = document.getElementById("globalStatsEnd")?.value;
+
+            if (!start || !end) return;
+
+            if (container) container.innerHTML = `<div class="superadmin-loading">Cargando estadísticas...</div>`;
+
+            try {
+                const { data, error } = await client.rpc("superadmin_global_statistics", {
+                    p_start_date: start,
+                    p_end_date: end
+                });
+
+                if (error) throw error;
+
+                const row = Array.isArray(data) ? data[0] : data;
+                renderGlobalStatistics(row);
+            } catch (error) {
+                console.error("ERROR CARGANDO ESTADÍSTICAS GLOBALES:", error);
+                if (container) {
+                    container.innerHTML = `<div class="superadmin-error">No fue posible cargar las estadísticas globales.<br><small>${escapeHtml(error?.message || "Error desconocido.")}</small></div>`;
+                }
+            }
+        }
+
+        function hideAuditView() {
+            const auditView = document.getElementById("auditView");
+            if (auditView) {
+                auditView.style.display = "none";
+            }
+        }
+
+        function formatAuditSource(source) {
+            const normalized = String(source || "").toUpperCase();
+            if (normalized === "ADMINISTRATIVO") return "Administrativo";
+            if (normalized === "SUSCRIPCIÓN") return "Suscripción";
+            return normalized || "—";
+        }
+
+        function renderGlobalAudit(data) {
+            const container = document.getElementById("auditContent");
+            if (!container) return;
+
+            const rows = Array.isArray(data) ? data : [];
+
+            if (rows.length === 0) {
+                container.innerHTML = `<div class="superadmin-loading">No hay registros de auditoría disponibles.</div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse; min-width:760px;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left; padding:10px; border-bottom:1px solid #e5e7eb;">Fecha</th>
+                                <th style="text-align:left; padding:10px; border-bottom:1px solid #e5e7eb;">Origen</th>
+                                <th style="text-align:left; padding:10px; border-bottom:1px solid #e5e7eb;">Acción / evento</th>
+                                <th style="text-align:left; padding:10px; border-bottom:1px solid #e5e7eb;">Barbería</th>
+                                <th style="text-align:left; padding:10px; border-bottom:1px solid #e5e7eb;">Responsable</th>
+                                <th style="text-align:left; padding:10px; border-bottom:1px solid #e5e7eb;">Detalle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.map(function(row) {
+                                return `
+                                    <tr>
+                                        <td style="padding:10px; border-bottom:1px solid #eef0f3; white-space:nowrap;">${escapeHtml(formatDateTime(row.event_at))}</td>
+                                        <td style="padding:10px; border-bottom:1px solid #eef0f3;">${escapeHtml(formatAuditSource(row.source))}</td>
+                                        <td style="padding:10px; border-bottom:1px solid #eef0f3;">${escapeHtml(row.action || "—")}</td>
+                                        <td style="padding:10px; border-bottom:1px solid #eef0f3;">${escapeHtml(row.business_name || "Plataforma")}</td>
+                                        <td style="padding:10px; border-bottom:1px solid #eef0f3;">${escapeHtml(row.actor_email || "—")}</td>
+                                        <td style="padding:10px; border-bottom:1px solid #eef0f3;">${escapeHtml(row.description || "—")}</td>
+                                    </tr>
+                                `;
+                            }).join("")}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        async function loadGlobalAudit() {
+            const container = document.getElementById("auditContent");
+            if (container) {
+                container.innerHTML = `<div class="superadmin-loading">Cargando auditoría...</div>`;
+            }
+
+            try {
+                const { data, error } = await client.rpc("superadmin_global_audit", {
+                    p_limit: 100
+                });
+
+                if (error) throw error;
+                renderGlobalAudit(data);
+            } catch (error) {
+                console.error("ERROR CARGANDO AUDITORÍA GLOBAL:", error);
+                if (container) {
+                    container.innerHTML = `<div class="superadmin-error">No fue posible cargar la auditoría global.<br><small>${escapeHtml(error?.message || "Error desconocido.")}</small></div>`;
+                }
+            }
+        }
+
+        async function showAudit() {
+            hideBusinessDetailView();
+            const viewIds = [
+                "dashboardView",
+                "businessesView",
+                "businessDetailView",
+                "usersView",
+                "subscriptionsView",
+                "plansView",
+                "globalStatisticsView"
+            ];
+
+            viewIds.forEach(function(id) {
+                const element = document.getElementById(id);
+                if (element) element.style.display = "none";
+            });
+
+            const modules = document.querySelector(".superadmin-grid");
+            if (modules) modules.style.display = "none";
+
+            const view = document.getElementById("auditView");
+            if (view) view.style.display = "block";
+
+            await loadGlobalAudit();
+        }
+
+        async function showGlobalStatistics() {
+            hideAuditView();
+            hideBusinessDetailView();
+            const views = [
+                "dashboardView",
+                "businessesView",
+                "usersView",
+                "subscriptionsView",
+                "plansView"
+            ];
+            views.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.style.display = "none";
+            });
+
+            const view = document.getElementById("globalStatisticsView");
+            const modules = document.querySelector(".superadmin-grid");
+            if (view) view.style.display = "block";
+            if (modules) modules.style.display = "none";
+
+            initializeGlobalStatsDates();
+            await loadGlobalStatistics();
+        }
+
+        async function showPlans() {
+            hideAuditView();
+            hideBusinessDetailView();
+            const dashboard = document.getElementById("dashboardView");
+            const businessesView = document.getElementById("businessesView");
+            const usersView = document.getElementById("usersView");
+            const subscriptionsView = document.getElementById("subscriptionsView");
+            const plansView = document.getElementById("plansView");
+            const globalStatisticsView = document.getElementById("globalStatisticsView");
+            const modules = document.querySelector(".superadmin-grid");
+
+            if (dashboard) dashboard.style.display = "none";
+            if (businessesView) businessesView.style.display = "none";
+            if (usersView) usersView.style.display = "none";
+            if (subscriptionsView) subscriptionsView.style.display = "none";
+            if (plansView) plansView.style.display = "block";
+            if (globalStatisticsView) globalStatisticsView.style.display = "none";
+            if (modules) modules.style.display = "none";
+
+            await loadPlans();
+        }
+
+        async function showSubscriptions() {
+            hideAuditView();
+            hideBusinessDetailView();
+            const dashboard = document.getElementById("dashboardView");
+            const businessesView = document.getElementById("businessesView");
+            const usersView = document.getElementById("usersView");
+            const subscriptionsView = document.getElementById("subscriptionsView");
+            const plansView = document.getElementById("plansView");
+            const globalStatisticsView = document.getElementById("globalStatisticsView");
+            const modules = document.querySelector(".superadmin-grid");
+
+            if (dashboard) dashboard.style.display = "none";
+            if (businessesView) businessesView.style.display = "none";
+            if (usersView) usersView.style.display = "none";
+            if (subscriptionsView) subscriptionsView.style.display = "block";
+            if (plansView) plansView.style.display = "none";
+            if (globalStatisticsView) globalStatisticsView.style.display = "none";
+            if (modules) modules.style.display = "none";
+
+            await loadSubscriptions();
+        }
+
+        async function showUsers() {
+            hideAuditView();
+            hideBusinessDetailView();
+            const dashboard =
+                document.getElementById("dashboardView");
+
+            const businessesView =
+                document.getElementById("businessesView");
+
+            const usersView =
+                document.getElementById("usersView");
+
+            const subscriptionsView =
+                document.getElementById("subscriptionsView");
+
+            const plansView =
+                document.getElementById("plansView");
+
+            const modules =
+                document.querySelector(".superadmin-grid");
+
+            if (dashboard) {
+                dashboard.style.display = "none";
+            }
+
+            if (businessesView) {
+                businessesView.style.display = "none";
+            }
+
+            if (usersView) {
+                usersView.style.display = "block";
+            }
+
+            if (subscriptionsView) {
+                subscriptionsView.style.display = "none";
+            }
+
+            if (plansView) {
+                plansView.style.display = "none";
+            }
+
+            const globalStatisticsView = document.getElementById("globalStatisticsView");
+            if (globalStatisticsView) {
+                globalStatisticsView.style.display = "none";
+            }
+
+            if (modules) {
+                modules.style.display = "none";
+            }
+
+            await loadUsers();
+        }
+
+
+        function userRoleClass(role) {
+            const normalized = String(role || "").toLowerCase();
+
+            if (normalized === "superadmin") {
+                return "superadmin";
+            }
+
+            if (normalized === "owner") {
+                return "owner";
+            }
+
+            return "other";
+        }
+
+        function userRoleLabel(role) {
+            const normalized = String(role || "").toLowerCase();
+
+            if (normalized === "superadmin") {
+                return "Superadmin";
+            }
+
+            if (normalized === "owner") {
+                return "Administrador";
+            }
+
+            return normalized || "Sin rol";
+        }
+
+        function formatDateTime(value) {
+            if (!value) {
+                return "No registrado";
+            }
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                return "No registrado";
+            }
+
+            return new Intl.DateTimeFormat("es-CO", {
+                dateStyle: "medium",
+                timeStyle: "short"
+            }).format(date);
+        }
+
+        function renderUsers(data) {
+            const usersContent =
+                document.getElementById("usersContent");
+
+            if (!usersContent) {
+                return;
+            }
+
+            const users = Array.isArray(data) ? data : [];
+
+            if (users.length === 0) {
+                usersContent.innerHTML = `
+                    <div class="superadmin-loading">
+                        No hay usuarios relacionados con la plataforma.
+                    </div>
+                `;
+                return;
+            }
+
+            usersContent.innerHTML = `
+                <div class="superadmin-users">
+                    ${users.map(function(user) {
+                        const roleClass =
+                            userRoleClass(user.role);
+
+                        return `
+                            <article class="superadmin-user-card">
+                                <div class="superadmin-user-head">
+                                    <div>
+                                        <h4>${escapeHtml(user.email || "Correo no disponible")}</h4>
+                                        <div class="superadmin-user-meta">
+                                            ${escapeHtml(
+                                                user.business_name
+                                                    ? user.business_name
+                                                    : "Acceso global de plataforma"
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <span class="superadmin-user-badge ${roleClass}">
+                                        ${escapeHtml(userRoleLabel(user.role))}
+                                    </span>
+                                </div>
+
+                                <div class="superadmin-user-grid">
+                                    <div class="superadmin-user-detail">
+                                        <strong>Estado de correo</strong>
+                                        ${user.email_confirmed ? "Confirmado" : "No confirmado"}
+                                    </div>
+
+                                    <div class="superadmin-user-detail">
+                                        <strong>Último acceso</strong>
+                                        ${escapeHtml(formatDateTime(user.last_sign_in_at))}
+                                    </div>
+
+                                    <div class="superadmin-user-detail">
+                                        <strong>Cuenta creada</strong>
+                                        ${escapeHtml(formatDateTime(user.account_created_at))}
+                                    </div>
+
+                                    <div class="superadmin-user-detail">
+                                        <strong>Barberos vinculados</strong>
+                                        ${formatNumber(user.barbers_count)}
+                                    </div>
+                                </div>
+
+                                ${
+                                    user.barbers
+                                        ? `
+                                            <div class="superadmin-user-barbers">
+                                                💈 Barberos: ${escapeHtml(user.barbers)}
+                                            </div>
+                                        `
+                                        : ""
+                                }
+                            </article>
+                        `;
+                    }).join("")}
+                </div>
+            `;
+        }
+
+        async function loadUsers() {
+            const usersContent =
+                document.getElementById("usersContent");
+
+            if (usersContent) {
+                usersContent.innerHTML = `
+                    <div class="superadmin-loading">
+                        Cargando usuarios...
+                    </div>
+                `;
+            }
+
+            try {
+                const {
+                    data,
+                    error
+                } = await client.rpc("superadmin_users_list");
+
+                if (error) {
+                    throw error;
+                }
+
+                renderUsers(data);
+
+            } catch (error) {
+                console.error(
+                    "ERROR CARGANDO USUARIOS SUPERADMIN:",
+                    error
+                );
+
+                if (usersContent) {
+                    usersContent.innerHTML = `
+                        <div class="superadmin-error">
+                            No fue posible cargar los usuarios.
+                            <br>
+                            <small>${escapeHtml(
+                                error && error.message
+                                    ? error.message
+                                    : "Error desconocido."
+                            )}</small>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        async function showUsers() {
+            hideAuditView();
+            const dashboard =
+                document.getElementById("dashboardView");
+
+            const businessesView =
+                document.getElementById("businessesView");
+
+            const usersView =
+                document.getElementById("usersView");
+
+            const subscriptionsView =
+                document.getElementById("subscriptionsView");
+
+            const plansView =
+                document.getElementById("plansView");
+
+            const modules =
+                document.querySelector(".superadmin-grid");
+
+            if (dashboard) {
+                dashboard.style.display = "none";
+            }
+
+            if (businessesView) {
+                businessesView.style.display = "none";
+            }
+
+            if (usersView) {
+                usersView.style.display = "block";
+            }
+
+            const globalStatisticsView = document.getElementById("globalStatisticsView");
+            if (globalStatisticsView) {
+                globalStatisticsView.style.display = "none";
+            }
+
+            if (modules) {
+                modules.style.display = "none";
+            }
+
+            await loadUsers();
+        }
+
+        async function showBusinesses() {
+            hideAuditView();
+            hideBusinessDetailView();
+            const dashboard =
+                document.getElementById("dashboardView");
+
+            const businessesView =
+                document.getElementById("businessesView");
+
+            const usersView =
+                document.getElementById("usersView");
+
+            const subscriptionsView =
+                document.getElementById("subscriptionsView");
+
+            const plansView =
+                document.getElementById("plansView");
+
+            const modules =
+                document.querySelector(".superadmin-grid");
+
+            if (dashboard) {
+                dashboard.style.display = "none";
+            }
+
+            if (businessesView) {
+                businessesView.style.display = "block";
+            }
+
+            if (usersView) {
+                usersView.style.display = "none";
+            }
+
+            if (subscriptionsView) {
+                subscriptionsView.style.display = "none";
+            }
+
+            if (plansView) {
+                plansView.style.display = "none";
+            }
+
+            const globalStatisticsView = document.getElementById("globalStatisticsView");
+            if (globalStatisticsView) {
+                globalStatisticsView.style.display = "none";
+            }
+
+            if (modules) {
+                modules.style.display = "none";
+            }
+
+            await loadBusinesses();
+        }
+
+        function showHome() {
+            hideAuditView();
+            hideBusinessDetailView();
+            const dashboard =
+                document.getElementById("dashboardView");
+
+            const businessesView =
+                document.getElementById("businessesView");
+
+            const usersView =
+                document.getElementById("usersView");
+
+            const subscriptionsView =
+                document.getElementById("subscriptionsView");
+
+            const plansView =
+                document.getElementById("plansView");
+
+            const modules =
+                document.querySelector(".superadmin-grid");
+
+            if (businessesView) {
+                businessesView.style.display = "none";
+            }
+
+            if (usersView) {
+                usersView.style.display = "none";
+            }
+
+            if (subscriptionsView) {
+                subscriptionsView.style.display = "none";
+            }
+
+            if (plansView) {
+                plansView.style.display = "none";
+            }
+
+            const globalStatisticsView = document.getElementById("globalStatisticsView");
+            if (globalStatisticsView) {
+                globalStatisticsView.style.display = "none";
+            }
+
+            if (dashboard) {
+                dashboard.style.display = "block";
+            }
+
+            if (modules) {
+                modules.style.display = "grid";
+            }
+        }
+
+        async function checkSuperadminAccess() {
+            const accessState = document.getElementById("accessState");
+            const superadminApp = document.getElementById("superadminApp");
+
+            try {
+                const {
+                    data: sessionData,
+                    error: sessionError
+                } = await client.auth.getSession();
+
+                if (sessionError) {
+                    throw sessionError;
+                }
+
+                if (!sessionData || !sessionData.session) {
+                    window.location.href = "login.html";
+                    return;
+                }
+
+                const {
+                    data: isPlatformAdmin,
+                    error: platformAdminError
+                } = await client.rpc("is_platform_admin");
+
+                if (platformAdminError) {
+                    throw platformAdminError;
+                }
+
+                if (isPlatformAdmin !== true) {
+                    accessState.innerHTML = `
+                        <h2>⛔ Acceso no autorizado</h2>
+                        <p>Esta sección está reservada para Superadmin.</p>
+                    `;
+                    return;
+                }
+
+                accessState.style.display = "none";
+                superadminApp.style.display = "block";
+
+                await loadDashboard();
+
+            } catch (error) {
+                console.error("ERROR VERIFICANDO SUPERADMIN:", error);
+
+                accessState.innerHTML = `
+                    <h2>⚠️ No fue posible verificar el acceso</h2>
+                    <p>${escapeHtml(error && error.message ? error.message : "Error desconocido.")}</p>
+                    <button
+                        type="button"
+                        class="btn primary"
+                        onclick="window.location.reload()"
+                        style="margin-top:18px;"
+                    >
+                        🔄 Intentar nuevamente
+                    </button>
+                `;
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value === null || value === undefined ? "" : value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        async function logout() {
+            try {
+                await client.auth.signOut();
+            } catch (error) {
+                console.error("ERROR CERRANDO SESIÓN:", error);
+            }
+
+            window.location.href = "login.html";
+        }
+
+        checkSuperadminAccess();
+    </script>
+</body>
+</html>

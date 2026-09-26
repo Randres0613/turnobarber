@@ -258,7 +258,7 @@ async function loadBarberBusiness() {
             error: stationError
         } =
             await barberClient.rpc(
-                "get_my_barber_station"
+                "get_my_barber_station_with_profile"
             );
 
 
@@ -291,11 +291,17 @@ async function loadBarberBusiness() {
             station.business_city ||
             "";
 
+        // La estación puede traer directamente la imagen de la barbería.
+        // La usamos primero y dejamos el RPC de negocio como respaldo.
+        let profileImageUrl =
+            station.profile_image_url ||
+            null;
+
 
         /*
-         * get_my_barber_station es la fuente principal para el nombre
-         * de la barbería porque está diseñada específicamente para la
-         * estación del barbero. Intentamos obtener además la ciudad
+         * get_my_barber_station_with_profile es la fuente principal para los
+         * datos de la estación y la identidad de la barbería, incluyendo
+         * la imagen de perfil. Intentamos obtener además la ciudad
          * desde la información de negocio cuando el usuario tenga
          * acceso a ella. Si no está disponible, no rompemos la estación.
          */
@@ -325,6 +331,11 @@ async function loadBarberBusiness() {
 
                 }
 
+                if (business?.profile_image_url) {
+                    profileImageUrl =
+                        business.profile_image_url;
+                }
+
             }
 
         } catch (error) {
@@ -341,6 +352,7 @@ async function loadBarberBusiness() {
             id: station.business_id,
             name: station.business_name,
             city,
+            profileImageUrl,
             timezone: station.timezone || null
         };
 
@@ -576,30 +588,34 @@ function renderBarberDashboard() {
                     style="flex:1 1 280px; min-width:0;"
                 >
 
-                    <div
-                        style="
-                            display:flex;
-                            align-items:flex-start;
-                            gap:12px;
-                        "
-                    >
+                    <!-- Identidad principal: plataforma TurnoBarber 360 -->
+                    <div class="barber-platform-header">
+                        <img
+                            class="barber-platform-header-logo"
+                            src="assets/brand/icon-maestro.png"
+                            alt="Logo de TurnoBarber 360"
+                        >
+                        <span class="barber-platform-header-name">TURNOBARBER 360</span>
+                    </div>
 
-                        <div class="barber-dashboard-icon" aria-hidden="true">
+                    <!-- Identidad secundaria: barbería cliente -->
+                    <div class="barber-client-header">
+                        <div class="barber-dashboard-icon">
                             <img
-                                src="assets/brand/icon-maestro.png"
-                                alt=""
+                                src="${escapeBarberHtml(
+                                    barberBusiness?.profileImageUrl ||
+                                    "assets/brand/icon-maestro.png"
+                                )}"
+                                alt="${escapeBarberHtml(
+                                    barberBusiness?.name ||
+                                    barberProfile?.business_name ||
+                                    "Mi barbería"
+                                )}"
                             >
                         </div>
 
-                        <div>
-
-                            <div class="barber-brand-line">
-                                <span>TurnoBarber 360</span>
-                            </div>
-
-                            <h1
-                                class="barber-business-title"
-                            >
+                        <div class="barber-client-details">
+                            <h1 class="barber-business-title">
                                 ${escapeBarberHtml(
                                     barberBusiness?.name ||
                                     barberProfile?.business_name ||
@@ -609,13 +625,7 @@ function renderBarberDashboard() {
 
                             ${(barberBusiness?.city || barberProfile?.business_city)
                                 ? `
-                                    <p
-                                        style="
-                                            margin:0;
-                                            opacity:.7;
-                                            font-size:15px;
-                                        "
-                                    >
+                                    <p class="barber-client-city">
                                         ${escapeBarberHtml(
                                             barberBusiness?.city ||
                                             barberProfile?.business_city
@@ -623,9 +633,7 @@ function renderBarberDashboard() {
                                     </p>
                                   `
                                 : ""}
-
                         </div>
-
                     </div>
 
                     <div class="barber-profile-identity">

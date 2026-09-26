@@ -2243,11 +2243,172 @@ function renderStatisticsIndicatorsContent() {
 // MOSTRAR PANEL
 // ==========================================
 
+const ADMIN_HOME_STYLES = `
+<style id="turnobarber360-admin-home-styles">
+    .tb360-home {
+        display:flex;
+        flex-direction:column;
+        gap:14px;
+        padding-bottom:10px;
+    }
+    .tb360-home-hero {
+        display:grid;
+        grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);
+        gap:16px;
+        align-items:stretch;
+        padding:18px;
+        border-left:4px solid #2855D9;
+        background:linear-gradient(135deg,#ffffff 0%,#f7f9ff 100%);
+    }
+    .tb360-home-brand {
+        display:flex;
+        align-items:center;
+        gap:12px;
+        min-width:0;
+    }
+    .tb360-home-brand-mark {
+        width:58px;
+        height:58px;
+        display:grid;
+        place-items:center;
+        flex:0 0 58px;
+        border-radius:16px;
+        background:#eaf0ff;
+        color:#2855D9;
+        font-size:28px;
+        object-fit:cover;
+        overflow:hidden;
+    }
+    .tb360-home-meta {
+        display:flex;
+        flex-wrap:wrap;
+        gap:6px 12px;
+        margin-top:10px;
+        color:#667085;
+        font-size:12px;
+        line-height:1.4;
+    }
+    .tb360-home-meta span {
+        overflow-wrap:anywhere;
+    }
+    .settings-form-grid {
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:12px;
+    }
+    @media (max-width:520px) {
+        .settings-form-grid { grid-template-columns:1fr; }
+    }
+    .tb360-home-kicker { margin:0 0 4px; color:#667085; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+    .tb360-home-title { margin:0; color:#172033; font-size:clamp(21px,3vw,29px); line-height:1.1; }
+    .tb360-home-subtitle { margin:6px 0 0; color:#667085; font-size:13px; }
+    .tb360-home-status {
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        gap:5px;
+        padding:16px;
+        border-radius:16px;
+        background:#e9fbf1;
+        border:1px solid rgba(32,185,104,.16);
+    }
+    .tb360-home-status strong { color:#137545; font-size:17px; }
+    .tb360-home-status span { color:#47715b; font-size:13px; line-height:1.45; }
+    .tb360-home-metrics {
+        display:grid;
+        grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:10px;
+    }
+    .tb360-home-metric {
+        min-width:0;
+        padding:14px;
+        border:1px solid rgba(23,32,51,.07);
+        border-radius:15px;
+        background:#fff;
+        box-shadow:0 5px 16px rgba(23,32,51,.045);
+        display:flex;
+        align-items:center;
+        gap:12px;
+    }
+    .tb360-home-metric-icon {
+        width:44px;
+        height:44px;
+        flex:0 0 44px;
+        display:grid;
+        place-items:center;
+        border-radius:13px;
+        font-size:24px;
+        line-height:1;
+    }
+    .tb360-home-metric-copy { min-width:0; }
+    .tb360-home-metric strong { display:block; font-size:26px; line-height:1; color:#172033; }
+    .tb360-home-metric span { display:block; margin-top:8px; color:#667085; font-size:12px; }
+    .tb360-home-metric small { display:block; margin-top:5px; color:#667085; font-size:10px; }
+    .tb360-home-metric.waiting .tb360-home-metric-icon { background:#eaf0ff; }
+    .tb360-home-metric.attending .tb360-home-metric-icon { background:#fff5df; }
+    .tb360-home-metric.active .tb360-home-metric-icon { background:#e6f9ef; }
+    .tb360-home-metric.total .tb360-home-metric-icon { background:#eaf0ff; }
+    .tb360-home-metric.waiting { border-top:3px solid #2855D9; }
+    .tb360-home-metric.attending { border-top:3px solid #F4C84A; }
+    .tb360-home-metric.active { border-top:3px solid #20B968; }
+    .tb360-home-metric.total { border-top:3px solid #7c8cff; }
+    .tb360-home-main-grid {
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:14px;
+    }
+    .tb360-home-panel {
+        min-width:0;
+        padding:17px;
+        border:1px solid rgba(23,32,51,.07);
+        border-radius:16px;
+        background:#fff;
+        box-shadow:0 5px 16px rgba(23,32,51,.045);
+    }
+    .tb360-home-panel-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    .tb360-home-panel-head h3 { margin:0; color:#172033; font-size:16px; }
+    .tb360-home-panel-head .mini-label { color:#667085; font-size:11px; }
+    .tb360-home-empty { display:flex; align-items:center; gap:12px; padding:13px; border-radius:12px; background:#f5f7fa; color:#667085; font-size:13px; }
+    .tb360-home-empty .symbol { font-size:22px; }
+    .tb360-home-current-list { display:flex; flex-direction:column; gap:8px; }
+    .tb360-home-current-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 12px; border-radius:12px; background:#f5f7fa; }
+    .tb360-home-current-item strong { color:#172033; font-size:13px; }
+    .tb360-home-current-item span { color:#2855D9; font-weight:800; font-size:14px; }
+    .tb360-home-activity { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0; }
+    .tb360-home-activity li { padding:10px 0; border-bottom:1px solid rgba(23,32,51,.08); font-size:13px; }
+    .tb360-home-activity li:last-child { border-bottom:0; padding-bottom:0; }
+    .tb360-home-barbers { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .tb360-home-barber { padding:13px; border-radius:13px; background:#f7f9fc; border:1px solid rgba(23,32,51,.06); min-width:0; }
+    .tb360-home-barber strong { display:block; color:#172033; font-size:13px; overflow-wrap:anywhere; }
+    .tb360-home-barber .state { display:inline-flex; align-items:center; gap:5px; margin-top:7px; color:#137545; font-size:11px; font-weight:700; }
+    .tb360-home-barber .state::before { content:""; width:7px; height:7px; border-radius:50%; background:#20B968; }
+    .tb360-home-barber .state.busy { color:#8b6400; }
+    .tb360-home-barber .state.busy::before { background:#F4C84A; }
+    .tb360-home-barber .state.off { color:#667085; }
+    .tb360-home-barber .state.off::before { background:#98a2b3; }
+    .tb360-home-barber small { display:block; margin-top:8px; color:#667085; font-size:11px; }
+    .tb360-home-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .tb360-home-actions .btn { min-height:46px; }
+    @media (max-width:760px) {
+        .tb360-home-hero, .tb360-home-main-grid { grid-template-columns:1fr; }
+        .tb360-home-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .tb360-home-barbers { grid-template-columns:1fr; }
+        .tb360-home-brand-mark { width:48px; height:48px; flex-basis:48px; }
+        .tb360-home-actions { grid-template-columns:1fr; }
+    }
+    @media (max-width:420px) {
+        .tb360-home-metrics { gap:8px; }
+        .tb360-home-metric { padding:12px; }
+        .tb360-home-metric strong { font-size:23px; }
+    }
+</style>`;
+
 function renderPanel() {
 
     adminApp.className = "admin-shell";
 
     adminApp.innerHTML = `
+        ${ADMIN_HOME_STYLES}
         <section class="admin-tab ${activeAdminTab === "home" ? "active" : ""}" data-admin-tab="home">
             ${renderAdminHome()}
         </section>
@@ -2326,54 +2487,147 @@ function renderAdminNavigation() {
     `;
 }
 
+function formatBusinessTime(value) {
+    if (!value) return "";
+    const match = String(value).match(/^(\d{2}):(\d{2})/);
+    if (!match) return String(value);
+    const hour = Number(match[1]);
+    const minute = match[2];
+    const suffix = hour >= 12 ? "p. m." : "a. m.";
+    const normalizedHour = hour % 12 || 12;
+    return `${normalizedHour}:${minute} ${suffix}`;
+}
+
+function getBusinessHoursLabel() {
+    if (!business?.opening_time || !business?.closing_time) {
+        return "Horario no configurado";
+    }
+    return `${formatBusinessTime(business.opening_time)} – ${formatBusinessTime(business.closing_time)}`;
+}
+
+function getBusinessTodayLabel() {
+    const timezone = business?.timezone || "America/Bogota";
+    try {
+        return new Intl.DateTimeFormat("es-CO", {
+            timeZone: timezone,
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric"
+        }).format(new Date());
+    } catch (error) {
+        return "Fecha no disponible";
+    }
+}
+
+function getBusinessProfileImage() {
+    return business?.profile_image_url || "assets/brand/icon-maestro.png";
+}
+
 function renderAdminHome() {
     const waiting = barberQueues.reduce((total, barber) => total + Number(barber.waiting_count || 0), 0);
     const activeBarbers = myBarbers.filter(barber => barber.active !== false).length;
     const attending = barberQueues.filter(barber => barber.current_ticket_id);
+    const nextQueue = barberQueues.find(barber => barber.next_ticket_code);
+    const nextTicket = nextQueue?.next_ticket_code || "—";
+    const statusTitle = attending.length
+        ? "Atención en curso"
+        : waiting > 0
+            ? "Clientes en espera"
+            : "Todo tranquilo por ahora";
+    const statusDescription = attending.length
+        ? `${attending.length} ${attending.length === 1 ? "barbero está atendiendo" : "barberos están atendiendo"}.`
+        : waiting > 0
+            ? `${waiting} ${waiting === 1 ? "cliente está" : "clientes están"} esperando su turno.`
+            : `No hay clientes esperando ni turnos en atención.`;
+
+    const currentContent = attending.length
+        ? `<div class="tb360-home-current-list">${attending.map(barber => `
+            <div class="tb360-home-current-item">
+                <strong>💈 ${escapeHtml(barber.barber_name)}${barber.current_service_name ? ` · ${escapeHtml(barber.current_service_name)}` : ""}</strong>
+                <span>${escapeHtml(barber.current_ticket_code || "—")}</span>
+            </div>
+        `).join("")}</div>`
+        : `<div class="tb360-home-empty"><span class="symbol">✓</span><span>No hay turnos en atención en este momento.</span></div>`;
+
+    const nextContent = nextQueue
+        ? `<div class="tb360-home-current-item"><strong>💈 ${escapeHtml(nextQueue.barber_name || "Barbero")}</strong><span>${escapeHtml(nextTicket)}</span></div><p class="muted" style="margin:10px 0 0;font-size:12px;">Siguiente turno detectado en una de las colas.</p>`
+        : `<div class="tb360-home-empty"><span class="symbol">—</span><span>No hay turnos pendientes en las colas actuales.</span></div>`;
+
+    const barberContent = myBarbers.length
+        ? `<div class="tb360-home-barbers">${myBarbers.map(barber => {
+            const queue = barberQueues.find(item => item.barber_id === barber.id) || {};
+            const state = barber.active === false ? "off" : queue.current_ticket_id ? "busy" : "";
+            const stateLabel = barber.active === false ? "Inactivo" : queue.current_ticket_id ? "Atendiendo" : "Disponible";
+            return `<div class="tb360-home-barber"><strong>${escapeHtml(barber.name)}</strong><span class="state ${state}">${stateLabel}</span><small>En espera: ${Number(queue.waiting_count || 0)}</small></div>`;
+        }).join("")}</div>`
+        : `<div class="tb360-home-empty"><span class="symbol">💈</span><span>Aún no hay barberos registrados.</span></div>`;
 
     return `
-        <section class="card admin-current">
-            <div class="queue-header">
-                <div>
-                    <p class="muted" style="margin:0;">${escapeHtml(business.name)}</p>
-                    <h2>Panel de hoy</h2>
-                </div>
-                <span class="badge">● ONLINE</span>
-            </div>
-
-            <div style="margin-top:14px;">
-                <p class="muted" style="margin:0 0 10px;">Atención actual</p>
-                ${attending.length
-                    ? `<div style="display:flex;flex-direction:column;gap:8px;">${attending.map(barber => `
-                        <div class="status-box" style="margin:0;">
-                            <strong>💈 ${escapeHtml(barber.barber_name)}</strong>
-                            <span style="margin-left:8px;">${escapeHtml(barber.current_ticket_code || "—")}</span>
-                            ${barber.current_service_name ? `<span class="muted" style="margin-left:8px;">· ${escapeHtml(barber.current_service_name)}</span>` : ""}
+        <div class="tb360-home">
+            <section class="card tb360-home-hero">
+                <div class="tb360-home-brand">
+                    <img class="tb360-home-brand-mark" src="${escapeHtml(getBusinessProfileImage())}" alt="Imagen de ${escapeHtml(business.name)}" onerror="this.onerror=null;this.src='assets/brand/icon-maestro.png';">
+                    <div>
+                        <p class="tb360-home-kicker">Resumen de la jornada</p>
+                        <h2 class="tb360-home-title">${escapeHtml(business.name)}</h2>
+                        <p class="tb360-home-subtitle">Panel operativo de hoy · TurnoBarber 360</p>
+                        <div class="tb360-home-meta">
+                            <span>📍 ${escapeHtml(business.city || "Ciudad no configurada")}</span>
+                            <span>📅 ${escapeHtml(getBusinessTodayLabel())}</span>
+                            <span>🕒 ${escapeHtml(getBusinessHoursLabel())}</span>
                         </div>
-                    `).join("")}</div>`
-                    : `<p class="muted" style="margin:0;">No hay turnos en atención.</p>`}
-            </div>
-        </section>
+                    </div>
+                </div>
+                <div class="tb360-home-status">
+                    <strong>✓ ${statusTitle}</strong>
+                    <span>${statusDescription}</span>
+                </div>
+            </section>
 
-        <section class="admin-summary">
-            <div class="admin-stat"><strong>${waiting}</strong><span>Esperando</span></div>
-            <div class="admin-stat"><strong>${activeBarbers}</strong><span>Barberos activos</span></div>
-            <div class="admin-stat"><strong>${attending.length}</strong><span>Atendiendo</span></div>
-            <div class="admin-stat"><strong>${myBarbers.length}</strong><span>Total barberos</span></div>
-        </section>
+            <section class="tb360-home-metrics" aria-label="Indicadores actuales">
+                <div class="tb360-home-metric waiting">
+                    <div class="tb360-home-metric-icon" aria-hidden="true">👥</div>
+                    <div class="tb360-home-metric-copy"><strong>${waiting}</strong><span>Clientes en espera</span><small>En cola</small></div>
+                </div>
+                <div class="tb360-home-metric attending">
+                    <div class="tb360-home-metric-icon" aria-hidden="true">✂️</div>
+                    <div class="tb360-home-metric-copy"><strong>${attending.length}</strong><span>En atención</span><small>Turnos en servicio</small></div>
+                </div>
+                <div class="tb360-home-metric active">
+                    <div class="tb360-home-metric-icon" aria-hidden="true">💈</div>
+                    <div class="tb360-home-metric-copy"><strong>${activeBarbers}</strong><span>Barberos activos</span><small>De ${myBarbers.length} registrados</small></div>
+                </div>
+                <div class="tb360-home-metric total">
+                    <div class="tb360-home-metric-icon" aria-hidden="true">👥</div>
+                    <div class="tb360-home-metric-copy"><strong>${myBarbers.length}</strong><span>Total de barberos</span><small>Registrados</small></div>
+                </div>
+            </section>
 
-        <section class="card">
-            <div class="queue-header"><h2>Acciones rápidas</h2></div>
-            <div class="admin-actions">
-                <button class="btn primary" onclick="showAdminTab('new')">＋ Crear turno</button>
-                <button class="btn secondary" onclick="showAdminTab('tickets')">Ver colas</button>
-            </div>
-        </section>
+            <section class="tb360-home-main-grid">
+                <article class="tb360-home-panel">
+                    <div class="tb360-home-panel-head"><h3>🎟️ Siguiente turno</h3><span class="mini-label">Colas</span></div>
+                    ${nextContent}
+                </article>
+                <article class="tb360-home-panel">
+                    <div class="tb360-home-panel-head"><h3>✂️ Atención actual</h3><span class="mini-label">En servicio</span></div>
+                    ${currentContent}
+                </article>
+            </section>
 
-        <section class="card">
-            <div class="queue-header"><h2>Actividad reciente</h2><span class="badge muted">Actualizado</span></div>
-            ${renderRecentActivity()}
-        </section>
+            <section class="tb360-home-panel">
+                <div class="tb360-home-panel-head"><h3>💈 Estado de barberos</h3><span class="mini-label">Equipo actual</span></div>
+                ${barberContent}
+            </section>
+
+            <section class="tb360-home-panel">
+                <div class="tb360-home-panel-head"><h3>⚡ Acciones rápidas</h3><span class="mini-label">Operación</span></div>
+                <div class="tb360-home-actions">
+                    <button class="btn primary" onclick="showAdminTab('new')">＋ Crear turno</button>
+                    <button class="btn secondary" onclick="showAdminTab('tickets')">☷ Ver colas de espera</button>
+                </div>
+            </section>
+        </div>
     `;
 }
 
@@ -2390,7 +2644,7 @@ function renderOperationalQueues() {
 function renderQueueCard(barber) {
     const waiting = Number(barber.waiting_count || 0);
     const later = Math.max(0, waiting - (barber.next_ticket_id ? 1 : 0));
-    const currentActions = barber.current_ticket_id ? `<div class="ticket-tools"><button class="btn success" onclick="finishTicket('${escapeHtml(barber.current_ticket_id)}')">Finalizar</button><button class="btn danger" onclick="noShowTicket('${escapeHtml(barber.current_ticket_id)}')">No se presentó</button><button class="btn secondary" disabled>Mover después</button><button class="btn secondary" disabled>Cambiar servicio</button><button class="btn secondary" disabled>Cancelar</button></div>` : barber.next_ticket_id ? `<div class="ticket-tools"><button class="btn primary" onclick="callNext('${escapeHtml(barber.barber_id)}')">📢 Llamar ${escapeHtml(barber.next_ticket_code)}</button></div>` : `<span class="badge muted">Sin turnos</span>`;
+    const currentActions = barber.current_ticket_id ? `<div class="ticket-tools"><button class="btn success" onclick="finishTicket('${escapeHtml(barber.current_ticket_id)}')">Finalizar</button><button class="btn danger" onclick="noShowTicket('${escapeHtml(barber.current_ticket_id)}')">No se presentó</button></div>` : barber.next_ticket_id ? `<div class="ticket-tools"><button class="btn primary" onclick="callNext('${escapeHtml(barber.barber_id)}')">📢 Llamar ${escapeHtml(barber.next_ticket_code)}</button></div>` : `<span class="badge muted">Sin turnos</span>`;
     return `<article class="tb-barber-card"><div class="queue-header"><h3>💈 ${escapeHtml(barber.barber_name)}</h3><span class="badge ${barber.current_ticket_id ? "" : "warn"}">${barber.current_ticket_id ? "Atendiendo" : "Disponible"}</span></div><p><strong>Actual:</strong> ${barber.current_ticket_code ? escapeHtml(barber.current_ticket_code) : "—"}</p><p><strong>Siguiente:</strong> ${barber.next_ticket_code ? `${escapeHtml(barber.next_ticket_code)} · ${escapeHtml(barber.next_service_name || "Servicio")}` : "—"}</p><p><strong>Esperando:</strong> ${waiting}</p><p><strong>Posteriores:</strong> ${later}${later ? " en cola" : ""}</p>${currentActions}</article>`;
 }
 
@@ -2586,6 +2840,21 @@ function renderBusinessEditor() {
                 <label for="settingsBusinessPhone">Teléfono</label>
                 <input id="settingsBusinessPhone" type="tel" maxlength="30" value="${escapeHtml(business?.phone || "")}" placeholder="Ej. 3001234567">
 
+                <div class="settings-form-grid">
+                    <div>
+                        <label for="settingsBusinessOpeningTime">Hora de apertura</label>
+                        <input id="settingsBusinessOpeningTime" type="time" value="${escapeHtml((business?.opening_time || "").slice(0, 5))}">
+                    </div>
+                    <div>
+                        <label for="settingsBusinessClosingTime">Hora de cierre</label>
+                        <input id="settingsBusinessClosingTime" type="time" value="${escapeHtml((business?.closing_time || "").slice(0, 5))}">
+                    </div>
+                </div>
+
+                <label for="settingsBusinessImage">Foto de perfil de la barbería</label>
+                <input id="settingsBusinessImage" type="file" accept="image/png,image/jpeg,image/webp">
+                <p class="muted" style="font-size:12px;margin:4px 0 0;">Formatos permitidos: JPG, PNG o WEBP. La imagen se mostrará en el dashboard.</p>
+
                 <div id="businessEditMessage" class="tb-settings-message ${businessEditMessage ? (businessEditMessageType === "success" ? "success" : "error") : ""}"${businessEditMessage ? "" : ' style="display:none;"'}>${escapeHtml(businessEditMessage || "")}</div>
 
                 <button class="btn primary big" type="submit" ${businessEditSaving ? "disabled" : ""}>${businessEditSaving ? "⏳ Guardando cambios..." : "Guardar cambios"}</button>
@@ -2631,11 +2900,17 @@ async function saveBusinessProfile(event) {
     const nameInput = document.getElementById("settingsBusinessName");
     const cityInput = document.getElementById("settingsBusinessCity");
     const phoneInput = document.getElementById("settingsBusinessPhone");
+    const openingTimeInput = document.getElementById("settingsBusinessOpeningTime");
+    const closingTimeInput = document.getElementById("settingsBusinessClosingTime");
+    const imageInput = document.getElementById("settingsBusinessImage");
     const submitButton = event.currentTarget?.querySelector('button[type="submit"]');
 
     const name = nameInput?.value.trim() || "";
     const city = cityInput?.value.trim() || "";
     const phone = phoneInput?.value.trim() || "";
+    const openingTime = openingTimeInput?.value || null;
+    const closingTime = closingTimeInput?.value || null;
+    const selectedImage = imageInput?.files?.[0] || null;
 
     if (!name) {
         setBusinessEditMessage("El nombre de la barbería es obligatorio.", "error");
@@ -2659,10 +2934,50 @@ async function saveBusinessProfile(event) {
     }
 
     try {
-        const { data, error } = await client.rpc("admin_update_business", {
+        if ((openingTime && !closingTime) || (!openingTime && closingTime)) {
+            throw new Error("Debes indicar la hora de apertura y la hora de cierre.");
+        }
+
+        if (openingTime && closingTime && closingTime <= openingTime) {
+            throw new Error("La hora de cierre debe ser posterior a la hora de apertura.");
+        }
+
+        let profileImageUrl = business?.profile_image_url || null;
+
+        if (selectedImage) {
+            const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+            if (!allowedTypes.includes(selectedImage.type)) {
+                throw new Error("La foto debe estar en formato JPG, PNG o WEBP.");
+            }
+            if (selectedImage.size > 5 * 1024 * 1024) {
+                throw new Error("La foto no puede superar los 5 MB.");
+            }
+
+            const extension = selectedImage.name.split(".").pop()?.toLowerCase() || "jpg";
+            const filePath = `${business.id}/${Date.now()}.${extension}`;
+            const { error: uploadError } = await client.storage
+                .from("business-profile-images")
+                .upload(filePath, selectedImage, {
+                    cacheControl: "3600",
+                    upsert: true,
+                    contentType: selectedImage.type
+                });
+
+            if (uploadError) throw uploadError;
+
+            const { data: publicUrlData } = client.storage
+                .from("business-profile-images")
+                .getPublicUrl(filePath);
+            profileImageUrl = publicUrlData?.publicUrl || profileImageUrl;
+        }
+
+        const { data, error } = await client.rpc("admin_update_business_profile", {
             p_business_name: name,
             p_city: city,
-            p_phone: phone || null
+            p_phone: phone || null,
+            p_opening_time: openingTime,
+            p_closing_time: closingTime,
+            p_profile_image_url: profileImageUrl
         });
 
         if (error) throw error;

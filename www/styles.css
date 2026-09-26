@@ -450,12 +450,22 @@ main{
 }
 .barber-dashboard-icon img{width:100%;height:100%;display:block;object-fit:cover}
 .barber-brand-line{
+    display:flex;
+    align-items:center;
+    gap:7px;
     margin:0 0 2px;
     font-size:13px;
     font-weight:850;
     letter-spacing:.06em;
     text-transform:uppercase;
     color:#CBD5E1;
+}
+.barber-platform-logo{
+    width:20px;
+    height:20px;
+    flex:0 0 20px;
+    display:block;
+    object-fit:contain;
 }
 .barber-business-title{
     margin:0;
@@ -1014,5 +1024,141 @@ main{
 
     .public-date-time{
         font-size:11px;
+    }
+}
+
+
+/* Ajuste puntual: encabezado del panel del barbero en pantallas estrechas */
+@media (max-width:520px){
+    .barber-profile-main{
+        flex-direction:column;
+        align-items:stretch;
+        gap:14px;
+    }
+
+    .barber-profile-main > div:first-child{
+        width:100%;
+        min-width:0;
+    }
+
+    .barber-profile-main > div:first-child > div:first-child{
+        width:100%;
+        min-width:0;
+    }
+
+    .barber-profile-identity{
+        margin-left:0;
+        width:100%;
+        box-sizing:border-box;
+    }
+
+    .barber-datetime-card{
+        margin-left:0;
+        width:100%;
+        max-width:none;
+        justify-content:flex-start;
+        flex-wrap:wrap;
+        box-sizing:border-box;
+    }
+}
+
+/* Ajuste final móvil: evita que el flex-basis inline de 280px
+   cree espacio vacío entre la estación y la fecha/hora. */
+@media (max-width:520px){
+    .barber-profile-hero{
+        min-height:0;
+    }
+
+    .barber-profile-main{
+        min-height:0;
+    }
+
+    .barber-profile-main > div:first-child{
+        flex:0 1 auto !important;
+    }
+
+    .barber-platform-logo{
+        width:18px;
+        height:18px;
+        flex-basis:18px;
+    }
+
+    .barber-brand-line{
+        gap:6px;
+        font-size:10px;
+    }
+}
+
+/* V6: jerarquía de marca exclusiva del panel del barbero.
+   Plataforma primero; barbería cliente después. */
+.barber-profile-hero .barber-platform-header {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding-bottom:10px;
+    margin-bottom:12px;
+    border-bottom:1px solid rgba(255,255,255,.14);
+}
+.barber-profile-hero .barber-platform-header-logo {
+    display:block;
+    width:34px;
+    height:34px;
+    flex:0 0 34px;
+    object-fit:contain;
+}
+.barber-profile-hero .barber-platform-header-name {
+    color:#fff;
+    font-size:15px;
+    font-weight:850;
+    letter-spacing:.045em;
+}
+.barber-profile-hero .barber-client-header {
+    display:flex;
+    align-items:center;
+    gap:12px;
+    min-width:0;
+}
+.barber-profile-hero .barber-client-details {
+    min-width:0;
+}
+.barber-profile-hero .barber-client-city {
+    margin:4px 0 0;
+    color:#CBD5E1;
+    font-size:14px;
+}
+.barber-profile-hero .barber-profile-identity {
+    margin-left:0;
+}
+@media (max-width:520px) {
+    .barber-profile-hero .barber-platform-header {
+        gap:8px;
+        margin-bottom:10px;
+        padding-bottom:9px;
+    }
+    .barber-profile-hero .barber-platform-header-logo {
+        width:30px;
+        height:30px;
+        flex-basis:30px;
+    }
+    .barber-profile-hero .barber-platform-header-name {
+        font-size:12px;
+    }
+    .barber-profile-hero .barber-client-header {
+        gap:10px;
+    }
+    .barber-profile-hero .barber-client-city {
+        font-size:12px;
+    }
+    .barber-profile-hero .barber-profile-main > div:first-child {
+        flex:0 0 auto !important;
+        min-height:0;
+    }
+    .barber-profile-hero .barber-datetime-card {
+        margin-top:0;
+        padding-top:9px;
+        margin-left:0;
+        width:100%;
+        max-width:none;
+        justify-content:flex-start;
     }
 }

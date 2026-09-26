@@ -49,6 +49,72 @@ function escapeHtml(value) {
 
 
 // ==========================================
+// TRANSICIONES SUAVES DE LA PÁGINA PÚBLICA
+// ==========================================
+// Mantiene la vista anterior durante el cambio de contenido
+// para evitar el parpadeo de la fecha, hora y encabezado.
+function renderApp(html) {
+    // Conservamos el encabezado público actual cuando una pantalla
+    // temporal (cargando, error o transición) no lo incluye.
+    // Así la fecha, la hora y la identidad de la barbería no desaparecen.
+    const currentHeader =
+        app.querySelector(".public-brand-card")?.outerHTML || "";
+
+    const nextHtml =
+        currentHeader &&
+        !String(html).includes("public-brand-card")
+            ? `${currentHeader}${html}`
+            : html;
+
+    const applyRender = () => {
+        app.innerHTML = nextHtml;
+
+        // Actualiza inmediatamente la fecha/hora del encabezado
+        // recién renderizado, sin esperar al siguiente intervalo.
+        updatePublicDateTime();
+    };
+
+    if (typeof document.startViewTransition === "function") {
+        document.startViewTransition(applyRender);
+        return;
+    }
+
+    applyRender();
+}
+
+
+// ==========================================
+// INFORMACIÓN PÚBLICA DE LA BARBERÍA
+// ==========================================
+
+function formatBusinessTime(value) {
+    if (!value) return "";
+
+    const match = String(value).match(/^(\d{2}):(\d{2})/);
+    if (!match) return String(value);
+
+    const hour = Number(match[1]);
+    const minute = match[2];
+    const suffix = hour >= 12 ? "p. m." : "a. m.";
+    const normalizedHour = hour % 12 || 12;
+
+    return `${normalizedHour}:${minute} ${suffix}`;
+}
+
+function getBusinessHoursLabel() {
+    if (!business?.opening_time || !business?.closing_time) {
+        return "Horario no configurado";
+    }
+
+    return `${formatBusinessTime(business.opening_time)} – ${formatBusinessTime(business.closing_time)}`;
+}
+
+function getBusinessProfileImage() {
+    return business?.profile_image_url || "assets/brand/icon-maestro.png";
+}
+
+
+// ==========================================
 // FECHA ACTUAL DE LA BARBERÍA
 // ==========================================
 
@@ -337,7 +403,7 @@ async function loadBusiness() {
             statusEl.textContent =
                 "Error";
 
-            app.innerHTML = `
+            renderApp(`
                 <div class="card hero">
 
                     <h2>
@@ -349,7 +415,7 @@ async function loadBusiness() {
                     </p>
 
                 </div>
-            `;
+            `);
 
             return false;
         }
@@ -359,7 +425,7 @@ async function loadBusiness() {
             statusEl.textContent =
                 "No encontrada";
 
-            app.innerHTML = `
+            renderApp(`
                 <div class="card hero">
 
                     <h2>
@@ -375,7 +441,7 @@ async function loadBusiness() {
                     </strong>
 
                 </div>
-            `;
+            `);
 
             return false;
         }
@@ -397,7 +463,7 @@ async function loadBusiness() {
         statusEl.textContent =
             "Error";
 
-        app.innerHTML = `
+        renderApp(`
             <div class="card hero">
 
                 <h2>
@@ -416,7 +482,7 @@ async function loadBusiness() {
                 </button>
 
             </div>
-        `;
+        `);
 
         return false;
     }
@@ -455,7 +521,7 @@ async function loadServices() {
             statusEl.textContent =
                 "Error";
 
-            app.innerHTML = `
+            renderApp(`
                 <div class="card hero">
 
                     <h2>
@@ -474,7 +540,7 @@ async function loadServices() {
                     </button>
 
                 </div>
-            `;
+            `);
 
             return false;
         }
@@ -497,7 +563,7 @@ async function loadServices() {
         statusEl.textContent =
             "Error";
 
-        app.innerHTML = `
+        renderApp(`
             <div class="card hero">
 
                 <h2>
@@ -516,7 +582,7 @@ async function loadServices() {
                 </button>
 
             </div>
-        `;
+        `);
 
         return false;
     }
@@ -530,14 +596,14 @@ async function loadServices() {
 
 function renderCustomer() {
 
-    app.innerHTML = `
+    renderApp(`
 
         <div class="card hero public-brand-card">
 
             <div class="public-brand-row">
                 <img
-                    src="assets/brand/icon-maestro.png"
-                    alt="TurnoBarber 360"
+                    src="${escapeHtml(getBusinessProfileImage())}"
+                    alt="${escapeHtml(business.name || "Foto de la barbería")}"
                     class="public-brand-icon"
                 >
                 <div class="public-brand-copy">
@@ -549,6 +615,7 @@ function renderCustomer() {
 
             <div class="public-brand-meta">
                 <span class="public-date-time"></span>
+                <span class="public-business-hours">🕘 ${escapeHtml(getBusinessHoursLabel())}</span>
                 <span class="badge">ONLINE</span>
             </div>
 
@@ -611,7 +678,7 @@ function renderCustomer() {
             }
 
         </div>
-    `;
+    `);
 }
 
 
@@ -653,7 +720,7 @@ async function takeTurn(serviceId) {
 
     if (!loaded) {
 
-        app.innerHTML = `
+        renderApp(`
             <div class="card hero">
 
                 <h2>
@@ -672,7 +739,7 @@ async function takeTurn(serviceId) {
                 </button>
 
             </div>
-        `;
+        `);
 
         return;
     }
@@ -687,14 +754,14 @@ async function takeTurn(serviceId) {
 
 function renderBarberSelection(service) {
 
-    app.innerHTML = `
+    renderApp(`
 
         <div class="card hero public-brand-card">
 
             <div class="public-brand-row">
                 <img
-                    src="assets/brand/icon-maestro.png"
-                    alt="TurnoBarber 360"
+                    src="${escapeHtml(getBusinessProfileImage())}"
+                    alt="${escapeHtml(business.name || "Foto de la barbería")}"
                     class="public-brand-icon"
                 >
                 <div class="public-brand-copy">
@@ -706,6 +773,7 @@ function renderBarberSelection(service) {
 
             <div class="public-brand-meta">
                 <span class="public-date-time"></span>
+                <span class="public-business-hours">🕘 ${escapeHtml(getBusinessHoursLabel())}</span>
                 <span class="badge">ONLINE</span>
             </div>
 
@@ -799,7 +867,7 @@ function renderBarberSelection(service) {
             </button>
 
         </div>
-    `;
+    `);
 }
 
 
@@ -819,17 +887,17 @@ function showTurnConfirmation(
         return;
     }
 
-    app.innerHTML = `
+    renderApp(`
         <div class="card hero public-brand-card">
             <div class="public-brand-row">
-                <img src="assets/brand/icon-maestro.png" alt="TurnoBarber 360" class="public-brand-icon">
+                <img src="${escapeHtml(getBusinessProfileImage())}" alt="${escapeHtml(business.name || "Foto de la barbería")}" class="public-brand-icon">
                 <div class="public-brand-copy">
                     <div class="public-brand-name">TurnoBarber 360</div>
                     <h1>${escapeHtml(business.name)}</h1>
                     <p class="muted">Confirma los datos de tu turno</p>
                 </div>
             </div>
-            <div class="public-brand-meta"><span class="public-date-time"></span><span class="badge">ONLINE</span></div>
+            <div class="public-brand-meta"><span class="public-date-time"></span><span class="public-business-hours">🕘 ${escapeHtml(getBusinessHoursLabel())}</span><span class="badge">ONLINE</span></div>
         </div>
         <div class="card">
             <h2>Confirma tu turno</h2>
@@ -840,7 +908,7 @@ function showTurnConfirmation(
             </div>
             <button class="btn primary" onclick="takeTurnWithBarber('${escapeHtml(service.id)}','${escapeHtml(barber.id)}')">✅ Confirmar turno</button>
             <button class="btn secondary" onclick="renderBarberSelection(services.find(s => s.id === '${escapeHtml(service.id)}'))">← Volver</button>
-        </div>`;
+        </div>`);
 }
 
 async function takeTurnWithBarber(
@@ -867,7 +935,7 @@ async function takeTurnWithBarber(
         return;
     }
 
-    app.innerHTML = `
+    renderApp(`
 
         <div class="card hero">
 
@@ -886,7 +954,7 @@ async function takeTurnWithBarber(
             </p>
 
         </div>
-    `;
+    `);
 
     try {
 
@@ -909,7 +977,7 @@ async function takeTurnWithBarber(
 
             console.error(error);
 
-            app.innerHTML = `
+            renderApp(`
 
                 <div class="card hero">
 
@@ -929,14 +997,14 @@ async function takeTurnWithBarber(
                     </button>
 
                 </div>
-            `;
+            `);
 
             return;
         }
 
         if (!data || data.length === 0) {
 
-            app.innerHTML = `
+            renderApp(`
 
                 <div class="card hero">
 
@@ -952,7 +1020,7 @@ async function takeTurnWithBarber(
                     </button>
 
                 </div>
-            `;
+            `);
 
             return;
         }
@@ -980,7 +1048,7 @@ async function takeTurnWithBarber(
             error
         );
 
-        app.innerHTML = `
+        renderApp(`
 
             <div class="card hero">
 
@@ -1000,7 +1068,7 @@ async function takeTurnWithBarber(
                 </button>
 
             </div>
-        `;
+        `);
     }
 
 }
@@ -1108,18 +1176,18 @@ function showTicket() {
         return;
     }
 
-    app.innerHTML = `
+    renderApp(`
 
         <div class="card hero public-brand-card">
             <div class="public-brand-row">
-                <img src="assets/brand/icon-maestro.png" alt="TurnoBarber 360" class="public-brand-icon">
+                <img src="${escapeHtml(getBusinessProfileImage())}" alt="${escapeHtml(business.name || "Foto de la barbería")}" class="public-brand-icon">
                 <div class="public-brand-copy">
                     <div class="public-brand-name">TurnoBarber 360</div>
                     <h1>${escapeHtml(business.name)}</h1>
                     <p class="muted">${escapeHtml(business.city || "")}</p>
                 </div>
             </div>
-            <div class="public-brand-meta"><span class="public-date-time"></span></div>
+            <div class="public-brand-meta"><span class="public-date-time"></span><span class="public-business-hours">🕘 ${escapeHtml(getBusinessHoursLabel())}</span></div>
         </div>
 
         <div id="ticketStatus">
@@ -1196,7 +1264,7 @@ function showTicket() {
             </div>
 
         </div>
-    `;
+    `);
 
     checkTicketStatus();
 }
@@ -1545,20 +1613,9 @@ async function cancelTurn() {
 
     const ticketId = currentTicket.id;
 
-    app.innerHTML = `
-
-        <div class="card hero">
-
-            <h2>
-                ⏳ Cancelando tu turno...
-            </h2>
-
-            <p>
-                Espera un momento.
-            </p>
-
-        </div>
-    `;
+    // No reemplazamos toda la pantalla durante la solicitud.
+    // Así evitamos el parpadeo y el salto visual de la página pública.
+    statusEl.textContent = "Cancelando turno...";
 
     try {
 
@@ -1610,18 +1667,26 @@ async function cancelTurn() {
         // Mostramos directamente la pantalla final de cancelación.
         clearSavedTicket();
 
-        app.innerHTML = `
+        renderApp(`
 
-            <div class="card hero">
-
-                <h1>
-                    ${escapeHtml(business.name)}
-                </h1>
-
-                <p class="muted">
-                    ${escapeHtml(business.city || "")}
-                </p>
-
+            <div class="card hero public-brand-card">
+                <div class="public-brand-row">
+                    <img
+                        src="${escapeHtml(getBusinessProfileImage())}"
+                        alt="${escapeHtml(business.name || "Foto de la barbería")}"
+                        class="public-brand-icon"
+                    >
+                    <div class="public-brand-copy">
+                        <div class="public-brand-name">TurnoBarber 360</div>
+                        <h1>${escapeHtml(business.name || "")}</h1>
+                        <p class="muted">${escapeHtml(business.city || "")}</p>
+                    </div>
+                </div>
+                <div class="public-brand-meta">
+                    <span class="public-date-time"></span>
+                    <span class="public-business-hours">🕘 ${escapeHtml(getBusinessHoursLabel())}</span>
+                    <span class="badge">ONLINE</span>
+                </div>
             </div>
 
             <div class="card ticket-card">
@@ -1675,7 +1740,10 @@ async function cancelTurn() {
                 </button>
 
             </div>
-        `;
+        `);
+
+        updatePublicDateTime();
+        statusEl.textContent = "Conectado";
 
     } catch (error) {
 
@@ -1920,7 +1988,7 @@ async function startApp() {
         statusEl.textContent =
             "Error";
 
-        app.innerHTML = `
+        renderApp(`
 
             <div class="card hero">
 
@@ -1940,7 +2008,7 @@ async function startApp() {
                 </button>
 
             </div>
-        `;
+        `);
     }
 
 }

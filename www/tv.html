@@ -61,7 +61,7 @@ body {
     font-weight: bold;
 }
 
-.brand-lockup{display:flex;align-items:center;justify-content:center;gap:14px}.brand-lockup img{width:62px;height:62px;object-fit:contain;border-radius:14px}.brand-copy{text-align:left}.brand-copy strong{display:block;font-size:20px;letter-spacing:.8px;color:#fff}.brand-copy h1{margin:2px 0 0;font-size:44px;line-height:1.02;color:#fff}.date-time{margin-top:6px;font-size:18px;font-weight:700;color:#dbe4f5;letter-spacing:.2px}.header .online{margin-top:8px;background:#20B968;color:#082e1c}.barber-card{box-shadow:0 8px 20px rgba(0,0,0,.18)}
+.platform-bar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:10px 14px 11px;margin:-22px -30px 22px;background:#111a2b;border-bottom:1px solid rgba(255,255,255,.16)}.platform-identity{display:flex;align-items:center;gap:12px;min-width:0}.platform-identity img{width:48px;height:48px;object-fit:contain;border-radius:12px;flex:0 0 auto}.platform-copy{text-align:left;min-width:0}.platform-copy strong{display:block;font-size:22px;letter-spacing:.5px;color:#fff}.platform-copy span{display:block;margin-top:2px;font-size:10px;line-height:1.1;letter-spacing:.1px;color:#b8c4d8;white-space:nowrap}.platform-context{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-left:10px}.platform-context span{font-size:12px;color:#dbe4f5}.platform-status{display:flex;align-items:center;gap:10px;flex:0 0 auto}.platform-status .online{margin:0;padding:5px 12px;background:#dff8e9;color:#08733d}.business-identity{display:flex;align-items:center;justify-content:center;gap:16px}.business-identity img{width:76px;height:76px;object-fit:contain;border-radius:16px;flex:0 0 auto}.business-copy{text-align:left}.business-copy h1{margin:0;font-size:48px;line-height:1.02;color:#fff}.business-meta{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:8px 18px;margin-top:9px}.business-meta p{margin:0;font-size:24px}.business-hours{font-size:18px;font-weight:700;color:#dbe4f5;letter-spacing:.2px}.date-time{margin-top:10px;font-size:18px;font-weight:700;color:#dbe4f5;letter-spacing:.2px}.header .online{margin-top:10px;background:#20B968;color:#082e1c}.barber-card{box-shadow:0 8px 20px rgba(0,0,0,.18)}
 
 .sound-button {
     position: fixed;
@@ -288,6 +288,26 @@ body {
 
 }
 
+@media(max-width:900px) {
+    .platform-bar {
+        align-items:flex-start;
+        flex-direction:column;
+        gap:8px;
+    }
+
+    .platform-context {
+        margin-left:0;
+    }
+
+    .platform-status {
+        align-self:flex-end;
+    }
+
+    .business-copy h1 {
+        font-size:40px;
+    }
+}
+
 @media(max-height:700px) {
 
     .screen {
@@ -323,6 +343,30 @@ body {
 
 @media(max-width:800px) {
 
+    .platform-identity img {
+        width: 48px;
+        height: 48px;
+    }
+
+    .platform-copy strong {
+        font-size: 21px;
+    }
+
+    .platform-copy span {
+        font-size: 11px;
+    }
+
+    .business-identity img {
+        width: 54px;
+        height: 54px;
+    }
+
+    .business-copy h1 {
+        font-size: 34px;
+    }
+
+
+
     body {
         overflow: auto;
     }
@@ -350,6 +394,27 @@ body {
 
     .header h1 {
         font-size: 40px;
+    }
+
+    .platform-identity {
+        flex-wrap: wrap;
+    }
+
+    .business-identity {
+        gap: 10px;
+    }
+
+    .business-identity img {
+        width: 60px;
+        height: 60px;
+    }
+
+    .business-copy h1 {
+        font-size: 34px;
+    }
+
+    .business-meta p {
+        font-size: 20px;
     }
 
     .header p {
@@ -400,23 +465,36 @@ body {
 <main class="screen">
 
     <header class="header">
-        <div class="brand-lockup">
-            <img src="assets/brand/icon-maestro.png" alt="TurnoBarber 360">
-            <div class="brand-copy">
-                <strong>TurnoBarber 360</strong>
-                <h1 id="businessName">Barbería</h1>
+        <section class="platform-bar" aria-label="Encabezado de TurnoBarber 360">
+            <div class="platform-identity">
+                <img id="turnobarberLogo" src="assets/brand/icon-maestro.png" alt="Logo de TurnoBarber 360">
+                <div class="platform-copy">
+                    <strong>TurnoBarber 360</strong>
+                    <span>CONTROLA · ORGANIZA · CRECE</span>
+                </div>
+                <div class="platform-context">
+                    <span id="platformDateTime">--</span>
+                </div>
             </div>
-        </div>
+            <div class="platform-status">
+                <span class="online">ONLINE</span>
+            </div>
+        </section>
 
-        <p id="businessCity">Cargando barbería...</p>
+        <section class="business-identity" aria-label="Identidad de la barbería">
+            <img id="businessLogo" src="assets/brand/icon-maestro.png" alt="Logo de la barbería">
+            <div class="business-copy">
+                <h1 id="businessName">Barbería</h1>
+                <div class="business-meta">
+                    <p id="businessCity">Cargando barbería...</p>
+                    <span class="business-hours" id="businessHours">🕘 Horario no configurado</span>
+                </div>
+            </div>
+        </section>
 
         <div class="date-time" id="tvDateTime">
             --
         </div>
-
-        <span class="online">
-            ONLINE
-        </span>
     </header>
 
     <section
@@ -530,6 +608,16 @@ var businessCity =
         "businessCity"
     );
 
+var businessLogo =
+    document.getElementById(
+        "businessLogo"
+    );
+
+var businessHours =
+    document.getElementById(
+        "businessHours"
+    );
+
 var barberGrid =
     document.getElementById(
         "barberGrid"
@@ -567,10 +655,11 @@ var callService =
 
 var tvDateTime = document.getElementById("tvDateTime");
 
+var platformDateTime = document.getElementById("platformDateTime");
+
 function updateTvDateTime() {
-    if (!tvDateTime) return;
     var now = new Date();
-    tvDateTime.innerHTML = now.toLocaleDateString("es-CO", {
+    var dateLabel = now.toLocaleDateString("es-CO", {
         weekday: "short",
         day: "numeric",
         month: "short",
@@ -579,6 +668,45 @@ function updateTvDateTime() {
         hour: "numeric",
         minute: "2-digit"
     });
+
+    if (tvDateTime) {
+        tvDateTime.innerHTML = dateLabel;
+    }
+
+    if (platformDateTime) {
+        platformDateTime.innerHTML = dateLabel;
+    }
+}
+
+function formatBusinessTime(value) {
+    if (!value) return "";
+
+    var match = String(value).match(/^(\\d{2}):(\\d{2})/);
+
+    if (!match) return String(value);
+
+    var hour = Number(match[1]);
+    var minute = match[2];
+    var suffix = hour >= 12 ? "p. m." : "a. m.";
+    var normalizedHour = hour % 12 || 12;
+
+    return normalizedHour + ":" + minute + " " + suffix;
+}
+
+function getBusinessHoursLabel() {
+    if (!business || !business.opening_time || !business.closing_time) {
+        return "Horario no configurado";
+    }
+
+    return formatBusinessTime(business.opening_time) +
+        " – " +
+        formatBusinessTime(business.closing_time);
+}
+
+function getBusinessProfileImage() {
+    return business && business.profile_image_url
+        ? business.profile_image_url
+        : "assets/brand/icon-maestro.png";
 }
 
 function getTodayKey() {
@@ -1130,6 +1258,19 @@ function loadBusiness() {
                     business.city ||
                     ""
                 );
+
+            businessHours.innerHTML =
+                "🕘 " +
+                escapeHtml(
+                    getBusinessHoursLabel()
+                );
+
+            businessLogo.src =
+                getBusinessProfileImage();
+
+            businessLogo.alt =
+                business.name ||
+                "Foto de la barbería";
 
             loadQueues();
 

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invitación de administrador · TurnoBarber 360</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;background:#f4f7fb;margin:0;color:#172033}
+.wrap{max-width:520px;margin:50px auto;padding:20px}
+.card{background:#fff;border-radius:16px;padding:26px;box-shadow:0 8px 30px rgba(0,0,0,.08)}
+h1{font-size:25px;margin:0 0 8px}h2{font-size:19px;margin:0 0 10px}.muted{color:#687386}.ok{color:#16803a}.err{color:#b42318}.box{background:#f7f9fc;border-radius:10px;padding:14px;margin:16px 0}label{display:block;font-weight:600;margin:12px 0 6px}input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #cfd6e1;border-radius:9px;font-size:15px}button{width:100%;border:0;border-radius:9px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:12px}.primary{background:#111827;color:#fff}.secondary{background:#e9eef5;color:#172033}.hidden{display:none}.small{font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+<h1>TurnoBarber 360</h1>
+<p class="muted">Invitación para administrar una sede</p>
+<div id="loading">Verificando invitación…</div>
+<div id="app" class="hidden">
+  <div class="box">
+    <strong id="businessName">—</strong>
+    <div class="muted" id="organizationName" style="margin-top:5px">—</div>
+    <div class="muted small" id="inviteEmail" style="margin-top:8px">—</div>
+  </div>
+  <div id="status"></div>
+
+  <section id="loggedSection" class="hidden">
+    <h2>Aceptar invitación</h2>
+    <p class="muted">Tu cuenta será vinculada como administrador de esta sede.</p>
+    <button id="acceptButton" class="primary">Aceptar invitación</button>
+  </section>
+
+  <section id="accountSection" class="hidden">
+    <h2>¿Ya tienes cuenta?</h2>
+    <p class="muted">Inicia sesión con el correo al que fue enviada la invitación.</p>
+    <label for="loginEmail">Correo</label>
+    <input id="loginEmail" type="email" autocomplete="email">
+    <label for="loginPassword">Contraseña</label>
+    <input id="loginPassword" type="password" autocomplete="current-password">
+    <button id="loginButton" class="primary">Iniciar sesión y aceptar</button>
+    <hr style="border:0;border-top:1px solid #e5e7eb;margin:22px 0">
+    <h2>Crear cuenta</h2>
+    <p class="muted">Si todavía no tienes cuenta, créala con el correo de la invitación.</p>
+    <label for="signupEmail">Correo</label>
+    <input id="signupEmail" type="email" autocomplete="email">
+    <label for="signupPassword">Nueva contraseña</label>
+    <input id="signupPassword" type="password" autocomplete="new-password" minlength="6">
+    <button id="signupButton" class="secondary">Crear cuenta</button>
+  </section>
+</div>
+</div></div>
+<script>
+const SUPABASE_URL = "https://dkgkejulxkgvjrppsmly.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_7mxRDvndqfxuf6rCbi8CpA_VWKgK9e2";
+const client = window.supabaseClient || window.client || window.supabase?.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+let token = new URLSearchParams(window.location.search).get("token");
+let invitation = null;
+
+function setStatus(message, type="") {
+  const el=document.getElementById("status");
+  el.className=type;
+  el.innerHTML=message;
+}
+
+async function loadInvitation(){
+  if(!client) throw new Error("No se pudo inicializar la conexión con TurnoBarber 360.");
+  if(!token) throw new Error("El enlace de invitación no contiene un token válido.");
+  const {data,error}=await client.rpc("get_organization_manager_invitation",{p_token:token});
+  if(error) throw error;
+  invitation=Array.isArray(data)?data[0]:data;
+  if(!invitation) throw new Error("No se encontró la invitación.");
+  if(invitation.accepted_at) throw new Error("Esta invitación ya fue utilizada.");
+  if(new Date(invitation.expires_at).getTime()<=Date.now()) throw new Error("Esta invitación ha expirado.");
+  document.getElementById("businessName").textContent=invitation.business_name||"Sede";
+  document.getElementById("organizationName").textContent="Empresa: "+(invitation.organization_name||"—");
+  document.getElementById("inviteEmail").textContent="Invitado: "+invitation.email;
+  document.getElementById("loginEmail").value=invitation.email||"";
+  document.getElementById("signupEmail").value=invitation.email||"";
+}
+
+async function acceptInvitation(){
+  const {data,error}=await client.rpc("accept_organization_manager_invitation",{p_token:token});
+  if(error) throw error;
+  setStatus("✅ Invitación aceptada. Ya eres administrador de esta sede. Redirigiendo…","ok");
+  setTimeout(()=>window.location.href="admin.html",800);
+}
+
+async function refreshAuthState(){
+  const {data}=await client.auth.getSession();
+  const session=data?.session;
+  if(session){
+    const email=(session.user?.email||"").toLowerCase();
+    if(email !== (invitation.email||"").toLowerCase()){
+      setStatus("⚠️ La sesión iniciada usa otro correo. Cierra sesión e inicia con: <strong>"+invitation.email+"</strong>","err");
+      document.getElementById("loggedSection").classList.add("hidden");
+      document.getElementById("accountSection").classList.add("hidden");
+      return;
+    }
+    document.getElementById("loggedSection").classList.remove("hidden");
+    document.getElementById("accountSection").classList.add("hidden");
+  }else{
+    document.getElementById("loggedSection").classList.add("hidden");
+    document.getElementById("accountSection").classList.remove("hidden");
+  }
+}
+
+document.getElementById("acceptButton").onclick=async()=>{try{document.getElementById("acceptButton").disabled=true;await acceptInvitation();}catch(e){document.getElementById("acceptButton").disabled=false;setStatus("❌ "+(e?.message||"No fue posible aceptar la invitación."),"err")}};
+document.getElementById("loginButton").onclick=async()=>{try{const email=document.getElementById("loginEmail").value.trim();const password=document.getElementById("loginPassword").value;if(email.toLowerCase()!==(invitation.email||"").toLowerCase())throw new Error("Debes usar el correo de la invitación.");const {error}=await client.auth.signInWithPassword({email,password});if(error)throw error;await acceptInvitation();}catch(e){setStatus("❌ "+(e?.message||"No fue posible iniciar sesión."),"err")}};
+document.getElementById("signupButton").onclick=async()=>{try{const email=document.getElementById("signupEmail").value.trim();const password=document.getElementById("signupPassword").value;if(email.toLowerCase()!==(invitation.email||"").toLowerCase())throw new Error("Debes registrarte con el correo de la invitación.");if(password.length<6)throw new Error("La contraseña debe tener al menos 6 caracteres.");const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:window.location.href}});if(error)throw error;if(data?.session){await acceptInvitation();}else{setStatus("✅ Cuenta creada. Revisa tu correo para confirmar la cuenta. Después vuelve a abrir este enlace para aceptar la invitación.","ok");}}catch(e){setStatus("❌ "+(e?.message||"No fue posible crear la cuenta."),"err")}};
+
+(async()=>{try{await loadInvitation();document.getElementById("loading").classList.add("hidden");document.getElementById("app").classList.remove("hidden");await refreshAuthState();}catch(e){document.getElementById("loading").textContent="";setStatus("❌ "+(e?.message||"No fue posible validar la invitación."),"err");document.getElementById("app").classList.remove("hidden");}})();
+</script>
+</body>
+</html>
