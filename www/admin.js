@@ -28,7 +28,7 @@ let barberServiceEditorBarberId = null;
 // Los enlaces para clientes y barberos deben apuntar siempre
 // a la versión pública, incluso cuando el administrador trabaje localmente.
 const TURNOBARBER_PUBLIC_BASE_URL =
-    "https://randres0613.github.io/turnobarber/";
+    "https://turnobarber360.com/";
 let activeAdminTab = "home";
 let adminMoreView = "menu";
 let adminSettingsOpen = false;
