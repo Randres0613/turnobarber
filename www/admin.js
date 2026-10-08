@@ -1,4 +1,4 @@
-const adminApp =
+﻿const adminApp =
     document.getElementById("adminApp");
 
 const businessInfo =
@@ -1122,37 +1122,63 @@ function renderSubscriptionCard() {
     `;
 }
 
-function showSubscriptionPlans() {
+async function showSubscriptionPlans() {
     if (subscriptionCheckoutLoading) return;
 
-    const currentPlan = String(subscriptionContext?.plan || "").toUpperCase();
-    const currentCycle = String(subscriptionContext?.billing_cycle || "").toLowerCase();
-    const plans = [
-        { code: "START", monthly: 29900, yearly: 299000, barbers: 2, locations: 1 },
-        { code: "PRO", monthly: 59900, yearly: 599000, barbers: 5, locations: 1 },
-        { code: "BUSINESS", monthly: 99900, yearly: 999000, barbers: 10, locations: 3 }
-    ];
+    const modalContent = createAdminModal(
+        "Planes y suscripción",
+        '<p class="muted" role="status">Cargando planes y precios…</p>'
+    );
 
-    const content = `
-        <p class="muted" style="margin-top:0;">Selecciona el plan y la modalidad de facturación. El pago se procesa de forma segura con Wompi.</p>
-        <div style="display:grid;gap:12px;">
-            ${plans.map(plan => `
-                <article class="card" style="margin:0;border:1px solid rgba(127,127,127,.25);">
-                    <div class="queue-header">
-                        <div><h3 style="margin:0;">${escapeHtml(plan.code)}</h3><p class="muted" style="margin:4px 0 0;">Hasta ${plan.barbers} barberos activos · ${plan.locations} ${plan.locations === 1 ? "ubicación" : "ubicaciones"}</p></div>
-                        ${currentPlan === plan.code ? `<span class="badge">PLAN ACTUAL</span>` : ""}
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
-                        <button type="button" class="btn ${currentPlan === plan.code && currentCycle === "monthly" ? "primary" : "secondary"}" onclick="startSubscriptionCheckout('${plan.code}', 'monthly')">Mensual<br><strong>${formatMoney(plan.monthly)}</strong></button>
-                        <button type="button" class="btn ${currentPlan === plan.code && currentCycle === "yearly" ? "primary" : "secondary"}" onclick="startSubscriptionCheckout('${plan.code}', 'yearly')">Anual<br><strong>${formatMoney(plan.yearly)}</strong></button>
-                    </div>
-                </article>
-            `).join("")}
-        </div>
-        <p class="muted" style="font-size:12px;margin-bottom:0;">Los planes y límites se validan también en el backend.</p>
-    `;
+    try {
+        const { data, error } = await client
+            .from("subscription_plans")
+            .select("code,name,monthly_price_cop,yearly_price_cop,max_active_barbers,max_locations")
+            .order("monthly_price_cop", { ascending: true });
 
-    createAdminModal("Planes y suscripción", content);
+        if (error) throw error;
+
+        const plans = (Array.isArray(data) ? data : []).filter(plan =>
+            /^[A-Z0-9_-]{1,32}$/.test(String(plan?.code || "").toUpperCase())
+        );
+
+        if (!plans.length) {
+            throw new Error("No hay planes disponibles en este momento.");
+        }
+
+        if (!modalContent.isConnected) return;
+
+        const currentPlan = String(subscriptionContext?.plan || "").toUpperCase();
+        const currentCycle = String(subscriptionContext?.billing_cycle || "").toLowerCase();
+        modalContent.innerHTML = `
+            <p class="muted" style="margin-top:0;">Selecciona el plan y la modalidad de facturación. El pago se procesa de forma segura con Wompi.</p>
+            <div class="subscription-plan-grid" style="display:grid;gap:12px;">
+                ${plans.map(plan => {
+                    const code = String(plan.code).toUpperCase();
+                    const name = plan.name || code;
+                    const locations = Number(plan.max_locations || 0);
+                    return `
+                        <article class="card" style="margin:0;border:1px solid rgba(127,127,127,.25);">
+                            <div class="queue-header">
+                                <div><h3 style="margin:0;">${escapeHtml(name)}</h3><p class="muted" style="margin:4px 0 0;">Hasta ${Number(plan.max_active_barbers || 0)} barberos activos · ${locations} ${locations === 1 ? "ubicación" : "ubicaciones"}</p></div>
+                                ${currentPlan === code ? `<span class="badge">PLAN ACTUAL</span>` : ""}
+                            </div>
+                            <div class="subscription-plan-prices" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+                                <button type="button" class="btn ${currentPlan === code && currentCycle === "monthly" ? "primary" : "secondary"}" onclick="startSubscriptionCheckout('${code}', 'monthly')">Mensual<br><strong>${formatMoney(plan.monthly_price_cop)}</strong></button>
+                                <button type="button" class="btn ${currentPlan === code && currentCycle === "yearly" ? "primary" : "secondary"}" onclick="startSubscriptionCheckout('${code}', 'yearly')">Anual<br><strong>${formatMoney(plan.yearly_price_cop)}</strong></button>
+                            </div>
+                        </article>
+                    `;
+                }).join("")}
+            </div>
+            <p class="muted" style="font-size:12px;margin-bottom:0;">Los planes y límites se validan también en el backend.</p>
+        `;
+    } catch (error) {
+        console.error("ERROR CARGANDO PLANES DE SUSCRIPCIÓN:", error);
+        if (modalContent.isConnected) {
+            modalContent.textContent = error?.message || "No fue posible cargar los planes. Intenta nuevamente.";
+        }
+    }
 }
 
 async function startSubscriptionCheckout(plan, billingCycle) {
@@ -1536,6 +1562,26 @@ function csvEscape(value) {
 }
 
 function downloadBlobFile(blob, filename) {
+    const androidBridge = window.TurnoBarberAndroid;
+    if (androidBridge && typeof androidBridge.saveFile === "function") {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            try {
+                const saved = androidBridge.saveFile(reader.result, filename, blob.type || "application/octet-stream");
+                if (saved) return;
+            } catch (error) {
+                console.error("ERROR GUARDANDO ARCHIVO EN ANDROID:", error);
+            }
+            downloadBlobFileWeb(blob, filename);
+        };
+        reader.onerror = () => downloadBlobFileWeb(blob, filename);
+        reader.readAsDataURL(blob);
+        return;
+    }
+    downloadBlobFileWeb(blob, filename);
+}
+
+function downloadBlobFileWeb(blob, filename) {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -7772,3 +7818,5 @@ renderPanel = function() {
     generatePublicQr();
 
 };
+
+

@@ -60,7 +60,7 @@ let invitation = null;
 function setStatus(message, type="") {
   const el=document.getElementById("status");
   el.className=type;
-  el.innerHTML=message;
+  el.textContent=message;
 }
 
 async function loadInvitation(){
@@ -92,7 +92,7 @@ async function refreshAuthState(){
   if(session){
     const email=(session.user?.email||"").toLowerCase();
     if(email !== (invitation.email||"").toLowerCase()){
-      setStatus("⚠️ La sesión iniciada usa otro correo. Cierra sesión e inicia con: <strong>"+invitation.email+"</strong>","err");
+      setStatus("⚠️ La sesión iniciada usa otro correo. Cierra sesión e inicia con: "+invitation.email,"err");
       document.getElementById("loggedSection").classList.add("hidden");
       document.getElementById("accountSection").classList.add("hidden");
       return;

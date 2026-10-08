@@ -1162,3 +1162,33 @@ main{
         justify-content:flex-start;
     }
 }
+
+/* Ajustes adaptativos compartidos para móvil, tablet y pantallas táctiles */
+html{ -webkit-text-size-adjust:100%; }
+button,input,select,textarea{ max-width:100%; }
+:focus-visible{ outline:3px solid rgba(40,85,217,.55); outline-offset:2px; }
+.admin-shell,#adminApp,.admin-settings-sheet,#adminActionModal{ min-width:0; }
+.admin-settings-sheet,.admin-action-modal-card{ padding-bottom:calc(20px + env(safe-area-inset-bottom)); }
+.admin-bottom-nav{ padding-bottom:calc(6px + env(safe-area-inset-bottom)); }
+.subscription-plan-grid>.card{ min-width:0; }
+.subscription-plan-prices .btn{ min-width:0; overflow-wrap:anywhere; }
+
+@media(max-width:680px){
+    header.topbar{ flex-wrap:wrap; align-items:center; }
+    .topbar-brand{ flex:1 1 220px; min-width:0; }
+    .topbar-brand>div{ min-width:0; }
+    .topbar-brand h1{ overflow-wrap:anywhere; }
+    .topbar-actions{ flex:0 1 auto; margin-left:auto; }
+    #adminActionModal{ padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom)); }
+    #adminActionModal>.card{ width:100%; max-height:calc(100dvh - 20px); overflow-y:auto; }
+}
+
+@media(max-width:390px){
+    header.topbar{ gap:8px; padding:12px 10px; }
+    .topbar-brand{ flex-basis:180px; gap:8px; }
+    .topbar-brand-icon{ width:34px; height:34px; }
+    .topbar-brand h1{ font-size:16px; }
+    .topbar-actions{ gap:5px; }
+    .subscription-plan-prices{ grid-template-columns:minmax(0,1fr)!important; }
+    #adminActionModal>.card{ padding:16px; }
+}
